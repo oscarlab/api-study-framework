@@ -28,7 +28,7 @@ def getSymbols( binaryname ):
 	for line in process.stdout:
 		parts = line.split()
 		if len(parts) > 7:
-			if parts[3] == 'FUNC' and (parts[4] == 'GLOBAL' or parts[4] == 'WEAK'):
+			if (parts[3] == 'FUNC' or parts[3] == 'IFUNC') and (parts[4] == 'GLOBAL' or parts[4] == 'WEAK'):
 					match = re.search('@', parts[7])
 					if match:
 						#Replace multiple occurences of @ with single @
@@ -54,42 +54,123 @@ def getSymbols( binaryname ):
 
 	#for symbols in symbol_list:
 		#symbols.displaySymbol()
-	print "Total number of functions in " + binaryname + " are " , count
-	return symbol_list;
+	#print "Total number of functions in " + binaryname + " are " , count
+	return symbol_list
 
-
+# getDependencies function will return list of dependencies that binary depends on.
 def getDependencies( binaryname ):
-	
-	filter1 = "s/^.* => //"
-	filter2 = "s/ (0x.*//"
-	count = 0;
-	process1 = subprocess.Popen(["ldd",binaryname],
+
+        filter1 = "s/^.* => //"
+        filter2 = "s/ (0x.*//"
+        count = 0;
+        process1 = subprocess.Popen(["ldd",binaryname],
                              stdout=subprocess.PIPE
                            )
-	process2 = subprocess.Popen(["sed", filter1],
+        process2 = subprocess.Popen(["sed", filter1],
                         stdin=process1.stdout,
                         stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 
-	process3 = subprocess.Popen(["sed", filter2],
+        process3 = subprocess.Popen(["sed", filter2],
                         stdin=process2.stdout,
                         stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 
+        dependency_list = []
+        for libpath in process3.stdout:
+                if (libpath != "" and len(libpath) > 1): #check this later
+			dependency_list.append(libpath.strip())
+                        count += 1
+	#for i in dependency_list:
+	#	print i
+        #print "No of dependencies:",count
+	
+        return dependency_list
+
+# getDependentSymbols will return list of all symbols of the dependencies that binary depend on.
+def getDependentSymbols( binaryname ):
+	
+	count = 0;
+	
+	dependency_list = getDependencies(binaryname)
 	lib_symbol_list = []
-	for libpath in process3.stdout:
-		if (libpath != "" and len(libpath) > 1): #check this later
-			temp_list = []
-			temp_list = getSymbols(libpath.strip())
-			lib_symbol_list += temp_list
-			#print "Length of ",libpath," is ",len(temp_list)
-			count += 1
-	for symbols in lib_symbol_list:
+	for libpath in dependency_list:
+		temp_list = []
+		temp_list = getSymbols(libpath)
+		lib_symbol_list += temp_list
+		#print "Length of ",libpath," is ",len(temp_list)
+		count += 1
+	#for symbols in lib_symbol_list:
+              #symbols.displaySymbol()
+
+	#print "Length of Main list  is: ",len(lib_symbol_list)
+	#print "No of dependencies:",count
+	return lib_symbol_list
+#print "Before function call"
+
+def getSymbolInfo( binaryname ):
+	
+	symbol_list = []
+	dependency_symlist = []
+	final_list = []
+	symbol_list = getSymbols(binaryname)
+	
+	#Below is the binary which is the interpretor and is statically linked , so for this special case just return its symbols.	
+	if binaryname == '/lib64/ld-linux-x86-64.so.2':
+		return symbol_list
+	dependency_symlist = getDependentSymbols(binaryname)
+
+	for symbol in symbol_list:
+		for dependency_sym in dependency_symlist:
+
+			if symbol.scope == 'U':
+				if ((symbol.name == dependency_sym.name) and (dependency_sym.scope == 'D')):
+					sym = Symbol(symbol.name,symbol.scope,dependency_sym.version,dependency_sym.libpath)
+					final_list.append(sym)
+					break
+					 	
+			else:
+					final_list.append(symbol)
+					break
+	#for symbols in final_list:
+        #      symbols.displaySymbol()
+	#print "Length of Symbol list  is: ",len(symbol_list)
+	#print "Length of Dependency list  is: ",len(dependency_symlist)
+	#print "Length of Final list  is: ",len(final_list)
+	return final_list
+
+#The getALlSymbolInfo function extracts all symbols of binary including it's dependency symbols(over-estimation)
+def getAllSymbolInfo( binaryname ):
+
+	final_list = getSymbolInfo(binaryname)
+	initial_count = len(final_list)
+        dependency_list = getDependencies(binaryname)
+	final_list_nodups = []	
+
+	for dependency in dependency_list:
+		temp_list = []
+		temp_list = getSymbolInfo(dependency)
+		print "Length of ",dependency," is ",len(temp_list)
+		final_list += temp_list
+
+
+	for symbols in final_list:
               symbols.displaySymbol()
 
-	print "Length of Main list  is: ",len(lib_symbol_list)
-	print "No of dependencies:",count
-	return;
-print "Before function call"
+	for i in final_list:
+                if i not in final_list_nodups:
+                        final_list_nodups.append(i)
+
+	
+	print "Number of dependencies is ",len(dependency_list)
+	print "Length of Original list is ",initial_count
+	print "Length of final list after over estimating is ",len(final_list)
+	print "Length of final list after over estimating without duplicates is ",len(final_list_nodups)
+	return final_list     
+
+
+	
 if __name__ == "__main__":
 	#getSymbols(sys.argv[1]);
-	getDependencies(sys.argv[1]);
+	#getDependencies(sys.argv[1]);
+	#getSymbolInfo(sys.argv[1]);
+	getAllSymbolInfo(sys.argv[1]);
 
