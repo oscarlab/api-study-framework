@@ -3,6 +3,10 @@ import subprocess
 import sys
 import re
 
+
+# When the scope is D (Defined) , the libpath is the path where symbols is defined
+# When the scope is U (Undefined) , the libpath gives the path where it is actually defined
+
 class Symbol:
 
    symbols_count = 0
@@ -143,28 +147,33 @@ def getAllSymbolInfo( binaryname ):
 	final_list = getSymbolInfo(binaryname)
 	initial_count = len(final_list)
         dependency_list = getDependencies(binaryname)
-	final_list_nodups = []	
+	final_list_nodups = []
 
 	for dependency in dependency_list:
 		temp_list = []
 		temp_list = getSymbolInfo(dependency)
-		print "Length of ",dependency," is ",len(temp_list)
+		#print "Length of ",dependency," is ",len(temp_list)
 		final_list += temp_list
 
 
+	#Code for duplicate elimination from symbol list	
 	for symbols in final_list:
+		count = 1
+		for i in final_list_nodups:
+			if (symbols.name == i.name and symbols.scope == i.scope and symbols.version == i.version and symbols.libpath == i.libpath):
+				count += 1	
+				break
+		if count == 1:
+		    final_list_nodups.append(symbols)	
+	
+	for symbols in final_list_nodups:
               symbols.displaySymbol()
 
-	for i in final_list:
-                if i not in final_list_nodups:
-                        final_list_nodups.append(i)
-
-	
 	print "Number of dependencies is ",len(dependency_list)
 	print "Length of Original list is ",initial_count
 	print "Length of final list after over estimating is ",len(final_list)
 	print "Length of final list after over estimating without duplicates is ",len(final_list_nodups)
-	return final_list     
+	return final_list_nodups     
 
 
 	
