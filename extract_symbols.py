@@ -2,7 +2,7 @@
 import subprocess
 import sys
 import re
-
+import sqlite3
 
 # When the scope is D (Defined) , the libpath is the path where symbols is defined
 # When the scope is U (Undefined) , the libpath gives the path where it is actually defined
@@ -147,6 +147,17 @@ def getAllSymbolInfo( binaryname ):
 	final_list = getSymbolInfo(binaryname)
 	initial_count = len(final_list)
         dependency_list = getDependencies(binaryname)
+
+	#Code to insert data into BINARY_DEPENDENCIES TABLE	
+	con = getConnection()
+	curr = con.cursor()
+	for item in dependency_list:
+		try:
+			curr.execute('insert into BINARY_DEPENDENCIES values (?,?)', (binaryname,item))
+		except Exception,err:
+			print("\nFailed to insert row into table BINARY_DEPENDENCIES:\n" + "binary name:" + str(binaryname) + " dependency name:" + str(item))	
+			print(Exception, err) 
+	con.commit()
 	final_list_nodups = []
 
 	for dependency in dependency_list:
@@ -166,14 +177,28 @@ def getAllSymbolInfo( binaryname ):
 		if count == 1:
 		    final_list_nodups.append(symbols)	
 	
-	for symbols in final_list_nodups:
-              symbols.displaySymbol()
+	#print all the symbol information
+	#for symbols in final_list_nodups:
+        #      symbols.displaySymbol()
 
+	#Code to insert data into SYMBOLS_INFO table
+	for symbols in final_list_nodups:
+		try:
+			curr.execute('insert into SYMBOLS_INFO values (?,?,?)', (binaryname,symbols.name,symbols.scope))
+		except Exception,err:
+			print("\nFailed to insert row into table SYMBOLS_INFO:\n" + "binary name:" + str(binaryname) + " Symbol Name:" + str(symbols.name) + " Symbol Scope:" + str(symbols.scope))
+			print(Exception, err)
+	con.commit()		
+	con.close()
 	print "Number of dependencies is ",len(dependency_list)
 	print "Length of Original list is ",initial_count
 	print "Length of final list after over estimating is ",len(final_list)
 	print "Length of final list after over estimating without duplicates is ",len(final_list_nodups)
 	return final_list_nodups     
+
+
+def getConnection():
+	return sqlite3.connect('syscall_popularity.db')
 
 
 	

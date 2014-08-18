@@ -2,7 +2,7 @@
 import subprocess
 import sys
 import re
-
+import sqlite3
 class CallStat:
 
    total_func_count = 0
@@ -281,8 +281,40 @@ def getData( binaryname ):
 			#Address not found in section header list , yet to be handled					
 			print "callq *offset(%rip) form indirect call --run time initialization YET TO BE  handled"			
 	
-	for item in call_list:
-		item.displayCallStat()
+	#print the call graph
+	#for item in call_list:
+	#	item.displayCallStat()
+
+ 	#Insert into database
+	insert_to_db(call_list,binaryname)
+
+def insert_to_db(call_list,binaryname):
+
+	con = getConnection()
+        curr = con.cursor()
+        for item in call_list:
+                try:
+                        if item.calls_no > 0:
+                                for func in item.called_func:
+                                        curr.execute('insert into CALLER_FUNC_INFO values (?,?,?)', (binaryname,item.func_name,func))
+                        else:
+                                curr.execute('insert into CALLER_FUNC_INFO values (?,?,?)', (binaryname,item.func_name,None))
+                except Exception,err:
+                        print("\nFailed to insert row into table CALLER_FUNC_INFO :\n" + "Binary Name:" + str(binaryname) + " Caller function:" + str(item.func_name) + "Callee Func:" + str(func))
+                        print(Exception, err)
+
+                try:
+                        if len(item.syscall_no) > 0:
+                                for no in item.syscall_no:
+                                        curr.execute('insert into SYSCALL_INFO values (?,?,?,?)', (binaryname,item.func_name,no,sytemCallInfo[str(int(no,16))] if is_hex(no) else None))
+                        else:
+                                curr.execute('insert into SYSCALL_INFO values (?,?,?,?)', (binaryname,item.func_name,None,None))
+                except Exception,err:
+                        print("\nFailed to insert row into table SYSCALL_INFO :\n" + "Binary Name:" + str(binaryname) + " Caller func:" + str(item.func_name) + "System call no:" + str(no))
+                        print(Exception, err)
+
+        con.commit()
+        con.close()
 
 def prepare():
     res = {}
@@ -291,6 +323,9 @@ def prepare():
             value, key = line.split()
             res[key] = value
     return res
+
+def getConnection():
+        return sqlite3.connect('syscall_popularity.db')
 
 
 def is_hex(s):
