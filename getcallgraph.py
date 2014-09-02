@@ -277,9 +277,9 @@ def getData( binaryname ):
 								break		
 				break			
 			
-		if flag == 0:
+		#if flag == 0:
 			#Address not found in section header list , yet to be handled					
-			print "callq *offset(%rip) form indirect call --run time initialization YET TO BE  handled"			
+		#	print "callq *offset(%rip) form indirect call --run time initialization YET TO BE  handled"			
 	
 	#print the call graph
 	#for item in call_list:
@@ -306,13 +306,17 @@ def insert_to_db(call_list,binaryname):
                 try:
                         if len(item.syscall_no) > 0:
                                 for no in item.syscall_no:
-                                        curr.execute('insert into SYSCALL_INFO values (?,?,?,?)', (binaryname,item.func_name,no,sytemCallInfo[str(int(no,16))] if is_hex(no) else None))
+				
+
+		
+	
+                                        curr.execute('insert into SYSCALL_INFO values (?,?,?,?)', (binaryname,item.func_name,no,sytemCallInfo[str(int(no,16))] if is_hex(no) and sytemCallInfo.has_key(str(int(no,16))) else None))
                         else:
                                 curr.execute('insert into SYSCALL_INFO values (?,?,?,?)', (binaryname,item.func_name,None,None))
                 except Exception,err:
                         print("\nFailed to insert row into table SYSCALL_INFO :\n" + "Binary Name:" + str(binaryname) + " Caller func:" + str(item.func_name) + "System call no:" + str(no))
                         print(Exception, err)
-
+	
         con.commit()
         con.close()
 

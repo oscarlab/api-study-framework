@@ -27,6 +27,7 @@ def getSymbols( binaryname ):
 	process = subprocess.Popen(["readelf", "--dyn-syms","-W", binaryname],
                              stdout=subprocess.PIPE
                            	)
+
 	count = 0
 	symbol_list = []
 	for line in process.stdout:
@@ -67,6 +68,7 @@ def getDependencies( binaryname ):
         filter1 = "s/^.* => //"
         filter2 = "s/ (0x.*//"
         count = 0;
+
         process1 = subprocess.Popen(["ldd",binaryname],
                              stdout=subprocess.PIPE
                            )
@@ -77,7 +79,6 @@ def getDependencies( binaryname ):
         process3 = subprocess.Popen(["sed", filter2],
                         stdin=process2.stdout,
                         stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-
         dependency_list = []
         for libpath in process3.stdout:
                 if (libpath != "" and len(libpath) > 1): #check this later
@@ -117,9 +118,18 @@ def getSymbolInfo( binaryname ):
 	final_list = []
 	symbol_list = getSymbols(binaryname)
 	
-	#Below is the binary which is the interpretor and is statically linked , so for this special case just return its symbols.	
-	if binaryname == '/lib64/ld-linux-x86-64.so.2':
-		return symbol_list
+	#Below is the binary which is the interpretor and is statically linked , so for this special case just return its symbols.
+		
+	#if binaryname == '/lib64/ld-linux-x86-64.so.2':
+	#	return symbol_list
+	#Check whether binary is statistically linked or not
+	binarylist = getDependencies(binaryname)
+	for binary in binarylist:
+		if binary == 'statically linked':
+			return symbol_list
+		else: 
+			break
+
 	dependency_symlist = getDependentSymbols(binaryname)
 
 	for symbol in symbol_list:
@@ -190,10 +200,10 @@ def getAllSymbolInfo( binaryname ):
 			print(Exception, err)
 	con.commit()		
 	con.close()
-	print "Number of dependencies is ",len(dependency_list)
-	print "Length of Original list is ",initial_count
-	print "Length of final list after over estimating is ",len(final_list)
-	print "Length of final list after over estimating without duplicates is ",len(final_list_nodups)
+	#print "Number of dependencies is ",len(dependency_list)
+	#print "Length of Original list is ",initial_count
+	#print "Length of final list after over estimating is ",len(final_list)
+	#print "Length of final list after over estimating without duplicates is ",len(final_list_nodups)
 	return final_list_nodups     
 
 
@@ -207,4 +217,5 @@ if __name__ == "__main__":
 	#getDependencies(sys.argv[1]);
 	#getSymbolInfo(sys.argv[1]);
 	getAllSymbolInfo(sys.argv[1]);
+	#getDependencies(sys.argv[1]);
 
