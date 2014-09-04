@@ -3,6 +3,7 @@ import subprocess
 import sys
 import re
 import sqlite3
+
 class CallStat:
 
    total_func_count = 0
@@ -63,8 +64,12 @@ def getData( binaryname ):
 	sym2 = '%'
 	call_list = []	
 	syscall = ''
-	rax = '' # Ultimately will have syscall no at the end
-	registers = ['%rax','%eax','%ax','%al']
+	registers = [['%rax','%eax','%ax','%al'],['%rbx','%ebx','%bx','%bl'],['%rcx','%ecx','%cx','%cl'],['%rdx','%edx','%dx','%dl'],                                              ['%rsi','%esi','%si','%sil'],['%rdi','%edi','%di','%dil'],['%rbp','%ebp','%bp','%bpl'],['%rsp','%esp','%sp','%spl'],                                          ['%r8','%r8d','%r8w','%r8b'],['%r9','%r9d','%r9w','%r9b'],['%r10','%r10d','%r10w','%r10b'],['%r11','%r11d','%r11w','%r11b'],                                  ['%r12','%r12d','%r12w','%r12b'],['%r13','%r13d','%r13w','%r13b'],['%r14','%r14d','%r14w','%r14b'],['%r15','%r15d','%r15w','%r15b']]
+	#Below dict gives the gapping of register that has to be considered.For eg if group is 1 consider rbx
+	main_register = {}
+	for i,j in enumerate(registers):
+		main_register[i] = j[0]
+
 	#Seeking the pipe to start position is difficult/not possible , so store in list
 	symlist = []
 	sectionlist = []
@@ -74,6 +79,10 @@ def getData( binaryname ):
                 symlist.append(item.strip())
 	for item in process2.stdout:
 		sectionlist.append(item.strip())
+
+	register_values = {}
+	for i in registers:
+		register_values[i[0]] = None
 
 	for line in process.stdout:
 		if line.strip() == '' and linenbr < 7:#intial parts of objdump output don't care
@@ -102,9 +111,38 @@ def getData( binaryname ):
 
 				j = line.find(pattern3)
 				matched_seq = line[j+len(pattern3):].strip()
-				if matched_seq.split(',')[1] in registers:
-					#The value of rax is used as system call no , if syscall instr is found
-					rax = matched_seq.split(',')[0]
+				for d in registers:
+					if matched_seq.split(',')[1] in d:
+						source_reg_val = matched_seq.split(',')[0].strip()
+						dest_reg_val = matched_seq.split(',')[1].strip()
+
+						for i,j in enumerate(registers):
+							if dest_reg_val in j:
+								d_reg = main_register[i]
+								break
+
+						if source_reg_val.startswith('$'):
+							register_values[d_reg] = source_reg_val
+							break
+						#if source_reg is not direct value ,rather register itself or mem location
+						else:
+							flag = 0	
+							for g in registers:
+								#source is register
+								if source_reg_val in g:
+									flag = 1
+									for i,j in enumerate(registers):
+										if source_reg_val in j:
+											s_reg = main_register[i]
+											break
+									register_values[d_reg] = register_values[s_reg]	
+									break
+							#source is memory location
+							if flag == 0:
+								register_values[d_reg] = source_reg_val
+								break
+
+							
 			if pattern1 in line:
 
 				#Gives the address of current call instruction
@@ -191,10 +229,13 @@ def getData( binaryname ):
 
 			if pattern2 in line:
 				syscall = 'YES'
-				sys_call_no = rax.replace('$','')#Remove $ before hex value of system call no
+				sys_call_no = ''
+				if register_values['%rax'] is not None:
+					sys_call_no = register_values['%rax'].replace('$','')#Remove $ before hex value of system call no
+
 				if sys_call_no not in sys_call_list:#Remove duplicate entries
 					sys_call_list.append(sys_call_no)
-
+					#Do we need to flush register-values dict here ??
 			if re.search(r'\b'+re.escape(pattern5)+r'\b',line):
 				#Gives the address of current call instruction
 				find_addr = re.search(r'^0*([A-Fa-f0-9]+):',line.strip())
@@ -227,6 +268,8 @@ def getData( binaryname ):
 			syscall = ''
 			name = ''
 			rax = ''	
+			for i in registers:
+                		register_values[i[0]] = None
 					
 		linenbr += 1
 		
@@ -282,8 +325,8 @@ def getData( binaryname ):
 		#	print "callq *offset(%rip) form indirect call --run time initialization YET TO BE  handled"			
 	
 	#print the call graph
-	#for item in call_list:
-	#	item.displayCallStat()
+	for item in call_list:
+		item.displayCallStat()
 
  	#Insert into database
 	insert_to_db(call_list,binaryname)
@@ -344,4 +387,5 @@ if __name__ == "__main__":
 	sytemCallInfo = {}
 	sytemCallInfo = prepare()
 	getData(sys.argv[1])
+	
 
