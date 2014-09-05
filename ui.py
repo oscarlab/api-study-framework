@@ -20,6 +20,46 @@ def center(win, h, w):
 		x = 0
 	return (y, x)
 
+def show_list(screen, name, items, print_func):
+	n = len(items)
+	(y, x) = center(screen, n + 3, 60)
+	win = curses.newwin(n + 3, 60, y, x)
+	win.border(0)
+	win.addstr(1, 1, "{0}: {1}".format(name, n))
+	y = 2
+	for i in items:
+		win.addstr(y, 1, print_func(i))
+		y = y + 1
+	c = win.getch()
+	while c != ord('q'):
+		c = win.getch()
+	del win
+
+def print_job(job):
+	(id, name, done) = job
+	if done:
+		return "*{0}: {1}".format(id, name)
+	else:
+		return " {0}: {1}".format(id, name)
+
+def print_worker(worker):
+	(name, job) = worker
+	if job:
+		return "{0}: Job {1}".format(name, job)
+	else:
+		return "{0}: Idle".format(name)
+
+def confirm_exit(screen):
+	(y, x) = center(screen, 3, 30)
+	win = curses.newwin(3, 30, y, x)
+	win.border(0)
+	win.addstr(1, 1, "Type \'exit\': ")
+	curses.echo()
+	text = win.getstr(1, 14)
+	del win
+	curses.noecho()
+	return text == "exit"
+
 def make_screen(jmgr, wmgr):
 	screen = curses.initscr()
 	screen.border(0)
@@ -36,33 +76,11 @@ def make_screen(jmgr, wmgr):
 	while True:
 		c = screen.getch()
 		if c == ord('l'):
-			jobs = jmgr.get_jobs()
-			n = len(jobs)
-			(y, x) = center(screen, n + 3, 60)
-			win = curses.newwin(n + 3, 60, y, x)
-			win.border(0)
-			win.addstr(1, 1, "Jobs: {0}".format(n))
-			y = 2
-			for (id, name, done) in jobs:
-				if done:
-					win.addstr(y, 1, "*{0}: {1}".format(id, name))
-				else:
-					win.addstr(y, 1, " {0}: {1}".format(id, name))
-				y = y + 1
-			c = win.getch()
-			while c != ord('q'):
-				c = win.getch()
-			del win
+			show_list(screen, "Jobs", jmgr.get_jobs(), print_job)
+		elif c == ord('w'):
+			show_list(screen, "Workers", wmgr.get_workers(), print_worker)
 		elif c == ord('e'):
-			(y, x) = center(screen, 3, 30)
-			win = curses.newwin(3, 30, y, x)
-			win.border(0)
-			win.addstr(1, 1, "Type \'exit\': ")
-			curses.echo()
-			text = win.getstr(1, 14)
-			del win
-			curses.noecho()
-			if text == "exit":
+			if confirm_exit(screen):
 				curses.endwin()
 				return True
 		elif c == ord('q'):

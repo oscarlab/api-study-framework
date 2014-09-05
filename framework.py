@@ -6,8 +6,9 @@ import sys
 import subprocess
 import re
 import shutil
+import signal
 from datetime import datetime
-from multiprocessing import Process, Queue, JoinableQueue, current_process
+from multiprocessing import Process, Queue, JoinableQueue, Value, current_process
 import multiprocessing
 
 class Job(object):
@@ -22,13 +23,23 @@ class Job(object):
 		self.func = func
 		self.args = args
 		self.id = Job.get_id()
-		self.done = False
 
 	def __eq__(self, obj):
 		return self.id == obj.id
 
 	def run(self):
 		self.func(self.args)
+
+class JobStatus(object):
+	def __init__(self, id, name, func, args):
+		self.id = id
+		self.name = name
+		self.func = func
+		self.args = args
+		self.start_time = datetime.now()
+
+	def __eq__(self, obj):
+		return self.id == obj.id
 
 class JobManager:
 	def __init__(self):
@@ -38,13 +49,9 @@ class JobManager:
 		self.done_jobs = []
 
 	def update_queue(self):
-		try:
-			j = self.done_queue.get(block = False)
-			while j:
-				self.done_jobs.append(j)
-				j = self.done_queue.get(block = False)
-		except:
-			return
+		while not self.done_queue.empty():
+			s = self.done_queue.get(block = False)
+			self.done_jobs.append(s)
 
 	def get_jobs(self):
 		self.update_queue()
@@ -55,19 +62,30 @@ class JobManager:
 		self.jobs.append(j)
 		self.work_queue.put(j)
 
-def worker(work_queue, done_queue):
-	current = current_process()
-	print "Worker start running:", current.name
+class Worker(Process):
+	def __init__(self, work_queue, done_queue):
+		Process.__init__(self)
+		self.work_queue = work_queue
+		self.done_queue = done_queue
+		self.current_job = Value('I', 0)
 
-	try:
-		j = work_queue.get()
-		while j:
+	def run(self):
+		signal.signal(signal.SIGINT, signal.SIG_IGN)
+		current = current_process()
+		print "Worker start running:", current.name
+
+		while True:
+			j = self.work_queue.get()
+			if not j:
+				self.work_queue.task_done()
+				break
+			self.current_job.value = j.id
+			s = JobStatus(j.id, j.name, j.func, j.args)
 			j.run()
-			work_queue.task_done()
-			done_queue.put(j)
-			j = work_queue.get()
-	except KeyboardInterrupt:
-		return
+			s.end_time = datetime.now()
+			self.current_job.value = 0
+			self.work_queue.task_done()
+			self.done_queue.put(s)
 
 class WorkerManager:
 	def __init__(self, jmgr, nworkers=0):
@@ -77,19 +95,18 @@ class WorkerManager:
 			self.add_worker()
 
 	def add_worker(self):
-		p = Process(target=worker, args=(self.job_manager.work_queue,
-			self.job_manager.done_queue,))
-		p.start()
-		self.workers.append(p)
+		w = Worker(self.job_manager.work_queue, self.job_manager.done_queue)
+		w.start()
+		self.workers.append(w)
+
+	def get_workers(self):
+		return [(w.name, w.current_job.value) for w in self.workers if
+				w.is_alive()]
 
 	def join(self):
-		for p in self.workers:
-			p.join()
-			self.workers.remove(p)
-			del p
+		for w in self.workers:
+			w.join()
 
 	def exit(self):
-		for p in self.workers:
-			p.terminate()
-			self.workers.remove(p)
-			del p
+		for w in self.workers:
+			w.terminate()
