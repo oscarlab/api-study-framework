@@ -84,6 +84,15 @@ def task_keys(screen, key, args):
 	task.create_job(jmgr, run_args)
 	return True
 
+def show_message(screen, message):
+	n = len(message)
+	(y, x) = center(screen, 3, n + 2)
+	win = curses.newwin(3, n + 2, y, x)
+	win.border(0)
+	win.addstr(1, 1, message)
+	win.getch()
+	del win
+
 def confirm_exit(screen):
 	(y, x) = center(screen, 3, 30)
 	win = curses.newwin(3, 30, y, x)
@@ -102,12 +111,10 @@ def make_screen(jmgr, wmgr, tasks):
 	screen.addstr(1, 1, "Commands:")
 	screen.addstr(2, 3, "l - List all jobs")
 	screen.addstr(3, 3, "a - Add new job")
-	screen.addstr(4, 3, "d - Delete jobs")
-	screen.addstr(5, 3, "w - List all workers")
-	screen.addstr(6, 3, "n - Create new workers")
-	screen.addstr(7, 3, "t - Terminate workers")
-	screen.addstr(8, 3, "e - End execution")
-	screen.addstr(9, 3, "q - Leave")
+	screen.addstr(4, 3, "w - List all workers")
+	screen.addstr(5, 3, "n - Create new worker")
+	screen.addstr(6, 3, "e - End execution")
+	screen.addstr(7, 3, "q - Leave")
 	while True:
 		c = screen.getch()
 		if c == ord('l'):
@@ -126,6 +133,9 @@ def make_screen(jmgr, wmgr, tasks):
 					task_keys, (jmgr, keys,))
 		elif c == ord('w'):
 			show_list(screen, "Workers", wmgr.get_workers(), print_worker)
+		elif c == ord('n'):
+			wmgr.add_worker()
+			show_message(screen, "A new worker is created")
 		elif c == ord('e'):
 			if confirm_exit(screen):
 				curses.endwin()
