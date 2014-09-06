@@ -11,24 +11,24 @@ from datetime import datetime
 from multiprocessing import Process, Queue, JoinableQueue, Value, current_process
 import multiprocessing
 
-class Job(object):
-	id_gen = 0
-	@classmethod
-	def get_id(cls):
-		cls.id_gen = cls.id_gen + 1
-		return cls.id_gen
+job_id_gen = Value('I', 1)
+def get_job_id():
+	id = job_id_gen.value
+	job_id_gen.value += 1
+	return id
 
-	def __init__(self, name, func, args):
+class Job(object):
+	def __init__(self, id, name, func, args):
 		self.name = name
 		self.func = func
 		self.args = args
-		self.id = Job.get_id()
+		self.id = id
 
 	def __eq__(self, obj):
 		return self.id == obj.id
 
-	def run(self):
-		self.func(self.args)
+	def run(self, jmgr):
+		self.func(jmgr, self.args)
 
 class JobStatus(object):
 	def __init__(self, id, name, func, args):
@@ -45,28 +45,40 @@ class JobManager:
 	def __init__(self):
 		self.work_queue = JoinableQueue()
 		self.done_queue = Queue()
+		self.more_queue = Queue()
 		self.jobs = []
 		self.done_jobs = []
+		self.master_process = current_process()
 
 	def update_queue(self):
 		while not self.done_queue.empty():
 			s = self.done_queue.get(block = False)
+			if not s:
+				break
 			self.done_jobs.append(s)
+
+		while not self.more_queue.empty():
+			j = self.more_queue.get(block = False)
+			if not j:
+				break
+			self.jobs.append(j)
 
 	def get_jobs(self):
 		self.update_queue()
 		return [(j.id, j.name, j in self.done_jobs) for j in self.jobs]
 
 	def add_job(self, name, func, args):
-		j = Job(name, func, args)
-		self.jobs.append(j)
+		j = Job(get_job_id(), name, func, args)
 		self.work_queue.put(j)
+		if current_process() == self.master_process:
+			self.jobs.append(j)
+		else:
+			self.more_queue.put(Job(j.id, name, func, args))
 
 class Worker(Process):
-	def __init__(self, work_queue, done_queue):
+	def __init__(self, job_manager):
 		Process.__init__(self)
-		self.work_queue = work_queue
-		self.done_queue = done_queue
+		self.job_manager = job_manager
 		self.current_job = Value('I', 0)
 
 	def run(self):
@@ -75,17 +87,17 @@ class Worker(Process):
 		print "Worker start running:", current.name
 
 		while True:
-			j = self.work_queue.get()
+			j = self.job_manager.work_queue.get()
 			if not j:
 				self.work_queue.task_done()
 				break
 			self.current_job.value = j.id
 			s = JobStatus(j.id, j.name, j.func, j.args)
-			j.run()
+			j.run(self.job_manager)
 			s.end_time = datetime.now()
 			self.current_job.value = 0
-			self.work_queue.task_done()
-			self.done_queue.put(s)
+			self.job_manager.work_queue.task_done()
+			self.job_manager.done_queue.put(s)
 
 class WorkerManager:
 	def __init__(self, jmgr, nworkers=0):
@@ -95,7 +107,7 @@ class WorkerManager:
 			self.add_worker()
 
 	def add_worker(self):
-		w = Worker(self.job_manager.work_queue, self.job_manager.done_queue)
+		w = Worker(self.job_manager)
 		w.start()
 		self.workers.append(w)
 

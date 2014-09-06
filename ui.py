@@ -20,7 +20,8 @@ def center(win, h, w):
 		x = 0
 	return (y, x)
 
-def show_list(screen, name, items, print_func):
+def show_list(screen, name, items, print_func, extra_keys=None,
+		extra_keys_args=None):
 	n = len(items)
 	(y, x) = center(screen, n + 3, 60)
 	win = curses.newwin(n + 3, 60, y, x)
@@ -30,9 +31,15 @@ def show_list(screen, name, items, print_func):
 	for i in items:
 		win.addstr(y, 1, print_func(i))
 		y = y + 1
-	c = win.getch()
-	while c != ord('q'):
+	while True:
 		c = win.getch()
+		if c == ord('q'):
+			break
+		if extra_keys:
+			win.redrawwin()
+			if extra_keys(screen, c, extra_keys_args):
+				break
+			win.refresh()
 	del win
 
 def print_job(job):
@@ -49,6 +56,34 @@ def print_worker(worker):
 	else:
 		return "{0}: Idle".format(name)
 
+def print_task(task):
+	(k, t) = task
+	return "{0}: {1}".format(k, t.name)
+
+def task_keys(screen, key, args):
+	(jmgr, keys) = args
+	task = None
+	for (k, t) in keys:
+		if key == ord(k):
+			task = t
+	if not task:
+		return False
+	(y, x) = center(screen, 2 + len(task.arg_defs), 60)
+	win = curses.newwin(2 + len(task.arg_defs), 60, y, x)
+	win.border(0)
+	y = 1
+	run_args = []
+	for a in task.arg_defs:
+		win.addstr(y, 1, a + ": ")
+		curses.echo()
+		text = win.getstr(y, len(a) + 3)
+		curses.noecho()
+		y += 1
+		run_args.append(text)
+	del win
+	task.create_job(jmgr, run_args)
+	return True
+
 def confirm_exit(screen):
 	(y, x) = center(screen, 3, 30)
 	win = curses.newwin(3, 30, y, x)
@@ -60,7 +95,7 @@ def confirm_exit(screen):
 	curses.noecho()
 	return text == "exit"
 
-def make_screen(jmgr, wmgr):
+def make_screen(jmgr, wmgr, tasks):
 	screen = curses.initscr()
 	screen.border(0)
 	curses.noecho()
@@ -77,6 +112,18 @@ def make_screen(jmgr, wmgr):
 		c = screen.getch()
 		if c == ord('l'):
 			show_list(screen, "Jobs", jmgr.get_jobs(), print_job)
+		elif c == ord('a'):
+			keys = []
+			for i in range(len(tasks)):
+				if i < 10:
+					keys.append((chr(ord('0') + i),
+						tasks[i]))
+				else:
+					keys.append((chr(ord('a') + i - 10),
+						tasks[i]))
+
+			show_list(screen, "Tasks", keys, print_task,
+					task_keys, (jmgr, keys,))
 		elif c == ord('w'):
 			show_list(screen, "Workers", wmgr.get_workers(), print_worker)
 		elif c == ord('e'):
@@ -85,7 +132,7 @@ def make_screen(jmgr, wmgr):
 				return True
 		elif c == ord('q'):
 			break
-		screen.touchwin()
+		screen.redrawwin()
 		screen.refresh()
 	curses.endwin()
 	return False

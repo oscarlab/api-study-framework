@@ -3,32 +3,18 @@
 import os
 import sys
 import re
-import time
 
 class Task:
+	registered_tasks = []
 	@classmethod
-	def run(cls, args):
-		return
+	def register(cls, task):
+		Task.registered_tasks.append(task)
 
-	@classmethod
-	def gen_name(cls, args):
-		return ""
+	def __init__(self, name, func, arg_defs, job_name):
+		self.name = name
+		self.func = func
+		self.arg_defs = arg_defs
+		self.job_name = job_name
 
-	@classmethod
-	def create_job(cls, jmgr, args):
-		jmgr.add_job(cls.gen_name(args), cls.run, args)
-
-all_tasks = []
-
-# Example
-class ExampleTask(Task):
-	name = "Example - Say Hello"
-	nargs = 2
-	@classmethod
-	def run(cls, args):
-		time.sleep(args[0])
-		print args[1]
-
-	@classmethod
-	def gen_name(cls, args):
-		return "Say hello"
+	def create_job(self, jmgr, args):
+		jmgr.add_job(self.job_name(args), self.func, args)
