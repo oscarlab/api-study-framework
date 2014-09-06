@@ -9,13 +9,14 @@ import os
 import sys
 import re
 from datetime import datetime
+import multiprocessing
 
 def main():
 	Task.register(ExampleTask)
 	Task.register(ExampleMoreTask)
 
 	jmgr = JobManager()
-	wmgr = WorkerManager(jmgr, 4)
+	wmgr = WorkerManager(jmgr, multiprocessing.cpu_count())
 
 	while True:
 		try:
