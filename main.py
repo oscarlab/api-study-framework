@@ -4,7 +4,7 @@ from framework import JobManager, WorkerManager
 from ui import make_screen
 from task import Task
 # from example import ExampleTask, ExampleMoreTask
-from package import PackageListByNames, PackageListByPrefixes, PackageListByRanks
+from package import PackageListByNames, PackageListByPrefixes, PackageListByRanks, PackageUnpack, BinaryList
 from package_popularity import PackagePopularity
 
 import os
@@ -19,6 +19,9 @@ def main():
 	Task.register(PackageListByNames)
 	Task.register(PackageListByPrefixes)
 	Task.register(PackageListByRanks)
+	Task.register(PackageListByRanks)
+	Task.register(PackageUnpack)
+	Task.register(BinaryList)
 	Task.register(PackagePopularity)
 
 	jmgr = JobManager()
