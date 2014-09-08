@@ -6,6 +6,7 @@ from task import Task
 # from example import ExampleTask, ExampleMoreTask
 import package
 import package_popularity
+import symbol
 
 import os
 import sys
@@ -24,6 +25,8 @@ def main():
 	Task.register(package.BinaryListByNames)
 	Task.register(package.BinaryListByPrefixes)
 	Task.register(package.BinaryListByRanks)
+	Task.register(symbol.BinarySymbol)
+	Task.register(symbol.BinaryDependency)
 	Task.register(package_popularity.PackagePopularity)
 
 	jmgr = JobManager()
