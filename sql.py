@@ -54,6 +54,7 @@ class Table:
 		if condition:
 			query += ' WHERE ' + condition
 		query += ';'
+		print query
 		return query
 
 class SQLite:
@@ -73,7 +74,9 @@ class SQLite:
 				type=\'table\' AND name=\'''' + table.name + '\''
 			cur = self.db.cursor()
 			cur.execute(query)
-			if not cur.fetchone():
+			result = cur.fetchone()
+			cur.close()
+			if not result:
 				self.db.execute(table.create_table())
 				self.db.commit()
 			self.tables.append(table)
@@ -86,4 +89,6 @@ class SQLite:
 	def search_record(self, table, condition=None, fields=None):
 		cur = self.db.cursor()
 		cur.execute(table.select_record(condition, fields))
-		return cur.fetchall()
+		result = cur.fetchall()
+		cur.close()
+		return result

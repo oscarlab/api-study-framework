@@ -33,9 +33,13 @@ def get_packages_by_ranks(sql, min, max):
 	packages = get_packages()
 	packages_by_ranks = sql.search_record(
 				package_popularity_table,
-				'RANK >= ' + min + ' AND RANK <= ' + max,
-				['PACKAGE_NAME'])
-	return [name for name in packages if name in packages_by_ranks]
+				'rank >= ' + str(min) + ' AND rank <= ' + str(max),
+				['package_name'])
+	result = []
+	for (name,) in packages_by_ranks:
+		if name in packages:
+			result.append(name)
+	return result
 
 def PackageInfo_run(jmgr, sql, args):
 	process = subprocess.Popen(["apt-cache", "showpkg", args[0]],
@@ -83,7 +87,7 @@ PackageListByPrefixes = Task(
 	job_name=PackageListByPrefixes_job_name)
 
 def PackageListByRanks_run(jmgr, sql, args):
-	packages = get_packages_by_ranks(int(args[0]), int(args[1]))
+	packages = get_packages_by_ranks(sql, int(args[0]), int(args[1]))
 	if packages:
 		for i in packages:
 			PackageInfo.create_job(jmgr, [i])
