@@ -4,8 +4,8 @@ from framework import JobManager, WorkerManager
 from ui import make_screen
 from task import Task
 # from example import ExampleTask, ExampleMoreTask
-from package import PackageListByNames, PackageListByPrefixes, PackageListByRanks, PackageUnpack, BinaryList
-from package_popularity import PackagePopularity
+import package
+import package_popularity
 
 import os
 import sys
@@ -16,13 +16,15 @@ import multiprocessing
 def main():
 	# Task.register(ExampleTask)
 	# Task.register(ExampleMoreTask)
-	Task.register(PackageListByNames)
-	Task.register(PackageListByPrefixes)
-	Task.register(PackageListByRanks)
-	Task.register(PackageListByRanks)
-	Task.register(PackageUnpack)
-	Task.register(BinaryList)
-	Task.register(PackagePopularity)
+	Task.register(package.PackageListByNames)
+	Task.register(package.PackageListByPrefixes)
+	Task.register(package.PackageListByRanks)
+	Task.register(package.PackageListByRanks)
+	Task.register(package.PackageUnpack)
+	Task.register(package.BinaryListByNames)
+	Task.register(package.BinaryListByPrefixes)
+	Task.register(package.BinaryListByRanks)
+	Task.register(package_popularity.PackagePopularity)
 
 	jmgr = JobManager()
 	wmgr = WorkerManager(jmgr, multiprocessing.cpu_count())

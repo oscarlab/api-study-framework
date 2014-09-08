@@ -214,3 +214,48 @@ BinaryList = Task(
 	func=BinaryList_run,
 	arg_defs=["Package Name"],
 	job_name=BinaryList_job_name)
+
+def BinaryListByNames_run(jmgr, sql, args):
+	packages = get_packages_by_names(args[0].split())
+	if packages:
+		for i in packages:
+			BinaryList.create_job(jmgr, [i])
+
+def BinaryListByNames_job_name(args):
+	return "Binary List By Names: " + args[0]
+
+BinaryListByNames = Task(
+	name="Binary List By Names",
+	func=BinaryListByNames_run,
+	arg_defs=["Package Names"],
+	job_name=BinaryListByNames_job_name)
+
+def BinaryListByPrefixes_run(jmgr, sql, args):
+	packages = get_packages_by_prefixes(args[0].split())
+	if packages:
+		for i in packages:
+			BinaryList.create_job(jmgr, [i])
+
+def BinaryListByPrefixes_job_name(args):
+	return "Binary List By Prefixes: " + args[0]
+
+BinaryListByPrefixes = Task(
+	name="Binary List By Prefixes",
+	func=BinaryListByPrefixes_run,
+	arg_defs=["Package Prefixes"],
+	job_name=BinaryListByPrefixes_job_name)
+
+def BinaryListByRanks_run(jmgr, sql, args):
+	packages = get_packages_by_ranks(sql, int(args[0]), int(args[1]))
+	if packages:
+		for i in packages:
+			BinaryList.create_job(jmgr, [i])
+
+def BinaryListByRanks_job_name(args):
+	return "Binary List By Ranks: " + args[0] + " to " + args[1]
+
+BinaryListByRanks = Task(
+	name="Binary List By Ranks",
+	func=BinaryListByRanks_run,
+	arg_defs=["Minimum Rank", "Maximum Rank"],
+	job_name=BinaryListByRanks_job_name)
