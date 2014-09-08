@@ -7,7 +7,7 @@ import sys
 import re
 import time
 
-def ExampleTask_run(jmgr, args):
+def ExampleTask_run(jmgr, sql, args):
 	time.sleep(int(args[0]))
 	print args[1]
 
@@ -20,7 +20,7 @@ ExampleTask = Task(
 	arg_defs=["Sleep Time", "Print-out String"],
 	job_name=ExampleTask_job_name)
 
-def ExampleMoreTask_run(jmgr, args):
+def ExampleMoreTask_run(jmgr, sql, args):
 	for i in range(int(args[0])):
 		ExampleTask.create_job(jmgr, args[1:])
 

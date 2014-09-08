@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from sql import SQLite
+
 import os
 import fnmatch
 import sys
@@ -10,6 +12,7 @@ import signal
 from datetime import datetime
 from multiprocessing import Process, Queue, JoinableQueue, Value, current_process
 import multiprocessing
+import traceback
 
 job_id_gen = Value('I', 1)
 def get_job_id():
@@ -27,8 +30,8 @@ class Job(object):
 	def __eq__(self, obj):
 		return self.id == obj.id
 
-	def run(self, jmgr):
-		self.func(jmgr, self.args)
+	def run(self, jmgr, sql):
+		self.func(jmgr, sql, self.args)
 
 class JobStatus(object):
 	def __init__(self, id, name, func, args):
@@ -86,6 +89,13 @@ class Worker(Process):
 		current = current_process()
 		print "Worker start running:", current.name
 
+		log = os.open(current.name + ".log",
+				os.O_RDWR|os.O_CREAT|os.O_TRUNC)
+		os.dup2(log, 1)
+		os.dup2(log, 2)
+
+		sql = SQLite()
+
 		while True:
 			j = self.job_manager.work_queue.get()
 			if not j:
@@ -93,11 +103,19 @@ class Worker(Process):
 				break
 			self.current_job.value = j.id
 			s = JobStatus(j.id, j.name, j.func, j.args)
-			j.run(self.job_manager)
+			try:
+				j.run(self.job_manager, sql)
+			except Exception as err:
+				print err.__class__.__name__, ':', err
+				print 'Traceback:'
+				traceback.print_tb(sys.exc_info()[2])
+
 			s.end_time = datetime.now()
 			self.current_job.value = 0
 			self.job_manager.work_queue.task_done()
 			self.job_manager.done_queue.put(s)
+
+		del sql
 
 class WorkerManager:
 	def __init__(self, jmgr, nworkers=0):
