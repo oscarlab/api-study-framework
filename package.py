@@ -2,6 +2,7 @@
 
 from task import Task
 from package_popularity import package_popularity_table
+from sql import Table
 
 import os
 import sys
@@ -139,10 +140,10 @@ def unpack_package(name):
 		shutil.rmtree(dir)
 		raise
 	os.chdir(cwd)
-	return dir
+	return (dir, name, version)
 
 def PackageUnpack_run(jmgr, sql, args):
-	dir = unpack_package(args[0])
+	(dir, pkgname, version) = unpack_package(args[0])
 	if not dir:
 		return
 	print "Unpacked to", dir
@@ -180,15 +181,30 @@ def walk_package(dir):
 				continue
 	return binaries
 
+binary_list_table = Table('binary_list', [
+			('package_name', 'TEXT', 'NOT NULL'),
+			('binary', 'TEXT', 'NOT NULL'),
+			('real_package', 'TEXT', ''),
+			('version', 'TEXT', 'NOT NULL')],
+			['package_name', 'binary'])
+
 def BinaryList_run(jmgr, sql, args):
-	dir = unpack_package(args[0])
+	sql.connect_table(binary_list_table)
+	(dir, pkgname, version) = unpack_package(args[0])
 	if not dir:
 		return
 	binaries = walk_package(dir)
-	if not binaries:
-		return
-	for bin in binaries:
-		print bin
+	if binaries:
+		for bin in binaries:
+			values = dict()
+			values['package_name'] = args[0]
+			values['binary'] = bin
+			values['real_package'] = pkgname
+			values['version'] = version
+
+			sql.append_record(binary_list_table, values)
+	sql.commit()
+	shutil.rmtree(dir)
 
 def BinaryList_job_name(args):
 	return "Binary List: " + args[0]
