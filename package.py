@@ -26,6 +26,7 @@ def get_packages_by_prefixes(prefixes):
 			if package.startswith(p):
 				result.append(package)
 				break
+	return result
 
 def get_packages_by_ranks(sql, min, max):
 	sql.connect_table(package_popularity_table)
@@ -52,8 +53,10 @@ PackageInfo = Task(
 	job_name=PackageInfo_job_name)
 
 def PackageListByNames_run(jmgr, sql, args):
-	for i in get_packages_by_names(args[0].split()):
-		PackageInfo.create_job(jmgr, [i])
+	packages = get_packages_by_names(args[0].split())
+	if packages:
+		for i in packages:
+			PackageInfo.create_job(jmgr, [i])
 
 def PackageListByNames_job_name(args):
 	return "Package List By Names: " + args[0]
@@ -65,8 +68,10 @@ PackageListByNames = Task(
 	job_name=PackageListByNames_job_name)
 
 def PackageListByPrefixes_run(jmgr, sql, args):
-	for i in get_packages_by_prefixes(args[0].split()):
-		PackageInfo.create_job(jmgr, [i])
+	packages = get_packages_by_prefixes(args[0].split())
+	if packages:
+		for i in packages:
+			PackageInfo.create_job(jmgr, [i])
 
 def PackageListByPrefixes_job_name(args):
 	return "Package List By Prefixes: " + args[0]
@@ -78,8 +83,10 @@ PackageListByPrefixes = Task(
 	job_name=PackageListByPrefixes_job_name)
 
 def PackageListByRanks_run(jmgr, sql, args):
-	for i in get_packages_by_ranks(int(args[0]), int(args[1])):
-		PackageInfo.create_job(jmgr, [i])
+	packages = get_packages_by_ranks(int(args[0]), int(args[1]))
+	if packages:
+		for i in packages:
+			PackageInfo.create_job(jmgr, [i])
 
 def PackageListByRanks_job_name(args):
 	return "Package List By Ranks: " + args[0] + " to " + args[1]
