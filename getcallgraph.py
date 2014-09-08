@@ -58,6 +58,7 @@ def getData( binaryname ):
 	pattern3 = 'mov '
 	pattern4 = '*ABS*' #Absolute addressing for indirect calls
 	pattern5 = 'retq'
+	pattern6 = 'xor'
 	sp = '#'
 	#Below symbols generally appear for indirect calls
 	sym1 = '*'
@@ -65,7 +66,7 @@ def getData( binaryname ):
 	call_list = []	
 	syscall = ''
 	registers = [['%rax','%eax','%ax','%al'],['%rbx','%ebx','%bx','%bl'],['%rcx','%ecx','%cx','%cl'],['%rdx','%edx','%dx','%dl'],                                              ['%rsi','%esi','%si','%sil'],['%rdi','%edi','%di','%dil'],['%rbp','%ebp','%bp','%bpl'],['%rsp','%esp','%sp','%spl'],                                          ['%r8','%r8d','%r8w','%r8b'],['%r9','%r9d','%r9w','%r9b'],['%r10','%r10d','%r10w','%r10b'],['%r11','%r11d','%r11w','%r11b'],                                  ['%r12','%r12d','%r12w','%r12b'],['%r13','%r13d','%r13w','%r13b'],['%r14','%r14d','%r14w','%r14b'],['%r15','%r15d','%r15w','%r15b']]
-	#Below dict gives the gapping of register that has to be considered.For eg if group is 1 consider rbx
+	#Below dict gives the mapping of register that has to be considered.For eg if group is 1 consider rbx
 	main_register = {}
 	for i,j in enumerate(registers):
 		main_register[i] = j[0]
@@ -141,6 +142,16 @@ def getData( binaryname ):
 							if flag == 0:
 								register_values[d_reg] = source_reg_val
 								break
+			#Handling xor instructions for system calls .eg: xor eax,eax --> make eax to zero
+			if re.search(r'\b'+re.escape(pattern6)+r'\b',line):
+				i = line.find(pattern6)
+				if line[i+ len(pattern6):].strip().split(',')[0] == line[i + len(pattern6):].strip().split(',')[1]:
+					s_reg = line[i+ len(pattern6):].strip().split(',')[0]
+					for i,j in enumerate(registers):
+						if s_reg in j:
+							d_reg = main_register[i]
+							register_values[d_reg] = '$0x0'
+							break
 
 							
 			if pattern1 in line:
@@ -325,8 +336,8 @@ def getData( binaryname ):
 		#	print "callq *offset(%rip) form indirect call --run time initialization YET TO BE  handled"			
 	
 	#print the call graph
-	for item in call_list:
-		item.displayCallStat()
+	#for item in call_list:
+	#	item.displayCallStat()
 
  	#Insert into database
 	insert_to_db(call_list,binaryname)
