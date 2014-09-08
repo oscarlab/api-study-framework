@@ -2,30 +2,33 @@
 
 from framework import JobManager, WorkerManager
 from ui import make_screen
+from task import Task
+# from example import ExampleTask, ExampleMoreTask
+from package import PackageListByNames, PackageListByPrefixes, PackageListByRanks
+from package_popularity import PackagePopularity
 
 import os
 import sys
 import re
-import time
 from datetime import datetime
-
-# Example
-def print_any(args):
-	time.sleep(args[0])
-	print args[1]
+import multiprocessing
 
 def main():
-	jmgr = JobManager()
-	wmgr = WorkerManager(jmgr, 4)
+	# Task.register(ExampleTask)
+	# Task.register(ExampleMoreTask)
+	Task.register(PackageListByNames)
+	Task.register(PackageListByPrefixes)
+	Task.register(PackageListByRanks)
+	Task.register(PackagePopularity)
 
-	# Example
-	jmgr.add_job("Say hello", print_any, (3, "Hello",))
+	jmgr = JobManager()
+	wmgr = WorkerManager(jmgr, multiprocessing.cpu_count())
 
 	while True:
 		try:
 			wmgr.join()
 		except KeyboardInterrupt:
-			if make_screen(jmgr, wmgr):
+			if make_screen(jmgr, wmgr, Task.registered_tasks):
 				wmgr.exit()
 				return
 
