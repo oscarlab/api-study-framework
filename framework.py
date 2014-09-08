@@ -103,6 +103,7 @@ class Worker(Process):
 				break
 			self.current_job.value = j.id
 			s = JobStatus(j.id, j.name, j.func, j.args)
+			print "Start Job:", j.name, s.start_time
 			try:
 				j.run(self.job_manager, sql)
 			except Exception as err:
@@ -111,6 +112,7 @@ class Worker(Process):
 				traceback.print_tb(sys.exc_info()[2])
 
 			s.end_time = datetime.now()
+			print "Finish Job:", j.name, s.end_time
 			self.current_job.value = 0
 			self.job_manager.work_queue.task_done()
 			self.job_manager.done_queue.put(s)

@@ -11,7 +11,7 @@ import subprocess
 def get_packages():
 	process = subprocess.Popen(["apt-cache", "pkgnames"],
 			stdout=subprocess.PIPE)
-	(stdout, stderr) = process.communiate()
+	(stdout, stderr) = process.communicate()
 	return stdout.split()
 
 def get_packages_by_names(names):
@@ -37,7 +37,10 @@ def get_packages_by_ranks(sql, min, max):
 	return [name for name in packages if name in packages_by_ranks]
 
 def PackageInfo_run(jmgr, sql, args):
-	print args[0]
+	process = subprocess.Popen(["apt-cache", "showpkg", args[0]],
+			stdout=subprocess.PIPE)
+	(stdout, stderr) = process.communicate()
+	print stdout
 
 def PackageInfo_job_name(args):
 	return "Package Info: " + args[0]
@@ -49,7 +52,7 @@ PackageInfo = Task(
 	job_name=PackageInfo_job_name)
 
 def PackageListByNames_run(jmgr, sql, args):
-	for i in get_package_by_names(args[0].split()):
+	for i in get_packages_by_names(args[0].split()):
 		PackageInfo.create_job(jmgr, [i])
 
 def PackageListByNames_job_name(args):
@@ -62,7 +65,7 @@ PackageListByNames = Task(
 	job_name=PackageListByNames_job_name)
 
 def PackageListByPrefixes_run(jmgr, sql, args):
-	for i in get_package_by_prefixes(args[0].split()):
+	for i in get_packages_by_prefixes(args[0].split()):
 		PackageInfo.create_job(jmgr, [i])
 
 def PackageListByPrefixes_job_name(args):
@@ -75,7 +78,7 @@ PackageListByPrefixes = Task(
 	job_name=PackageListByPrefixes_job_name)
 
 def PackageListByRanks_run(jmgr, sql, args):
-	for i in get_package_by_ranks(int(args[0]), int(args[1])):
+	for i in get_packages_by_ranks(int(args[0]), int(args[1])):
 		PackageInfo.create_job(jmgr, [i])
 
 def PackageListByRanks_job_name(args):
