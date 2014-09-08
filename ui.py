@@ -22,19 +22,39 @@ def center(win, h, w):
 
 def show_list(screen, name, items, print_func, extra_keys=None,
 		extra_keys_args=None):
+	(maxy, maxx) = screen.getmaxyx()
 	n = len(items)
-	(y, x) = center(screen, n + 3, 60)
-	win = curses.newwin(n + 3, 60, y, x)
-	win.border(0)
-	win.addstr(1, 1, "{0}: {1}".format(name, n))
-	y = 2
-	for i in items:
-		win.addstr(y, 1, print_func(i))
-		y = y + 1
+	if n + 3 > maxy:
+		n = maxy - 3
+	(winy, winx) = center(screen, n + 3, 60)
+	start = 0
+	win = None
 	while True:
+		if not win:
+			win = curses.newwin(n + 3, 60, winy, winx)
+			win.keypad(1)
+			win.border(0)
+			win.addstr(1, 1, "{0}: {1}".format(name, len(items)))
+			y = 2
+			for i in range(n):
+				win.addstr(y, 1, print_func(items[start + i]))
+				y = y + 1
+
 		c = win.getch()
 		if c == ord('q'):
 			break
+		if c == curses.KEY_UP:
+			if start > 0:
+				start -= 1
+				del win
+				win = None
+			continue
+		if c == curses.KEY_DOWN:
+			if start + n < len(items):
+				start += 1
+				del win
+				win = None
+			continue
 		if extra_keys:
 			win.redrawwin()
 			if extra_keys(screen, c, extra_keys_args):
