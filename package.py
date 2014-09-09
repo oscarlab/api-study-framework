@@ -114,33 +114,41 @@ def unpack_package(name):
 				stdout = subprocess.PIPE)
 		(stdout, stderr) = process.communicate()
 		if process.returncode != 0:
-			raise
-		result = re.search("Downloading ([0-9A-Za-z_]+) ([0-9A-Za-z.\\-_]+)",
-				stdout)
+			raise Exception("Cannot download \'" + name + "\'")
+		downloaded = list(os.walk('.'))
+		if len(downloaded) != 1:
+			raise Exception("\'" + name + "\' is not properly downloaded")
+		(root, subdirs, files) = downloaded[0]
+		if len(files) != 1:
+			raise Exception("\'" + name + "\' is not properly downloaded")
+		filename = files[0]
+		result = re.match('([^_]+)_([^_]+)_([^.]+).deb', filename)
+		if not result:
+			raise Exception("\'" + name + "\' is not properly downloaded")
 		name = result.group(1)
 		version = result.group(2)
-		if not name or not version:
-			raise
-		arch = None
-		all_archs = ['all', 'amd64']
-		for a in all_archs:
-			filename = dir + '/' + name + '_' + version + '_' + a + '.deb'
-			if os.path.exists(filename):
-				arch = a
-				break
-		if not arch:
-			raise
+		arch = result.group(3)
 		with open(os.devnull, 'w') as devnull:
 			result = subprocess.call(["dpkg", "-x", filename, "."],
 					stdout=devnull)
 		if result != 0:
-			raise
+			raise Exception("Cannot unpack \'" + name + "\'")
 	except:
 		os.chdir(cwd)
 		shutil.rmtree(dir)
 		raise
+	os.mkdir('refs')
 	os.chdir(cwd)
 	return (dir, name, version)
+
+def reference_dir(dir):
+	(file, path) = tempfile.mkstemp(dir=dir + '/refs')
+	ref = path[len(dir) + 6:]
+	return ref
+
+def dereference_dir(dir, ref):
+	os.remove(dir + '/refs/' + ref)
+	return not os.walk(dir + '/refs')
 
 def PackageUnpack_run(jmgr, sql, args):
 	(dir, pkgname, version) = unpack_package(args[0])

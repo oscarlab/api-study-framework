@@ -72,23 +72,41 @@ class SQLite:
 		if table not in self.tables:
 			query = '''SELECT name FROM sqlite_master WHERE
 				type=\'table\' AND name=\'''' + table.name + '\''
-			cur = self.db.cursor()
-			cur.execute(query)
-			result = cur.fetchone()
-			cur.close()
+			retry = True
+			while retry:
+				cur = self.db.cursor()
+				retry = False
+				try:
+					cur.execute(query)
+					result = cur.fetchone()
+				except sqlite3.OperationalError:
+					retry = True
+				cur.close()
 			if not result:
 				self.db.execute(table.create_table())
 				self.db.commit()
 			self.tables.append(table)
 
 	def append_record(self, table, values, commit=False):
-		self.db.execute(table.insert_record(values))
+		retry = True
+		while retry:
+			retry = False
+			try:
+				self.db.execute(table.insert_record(values))
+			except sqlite3.OperationalError:
+				retry = True
 		if commit:
 			self.db.commit()
 
 	def search_record(self, table, condition=None, fields=None):
-		cur = self.db.cursor()
-		cur.execute(table.select_record(condition, fields))
-		result = cur.fetchall()
-		cur.close()
+		retry = True
+		while retry:
+			cur = self.db.cursor()
+			retry = False
+			try:
+				cur.execute(table.select_record(condition, fields))
+				result = cur.fetchall()
+			except sqlite3.OperationalError:
+				retry = True
+			cur.close()
 		return result

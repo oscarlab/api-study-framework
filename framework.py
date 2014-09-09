@@ -34,12 +34,11 @@ class Job(object):
 		self.func(jmgr, sql, self.args)
 
 class JobStatus(object):
-	def __init__(self, id, name, func, args):
+	def __init__(self, id, name):
 		self.id = id
 		self.name = name
-		self.func = func
-		self.args = args
 		self.start_time = datetime.now()
+		self.success = True
 
 	def __eq__(self, obj):
 		return self.id == obj.id
@@ -58,7 +57,8 @@ class JobManager:
 			s = self.done_queue.get(block = False)
 			if not s:
 				break
-			self.done_jobs.append(s)
+			if s.success:
+				self.done_jobs.append(s)
 
 		while not self.more_queue.empty():
 			j = self.more_queue.get(block = False)
@@ -102,7 +102,7 @@ class Worker(Process):
 				self.work_queue.task_done()
 				break
 			self.current_job.value = j.id
-			s = JobStatus(j.id, j.name, j.func, j.args)
+			s = JobStatus(j.id, j.name)
 			print "Start Job:", j.name, s.start_time
 			try:
 				j.run(self.job_manager, sql)
@@ -110,7 +110,7 @@ class Worker(Process):
 				print err.__class__.__name__, ':', err
 				print 'Traceback:'
 				traceback.print_tb(sys.exc_info()[2])
-
+				s.success = False
 			s.end_time = datetime.now()
 			print "Finish Job:", j.name, s.end_time
 			self.current_job.value = 0

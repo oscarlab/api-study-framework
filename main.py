@@ -27,6 +27,7 @@ def main():
 	Task.register(package.BinaryListByRanks)
 	Task.register(symbol.BinarySymbol)
 	Task.register(symbol.BinaryDependency)
+	Task.register(symbol.BinaryInfo)
 	Task.register(package_popularity.PackagePopularity)
 
 	jmgr = JobManager()

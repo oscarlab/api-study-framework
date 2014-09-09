@@ -9,6 +9,7 @@ import sys
 import re
 import subprocess
 import shutil
+from multiprocessing import Value
 
 # When the scope is D (Defined) , the libpath is the path where symbols is defined
 # When the scope is U (Undefined) , the libpath gives the path where it is actually defined
@@ -64,10 +65,18 @@ binary_symbol_table = Table('binary_symbol', [
 
 def BinarySymbol_run(jmgr, sql, args):
 	sql.connect_table(binary_symbol_table)
-	(dir, pkgname, version) = package.unpack_package(args[0])
+	pkgname = args[0]
+	bin = args[1]
+	dir = args[2]
 	if not dir:
-		return
-	path = dir + '/' + args[1]
+		(dir, pkgname, version) = package.unpack_package(args[0])
+		if not dir:
+			return
+	if len(args) > 3:
+		ref = args[3]
+	else:
+		ref = None
+	path = dir + '/' + bin
 	if os.path.exists(path):
 		symbols = get_symbols(path)
 		for sym in symbols:
@@ -82,6 +91,9 @@ def BinarySymbol_run(jmgr, sql, args):
 
 			sql.append_record(binary_symbol_table, values)
 	sql.commit()
+	if ref:
+		if not package.dereference_dir(dir, ref):
+			return
 	shutil.rmtree(dir)
 
 def BinarySymbol_job_name(args):
@@ -90,7 +102,7 @@ def BinarySymbol_job_name(args):
 BinarySymbol = Task(
 	name="Binary Symbol",
 	func=BinarySymbol_run,
-	arg_defs=["Package Name", "Binary Path"],
+	arg_defs=["Package Name", "Binary Path", "Unpack Path"],
 	job_name=BinarySymbol_job_name)
 
 # get_dependencies() will return list of dependencies that binary depends on.
@@ -118,19 +130,30 @@ binary_dependency_table = Table('binary_dependency', [
 
 def BinaryDependency_run(jmgr, sql, args):
 	sql.connect_table(binary_dependency_table)
-	(dir, pkgname, version) = package.unpack_package(args[0])
+	pkgname = args[0]
+	bin = args[1]
+	dir = args[2]
 	if not dir:
-		return
-	path = dir + '/' + args[1]
+		(dir, pkgname, version) = package.unpack_package(args[0])
+		if not dir:
+			return
+	if len(args) > 3:
+		ref = args[3]
+	else:
+		ref = None
+	path = dir + '/' + bin
 	if os.path.exists(path):
 		dependencies = get_dependencies(path)
 		for dep in dependencies:
 			values = dict()
-			values['binary'] = args[1]
+			values['binary'] = bin
 			values['dependency'] = dep
 
 			sql.append_record(binary_dependency_table, values)
 	sql.commit()
+	if ref:
+		if not package.dereference_dir(dir, ref):
+			return
 	shutil.rmtree(dir)
 
 def BinaryDependency_job_name(args):
@@ -139,5 +162,28 @@ def BinaryDependency_job_name(args):
 BinaryDependency = Task(
 	name="Binary Dependency",
 	func=BinaryDependency_run,
-	arg_defs=["Package Name", "Binary Path"],
+	arg_defs=["Package Name", "Binary Path", "Unpack Path"],
 	job_name=BinaryDependency_job_name)
+
+def BinaryInfo_run(jmgr, sql, args):
+	(dir, pkgname, version) = package.unpack_package(args[0])
+	if not dir:
+		return
+	binaries = package.walk_package(dir)
+	if not binaries:
+		shutil.rmtree(dir)
+		return
+	for bin in binaries:
+		ref = package.reference_dir(dir)
+		BinaryDependency.create_job(jmgr, [pkgname, bin, dir, ref])
+		ref = package.reference_dir(dir)
+		BinarySymbol.create_job(jmgr, [pkgname, bin, dir, ref])
+
+def BinaryInfo_job_name(args):
+	return "Binary Info: " + args[0]
+
+BinaryInfo = Task(
+	name="Binary Info",
+	func=BinaryInfo_run,
+	arg_defs=["Package Name"],
+	job_name=BinaryInfo_job_name)
