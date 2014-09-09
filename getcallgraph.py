@@ -336,11 +336,11 @@ def getData( binaryname ):
 		#	print "callq *offset(%rip) form indirect call --run time initialization YET TO BE  handled"			
 	
 	#print the call graph
-	#for item in call_list:
-	#	item.displayCallStat()
+	for item in call_list:
+		item.displayCallStat()
 
  	#Insert into database
-	insert_to_db(call_list,binaryname)
+	#insert_to_db(call_list,binaryname)
 
 def insert_to_db(call_list,binaryname):
 

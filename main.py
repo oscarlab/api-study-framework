@@ -20,7 +20,6 @@ def main():
 	Task.register(package.PackageListByNames)
 	Task.register(package.PackageListByPrefixes)
 	Task.register(package.PackageListByRanks)
-	Task.register(package.PackageListByRanks)
 	Task.register(package.PackageUnpack)
 	Task.register(package.BinaryListByNames)
 	Task.register(package.BinaryListByPrefixes)
