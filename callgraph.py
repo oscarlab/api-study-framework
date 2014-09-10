@@ -10,7 +10,7 @@ def prepare_syscalls():
 	with open("systable.h", "r") as text:
 		for line in text:
 			value, key = line.split()
-			res[key] = value
+			res[int(key)] = value
 	return res
 
 syscalls_info = prepare_syscalls()
@@ -28,6 +28,14 @@ class Caller:
 		self.func_name = func_name
 		self.callees = set()
 		self.syscalls = set()
+
+	def add_callees(self, callees):
+		if callees:
+			self.callees = self.callees|set(callees)
+
+	def add_syscalls(self, syscalls):
+		if syscalls:
+			self.syscalls = self.syscalls|set(syscalls)
 
 	@classmethod
 	def register_caller(cls, caller_list, func_addr, func_name = None,
@@ -47,13 +55,24 @@ class Caller:
 			caller_list.append(caller)
 
 		# Merge two
-		if callees:
-			caller.callees = caller.callees|set(callees)
-		if syscalls:
-			caller.syscalls = caller.syscalls|set(syscalls)
+		caller.add_callees(callees)
+		caller.add_syscalls(syscalls)
 
 	def __str__(self):
-		return '%08x: %s' % (self.func_addr, self.func_name)
+		result = '%08x: %s' % (self.func_addr, self.func_name)
+		if self.callees:
+			for c in self.callees:
+				if isinstance(c, int):
+					result += "\n\tcall: " + "%08x" % (c)
+				else:
+					result += "\n\tcall: " + c
+		if self.syscalls:
+			for s in self.syscalls:
+				if isinstance(s, int):
+					result += "\n\tsyscall: " + syscalls_info[s]
+				else:
+					result += "\n\tsyscall: " + s
+		return result
 
 class Inst:
 	def __init__(self, inst_addr):
@@ -299,8 +318,12 @@ def get_callgraph(binaryname):
 						binary.seek(fo + (addr - va))
 						func_addr = struct.unpack('i', binary.read(16))[0]
 						break
-				Caller.register_caller(func_list, func_addr)
-				call_list.append(Call_Inst(inst_addr, func_addr))
+				func_name = None
+				if func_addr in dynsym_list.keys():
+					func_name = dynsym_list[func_addr]
+				else:
+					Caller.register_caller(func_list, func_addr)
+				call_list.append(Call_Inst(inst_addr, func_addr, func_name))
 				continue
 
 		if inst == 'syscall':
@@ -318,11 +341,36 @@ def get_callgraph(binaryname):
 	call_list = sorted(call_list, Inst_cmp)
 	syscall_list = sorted(syscall_list, Inst_cmp)
 
+	func_iter = iter(func_list)
+	call_iter = iter(call_list)
+	syscall_iter = iter(syscall_list)
+
+	def iter_next(iter):
+		try:
+			return next(iter)
+		except StopIteration:
+			return None
+
+	next_func = iter_next(func_iter)
+	next_call = iter_next(call_iter)
+	next_syscall = iter_next(syscall_iter)
+	while next_func:
+		func = next_func
+		next_func = iter_next(func_iter)
+
+		while next_call:
+			if next_func and next_call.inst_addr >= next_func.func_addr:
+				break
+			func.add_callees([next_call.call_target])
+			next_call = iter_next(call_iter)
+
+		while next_syscall:
+			if next_func and next_syscall.inst_addr >= next_func.func_addr:
+				break
+			func.add_syscalls([next_syscall.syscall_no])
+			next_syscall = iter_next(syscall_iter)
+
 	# print the call graph
-	for call in call_list:
-		print call
-	for syscall in syscall_list:
-		print syscall
 	for caller in func_list:
 		print caller
 
