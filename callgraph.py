@@ -28,6 +28,7 @@ class Caller:
 		self.func_name = func_name
 		self.callees = set()
 		self.syscalls = set()
+		self.closed = False
 
 	def add_callees(self, callees):
 		if callees:
@@ -60,18 +61,18 @@ class Caller:
 
 	def __str__(self):
 		result = '%08x: %s' % (self.func_addr, self.func_name)
-		if self.callees:
-			for c in self.callees:
-				if isinstance(c, int):
-					result += "\n\tcall: " + "%08x" % (c)
-				else:
-					result += "\n\tcall: " + c
-		if self.syscalls:
-			for s in self.syscalls:
-				if isinstance(s, int):
-					result += "\n\tsyscall: " + syscalls_info[s]
-				else:
-					result += "\n\tsyscall: " + s
+		for c in self.callees:
+			if isinstance(c, int):
+				result += "\n\tcall: " + "%08x" % (c)
+			else:
+				result += "\n\tcall: " + c
+		for s in self.syscalls:
+			if isinstance(s, int):
+				result += "\n\tsyscall: " + syscalls_info[s]
+			else:
+				result += "\n\tsyscall: " + s
+		if self.closed:
+			result += "\n\tfunction closed"
 		return result
 
 class Inst:
@@ -145,6 +146,21 @@ def get_callgraph(binaryname):
 			int(parts[5][2:], 16)
 			))
 
+	process = subprocess.Popen(["readelf", "--section-headers", "-W", binaryname],
+			stdout=subprocess.PIPE
+			)
+
+	text_area = None
+	for line in process.stdout:
+		parts = line.strip().split()
+		if len(parts) < 6:
+			continue
+		if parts[1] != '.text':
+			continue
+		if not is_hex(parts[3]) or not is_hex(parts[5]):
+			break
+		text_area = (int(parts[3], 16), int(parts[3], 16) + int(parts[5], 16))
+
 	registers = [	['%rax','%eax','%ax','%al'],
 			['%rbx','%ebx','%bx','%bl'],
 			['%rcx','%ecx','%cx','%cl'],
@@ -170,6 +186,7 @@ def get_callgraph(binaryname):
 	func_list = []
 	call_list = []
 	syscall_list = []
+	ret_list = []
 
 	binary = open(binaryname, 'rb')
 
@@ -214,9 +231,17 @@ def get_callgraph(binaryname):
 				break
 
 		inst = None
-		for i in range(len(parts)):
+		inst_size = 0
+		for i in range(1, len(parts)):
 			token = parts[i]
+			if re.match('[a-f0-9][a-f0-9]', token):
+				inst_size += 1
+				continue
 			if token.startswith('mov') and i + 1 < len(parts):
+				inst = token
+				args = parts[i + 1].split(',')
+				break
+			if token.startswith('lea') and i + 1 < len(parts):
 				inst = token
 				args = parts[i + 1].split(',')
 				break
@@ -233,6 +258,9 @@ def get_callgraph(binaryname):
 				break
 			if token == 'int' and i + 1 < len(parts) and parts[i + 1] == '$0x50':
 				inst = 'syscall'
+				break
+			if token == 'retq':
+				ret_list.append(Inst(inst_addr))
 				break
 
 		if not inst:
@@ -285,6 +313,30 @@ def get_callgraph(binaryname):
 				register_values[d_reg] = 0
 			continue
 
+		if inst.startswith('lea'):
+			source = args[0]
+			dest = args[1]
+			s_reg = None
+			d_reg = None
+			for i in range(len(registers)):
+				if source in registers[i]:
+					s_reg = main_register[i]
+				if dest in registers[i]:
+					d_reg = main_register[i]
+
+			# Indirect calls (*offset(%rip))
+			match = re.match(r'\*?(-?)0x([a-f0-9]+)\(%rip\)', args[0])
+			if match:
+				if match.group(1) == '-':
+					addr = inst_addr + inst_size - int(match.group(2), 16)
+				else:
+					addr = inst_addr + inst_size + int(match.group(2), 16)
+
+				if addr >= text_area[0] and addr < text_area[1]:
+					Caller.register_caller(func_list, addr)
+					call_list.append(Call_Inst(inst_addr, addr))
+			continue
+
 		if inst == 'callq':
 			if re.match(r'[a-f0-9]+', args[0]):
 				func_addr = int(args[0], 16)
@@ -309,9 +361,12 @@ def get_callgraph(binaryname):
 				continue
 
 			# Indirect calls (*offset(%rip))
-			match = re.match(r'\*?0x([a-f0-9]+)\(%rip\)', args[0])
+			match = re.match(r'\*?(-?)0x([a-f0-9]+)\(%rip\)', args[0])
 			if match:
-				addr = inst_addr + int(match.group(0), 16)
+				if match.group(1) == '-':
+					addr = inst_addr + inst_size - int(match.group(2), 16)
+				else:
+					addr = inst_addr + inst_size + int(match.group(2), 16)
 				func_addr = None
 				for (fo, va, fsz, msz) in load_list:
 					if addr >= va and addr < va + fsz:
@@ -324,7 +379,7 @@ def get_callgraph(binaryname):
 				else:
 					Caller.register_caller(func_list, func_addr)
 				call_list.append(Call_Inst(inst_addr, func_addr, func_name))
-				continue
+			continue
 
 		if inst == 'syscall':
 			syscall_list.append(Syscall_Inst(inst_addr, register_values['%rax']))
@@ -344,6 +399,7 @@ def get_callgraph(binaryname):
 	func_iter = iter(func_list)
 	call_iter = iter(call_list)
 	syscall_iter = iter(syscall_list)
+	ret_iter = iter(ret_list)
 
 	def iter_next(iter):
 		try:
@@ -354,6 +410,7 @@ def get_callgraph(binaryname):
 	next_func = iter_next(func_iter)
 	next_call = iter_next(call_iter)
 	next_syscall = iter_next(syscall_iter)
+	next_ret = iter_next(ret_iter)
 	while next_func:
 		func = next_func
 		next_func = iter_next(func_iter)
@@ -370,9 +427,18 @@ def get_callgraph(binaryname):
 			func.add_syscalls([next_syscall.syscall_no])
 			next_syscall = iter_next(syscall_iter)
 
-	# print the call graph
-	for caller in func_list:
-		print caller
+		if next_func:
+			while next_ret:
+				if next_ret.inst_addr >= next_func.func_addr:
+					break
+				func.closed = True
+				next_ret = iter_next(ret_iter)
+		else:
+			if next_ret:
+				func.closed = True
+
+	return func_list
 
 if __name__ == "__main__":
-	get_callgraph(sys.argv[1])
+	for caller in get_callgraph(sys.argv[1]):
+		print caller
