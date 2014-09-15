@@ -20,7 +20,7 @@ package_popularity_table = Table('package_popularity', [
 def package_popularity_run(jmgr, sql, args):
 	sql.connect_table(package_popularity_table)
 
-	data = urllib2.urlopen("http://popcon.debian.org/by_no-files");
+	data = urllib2.urlopen("http://popcon.debian.org/by_inst");
 	for line in data:
 		# Ignore comments
 		if not line.startswith('#'):

@@ -8,6 +8,7 @@ import os
 import sys
 import re
 import subprocess
+import shutil
 import struct
 
 def prepare_syscalls():
@@ -398,7 +399,7 @@ def get_callgraph(binaryname):
 						func_addr = struct.unpack('L', binary.read(8))[0]
 						break
 				if not func_addr:
-					call_list.append(Call_Inst(inst_addr, args[0]))
+					call_list.append(Call_Inst(inst_addr, '<' + args[0] + '>'))
 					continue
 				func_name = None
 				if func_addr in dynsym_list.keys():
@@ -470,8 +471,9 @@ def get_callgraph(binaryname):
 binary_call_table = Table('binary_call', [
 			('binary', 'TEXT', 'NOT NULL'),
 			('func', 'TEXT', 'NOT NULL'),
-			('target', 'TEXT', 'NOT NULL')],
-			['binary', 'func', 'target'])
+			('target', 'TEXT', ''),
+			('source', 'TEXT', '')],
+			['binary', 'func', 'target', 'source'])
 
 binary_syscall_table = Table('binary_syscall', [
 			('binary', 'TEXT', 'NOT NULL'),
@@ -507,8 +509,13 @@ def BinaryCallgraph_run(jmgr, sql, args):
 					values['func'] = '0x%08x' % (caller.func_addr)
 				if isinstance(callee, int):
 					values['target'] = '0x%08x' % (callee)
+					values['source'] = ''
+				elif callee.startswith('<'):
+					values['target'] = ''
+					values['source'] = callee[1:-1]
 				else:
 					values['target'] = callee
+					values['source'] = ''
 
 				sql.append_record(binary_call_table, values)
 
@@ -562,6 +569,51 @@ BinaryCallInfo = Task(
 	func=BinaryCallInfo_run,
 	arg_defs=["Package Name"],
 	job_name=BinaryCallInfo_job_name)
+
+def BinaryCallInfoByNames_run(jmgr, sql, args):
+	packages = package.get_packages_by_names(args[0].split())
+	if packages:
+		for i in packages:
+			BinaryCallInfo.create_job(jmgr, [i])
+
+def BinaryCallInfoByNames_job_name(args):
+	return "Binary Call Info By Names: " + args[0]
+
+BinaryCallInfoByNames = Task(
+	name="Binary Call Info By Names",
+	func=BinaryCallInfoByNames_run,
+	arg_defs=["Package Names"],
+	job_name=BinaryCallInfoByNames_job_name)
+
+def BinaryCallInfoByPrefixes_run(jmgr, sql, args):
+	packages = package.get_packages_by_prefixes(args[0].split())
+	if packages:
+		for i in packages:
+			BinaryCallInfo.create_job(jmgr, [i])
+
+def BinaryCallInfoByPrefixes_job_name(args):
+	return "Binary Call Info By Prefixes: " + args[0]
+
+BinaryCallInfoByPrefixes = Task(
+	name="Binary Call Info By Prefixes",
+	func=BinaryCallInfoByPrefixes_run,
+	arg_defs=["Package Prefixes"],
+	job_name=BinaryCallInfoByPrefixes_job_name)
+
+def BinaryCallInfoByRanks_run(jmgr, sql, args):
+	packages = package.get_packages_by_ranks(sql, int(args[0]), int(args[1]))
+	if packages:
+		for i in packages:
+			BinaryCallInfo.create_job(jmgr, [i])
+
+def BinaryCallInfoByRanks_job_name(args):
+	return "Binary Call Info By Ranks: " + args[0] + " to " + args[1]
+
+BinaryCallInfoByRanks = Task(
+	name="Binary Call Info By Ranks",
+	func=BinaryCallInfoByRanks_run,
+	arg_defs=["Minimum Rank", "Maximum Rank"],
+	job_name=BinaryCallInfoByRanks_job_name)
 
 if __name__ == "__main__":
 	for caller in get_callgraph(sys.argv[1]):

@@ -28,7 +28,9 @@ def main():
 	Task.register(symbol.BinaryInfoByNames)
 	Task.register(symbol.BinaryInfoByPrefixes)
 	Task.register(symbol.BinaryInfoByRanks)
-	Task.register(callgraph.BinaryCallInfo)
+	Task.register(callgraph.BinaryCallInfoByNames)
+	Task.register(callgraph.BinaryCallInfoByPrefixes)
+	Task.register(callgraph.BinaryCallInfoByRanks)
 	Task.register(package_popularity.PackagePopularity)
 
 	jmgr = JobManager()

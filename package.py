@@ -176,7 +176,7 @@ def walk_package(dir):
 		for f in files:
 			path = root + '/' + f
 			rel_path = '/' + rel_root + '/' + f
-			s = os.stat(path)
+			s = os.lstat(path)
 			if stat.S_ISLNK(s.st_mode):
 				continue
 			if re.match('lib[0-9A-Za-z_]+.so(.[0-9]+)?', f):
@@ -193,7 +193,8 @@ binary_list_table = Table('binary_list', [
 			('package_name', 'TEXT', 'NOT NULL'),
 			('binary', 'TEXT', 'NOT NULL'),
 			('real_package', 'TEXT', ''),
-			('version', 'TEXT', 'NOT NULL')],
+			('version', 'TEXT', 'NOT NULL'),
+			('type', 'TEXT', 'NOT NULL')],
 			['package_name', 'binary'])
 
 def BinaryList_run(jmgr, sql, args):
