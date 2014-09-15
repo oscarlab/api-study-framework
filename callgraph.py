@@ -8,6 +8,7 @@ import os
 import sys
 import re
 import subprocess
+import struct
 
 def prepare_syscalls():
 	res = {}
@@ -122,10 +123,13 @@ def get_callgraph(binaryname):
 			continue
 		if not is_hex(parts[1]):
 			continue
-		match = re.match(r"([A-Za-z0-9_]+)(@[A-Za-z0-9_]+)?$", parts[7])
+		match = re.match(r"([A-Za-z0-9_]+)(@@?[A-Za-z0-9_\.]+)?$", parts[7])
 		if not match:
 			continue
-		dynsym_list[int(parts[1], 16)] = match.group(1)
+		addr = int(parts[1], 16)
+		if not addr:
+			continue
+		dynsym_list[addr] = match.group(1)
 
 	process = subprocess.Popen(["readelf", "--program-headers", "-W", binaryname],
 			stdout=subprocess.PIPE
@@ -253,9 +257,13 @@ def get_callgraph(binaryname):
 				inst = token
 				args = parts[i + 1].split(',')
 				break
-			if token == 'callq' and i + 2 < len(parts):
+			if token == 'callq':
 				inst = token
-				args = [parts[i + 1], parts[i + 2]]
+				args = []
+				if i + 1 < len(parts):
+					args.append(parts[i + 1])
+				if i + 2 < len(parts):
+					args.append(parts[i + 2])
 				break
 			if token == 'syscall' or token == 'sysenter':
 				inst = 'syscall'
@@ -357,10 +365,18 @@ def get_callgraph(binaryname):
 					continue
 
 				# Indirect call (*ABS*+0x...@plt)
-				match = re.match(r"\<\*ABS\*+0x([a-f0-9]+)@plt\>$", args[1])
+				match = re.match(r"\<\*ABS\*\+0x([a-f0-9]+)@plt\>$", args[1])
 				if match:
 					addr = match.group(1)
-					func_name = dynsym_list[addr]
+					if not is_hex(addr):
+						continue
+					func_addr = int(addr, 16)
+					func_name = None
+					if func_addr in dynsym_list.keys():
+						func_name = dynsym_list[func_addr]
+					else:
+						Caller.register_caller(func_list, func_addr)
+						func_name = func_addr
 					call_list.append(Call_Inst(inst_addr, func_name))
 					continue
 
@@ -379,14 +395,18 @@ def get_callgraph(binaryname):
 				for (fo, va, fsz, msz) in load_list:
 					if addr >= va and addr < va + fsz:
 						binary.seek(fo + (addr - va))
-						func_addr = struct.unpack('i', binary.read(16))[0]
+						func_addr = struct.unpack('L', binary.read(8))[0]
 						break
+				if not func_addr:
+					call_list.append(Call_Inst(inst_addr, args[0]))
+					continue
 				func_name = None
 				if func_addr in dynsym_list.keys():
 					func_name = dynsym_list[func_addr]
 				else:
 					Caller.register_caller(func_list, func_addr)
-				call_list.append(Call_Inst(inst_addr, func_addr, func_name))
+					func_name = func_addr
+				call_list.append(Call_Inst(inst_addr, func_name))
 			continue
 
 		if inst == 'syscall':
