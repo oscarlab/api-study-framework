@@ -78,6 +78,12 @@ class JobManager:
 		else:
 			self.more_queue.put(Job(j.id, name, func, args))
 
+	def clear_finished_jobs(self):
+		for j in self.jobs:
+			if j in self.done_jobs:
+				self.jobs.remove(j)
+				self.done_jobs.remove(j)
+
 class Worker(Process):
 	def __init__(self, job_manager):
 		Process.__init__(self)

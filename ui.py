@@ -72,10 +72,11 @@ def show_list(screen, name, items, print_func, extra_keys=None,
 			win = None
 			continue
 		if extra_keys:
-			win.redrawwin()
 			if extra_keys(screen, c, extra_keys_args):
 				break
-			win.refresh()
+			del win
+			win = None
+			continue
 	del win
 
 def print_job(job):
@@ -147,10 +148,11 @@ def make_screen(jmgr, wmgr, tasks):
 	screen.addstr(1, 1, "Commands:")
 	screen.addstr(2, 3, "l - List all jobs")
 	screen.addstr(3, 3, "a - Add new job")
-	screen.addstr(4, 3, "w - List all workers")
-	screen.addstr(5, 3, "n - Create new worker")
-	screen.addstr(6, 3, "e - End execution")
-	screen.addstr(7, 3, "q - Leave")
+	screen.addstr(4, 3, "c - Clear finished jobs")
+	screen.addstr(5, 3, "w - List all workers")
+	screen.addstr(6, 3, "n - Create new worker")
+	screen.addstr(7, 3, "e - End execution")
+	screen.addstr(8, 3, "q - Leave")
 	while True:
 		c = screen.getch()
 		if c == ord('l'):
@@ -167,6 +169,9 @@ def make_screen(jmgr, wmgr, tasks):
 
 			show_list(screen, "Tasks", keys, print_task,
 					task_keys, (jmgr, keys,))
+		elif c == ord('c'):
+			jmgr.clear_finished_jobs()
+			show_message(screen, "finished jobs are cleared")
 		elif c == ord('w'):
 			show_list(screen, "Workers", wmgr.get_workers(), print_worker)
 		elif c == ord('n'):
