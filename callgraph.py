@@ -122,7 +122,7 @@ def get_callgraph(binaryname):
 			continue
 		if not is_hex(parts[1]):
 			continue
-		match = re.match(r"([A-Za-z0-9_]+)@[A-Za-z0-9_]+$", parts[7])
+		match = re.match(r"([A-Za-z0-9_]+)(@[A-Za-z0-9_]+)?$", parts[7])
 		if not match:
 			continue
 		dynsym_list[int(parts[1], 16)] = match.group(1)
