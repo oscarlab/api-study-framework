@@ -181,11 +181,11 @@ def walk_package(dir):
 				continue
 			if re.match('lib[0-9A-Za-z_]+.so(.[0-9]+)?', f):
 				if check_elf(path):
-					binaries.append(rel_path)
+					binaries.append((rel_path, 'lib'))
 				continue
 			if s.st_mode & (stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH):
 				if check_elf(path):
-					binaries.append(rel_path)
+					binaries.append((rel_path, 'exe'))
 				continue
 	return binaries
 
@@ -203,10 +203,11 @@ def BinaryList_run(jmgr, sql, args):
 		return
 	binaries = walk_package(dir)
 	if binaries:
-		for bin in binaries:
+		for (bin, type) in binaries:
 			values = dict()
 			values['package_name'] = args[0]
 			values['binary'] = bin
+			values['type'] = type
 			values['real_package'] = pkgname
 			values['version'] = version
 

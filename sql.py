@@ -35,7 +35,7 @@ class Table:
 		for (field, type, attr) in self.fields:
 			query += delim
 			delim = ', '
-			query += '\'' + values[field] + '\''
+			query += '\'' + str(values[field]) + '\''
 		query += ');'
 		return query
 
@@ -83,7 +83,10 @@ class SQLite:
 					retry = True
 				cur.close()
 			if not result:
-				self.db.execute(table.create_table())
+				try:
+					self.db.execute(table.create_table())
+				except sqlite3.OperationalError:
+					pass
 				self.db.commit()
 			self.tables.append(table)
 

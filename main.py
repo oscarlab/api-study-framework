@@ -7,6 +7,7 @@ from task import Task
 import package
 import package_popularity
 import symbol
+import callgraph
 
 import os
 import sys
@@ -24,9 +25,10 @@ def main():
 	Task.register(package.BinaryListByNames)
 	Task.register(package.BinaryListByPrefixes)
 	Task.register(package.BinaryListByRanks)
-	Task.register(symbol.BinarySymbol)
-	Task.register(symbol.BinaryDependency)
-	Task.register(symbol.BinaryInfo)
+	Task.register(symbol.BinaryInfoByNames)
+	Task.register(symbol.BinaryInfoByPrefixes)
+	Task.register(symbol.BinaryInfoByRanks)
+	Task.register(callgraph.BinaryCallInfo)
 	Task.register(package_popularity.PackagePopularity)
 
 	jmgr = JobManager()

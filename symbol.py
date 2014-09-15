@@ -173,7 +173,7 @@ def BinaryInfo_run(jmgr, sql, args):
 	if not binaries:
 		shutil.rmtree(dir)
 		return
-	for bin in binaries:
+	for (bin, type) in binaries:
 		ref = package.reference_dir(dir)
 		BinaryDependency.create_job(jmgr, [pkgname, bin, dir, ref])
 		ref = package.reference_dir(dir)
@@ -187,3 +187,48 @@ BinaryInfo = Task(
 	func=BinaryInfo_run,
 	arg_defs=["Package Name"],
 	job_name=BinaryInfo_job_name)
+
+def BinaryInfoByNames_run(jmgr, sql, args):
+	packages = package.get_packages_by_names(args[0].split())
+	if packages:
+		for i in packages:
+			BinaryInfo.create_job(jmgr, [i])
+
+def BinaryInfoByNames_job_name(args):
+	return "Binary Info By Names: " + args[0]
+
+BinaryInfoByNames = Task(
+	name="Binary Info By Names",
+	func=BinaryInfoByNames_run,
+	arg_defs=["Package Names"],
+	job_name=BinaryInfoByNames_job_name)
+
+def BinaryInfoByPrefixes_run(jmgr, sql, args):
+	packages = package.get_packages_by_prefixes(args[0].split())
+	if packages:
+		for i in packages:
+			BinaryInfo.create_job(jmgr, [i])
+
+def BinaryInfoByPrefixes_job_name(args):
+	return "Binary Info By Prefixes: " + args[0]
+
+BinaryInfoByPrefixes = Task(
+	name="Binary Info By Prefixes",
+	func=BinaryInfoByPrefixes_run,
+	arg_defs=["Package Prefixes"],
+	job_name=BinaryInfoByPrefixes_job_name)
+
+def BinaryInfoByRanks_run(jmgr, sql, args):
+	packages = package.get_packages_by_ranks(sql, int(args[0]), int(args[1]))
+	if packages:
+		for i in packages:
+			BinaryInfo.create_job(jmgr, [i])
+
+def BinaryInfoByRanks_job_name(args):
+	return "Binary Info By Ranks: " + args[0] + " to " + args[1]
+
+BinaryInfoByRanks = Task(
+	name="Binary Info By Ranks",
+	func=BinaryInfoByRanks_run,
+	arg_defs=["Minimum Rank", "Maximum Rank"],
+	job_name=BinaryInfoByRanks_job_name)

@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+from task import Task
+import package
+from sql import Table
+
 import os
 import sys
 import re
@@ -118,7 +122,7 @@ def get_callgraph(binaryname):
 			continue
 		if not is_hex(parts[1]):
 			continue
-		match = re.match(r"([A-Za-z0-9_]+)@[A-Za-z0-9_]+", parts[7])
+		match = re.match(r"([A-Za-z0-9_]+)@[A-Za-z0-9_]+$", parts[7])
 		if not match:
 			continue
 		dynsym_list[int(parts[1], 16)] = match.group(1)
@@ -207,14 +211,14 @@ def get_callgraph(binaryname):
 			if not is_hex(parts[0]):
 				continue
 			# start building class object , initialize new class object
-			match = re.match(r"\<([A-Za-z0-9_]+)\>:", parts[1])
+			match = re.match(r"\<([A-Za-z0-9_]+)\>:$", parts[1])
 			if match:
 				# Filter name, may contain offset information, remove noise
 				name = match.group(1)
 				Caller.register_caller(func_list, int(parts[0], 16), name)
 			continue
 
-		result = re.search(r'([a-f0-9]+):', parts[0])
+		result = re.match(r'([a-f0-9]+):$', parts[0])
 		if not result:
 			continue
 		inst_addr = int(result.group(1), 16)
@@ -234,7 +238,7 @@ def get_callgraph(binaryname):
 		inst_size = 0
 		for i in range(1, len(parts)):
 			token = parts[i]
-			if re.match('[a-f0-9][a-f0-9]', token):
+			if re.match('[a-f0-9][a-f0-9]$', token):
 				inst_size += 1
 				continue
 			if token.startswith('mov') and i + 1 < len(parts):
@@ -325,7 +329,7 @@ def get_callgraph(binaryname):
 					d_reg = main_register[i]
 
 			# Indirect calls (*offset(%rip))
-			match = re.match(r'\*?(-?)0x([a-f0-9]+)\(%rip\)', args[0])
+			match = re.match(r'\*?(-?)0x([a-f0-9]+)\(%rip\)$', args[0])
 			if match:
 				if match.group(1) == '-':
 					addr = inst_addr + inst_size - int(match.group(2), 16)
@@ -338,18 +342,22 @@ def get_callgraph(binaryname):
 			continue
 
 		if inst == 'callq':
-			if re.match(r'[a-f0-9]+', args[0]):
+			if re.match(r'[a-f0-9]+$', args[0]):
 				func_addr = int(args[0], 16)
 
 				# Direct call
-				match = re.match(r"\<([a-zA-Z0-9_]+)(@plt)?\>", args[1])
+				match = re.match(r"\<([a-zA-Z0-9_]+)(@plt)?(\+0x[a-f0-9]+)?\>$", args[1])
 				if match:
-					func_name = match.group(1)
-					call_list.append(Call_Inst(inst_addr, func_name))
+					if match.group(3):
+						Caller.register_caller(func_list, func_addr)
+						call_list.append(Call_Inst(inst_addr, func_addr))
+					else:
+						func_name = match.group(1)
+						call_list.append(Call_Inst(inst_addr, func_name))
 					continue
 
 				# Indirect call (*ABS*+0x...@plt)
-				match = re.match(r"\<\*ABS\*+0x([a-f0-9]+)@plt\>", args[1])
+				match = re.match(r"\<\*ABS\*+0x([a-f0-9]+)@plt\>$", args[1])
 				if match:
 					addr = match.group(1)
 					func_name = dynsym_list[addr]
@@ -361,7 +369,7 @@ def get_callgraph(binaryname):
 				continue
 
 			# Indirect calls (*offset(%rip))
-			match = re.match(r'\*?(-?)0x([a-f0-9]+)\(%rip\)', args[0])
+			match = re.match(r'\*?(-?)0x([a-f0-9]+)\(%rip\)$', args[0])
 			if match:
 				if match.group(1) == '-':
 					addr = inst_addr + inst_size - int(match.group(2), 16)
@@ -438,6 +446,102 @@ def get_callgraph(binaryname):
 				func.closed = True
 
 	return func_list
+
+binary_call_table = Table('binary_call', [
+			('binary', 'TEXT', 'NOT NULL'),
+			('func', 'TEXT', 'NOT NULL'),
+			('target', 'TEXT', 'NOT NULL')],
+			['binary', 'func', 'target'])
+
+binary_syscall_table = Table('binary_syscall', [
+			('binary', 'TEXT', 'NOT NULL'),
+			('func', 'TEXT', 'NOT NULL'),
+			('syscall', 'INTEGER', ''),
+			('source', 'TEXT', '')],
+			['binary', 'func', 'syscall', 'source'])
+
+def BinaryCallgraph_run(jmgr, sql, args):
+	sql.connect_table(binary_call_table)
+	sql.connect_table(binary_syscall_table)
+	pkgname = args[0]
+	bin = args[1]
+	dir = args[2]
+	if not dir:
+		(dir, pkgname, version) = package.unpack_package(args[0])
+		if not dir:
+			return
+	if len(args) > 3:
+		ref = args[3]
+	else:
+		ref = None
+	path = dir + '/' + bin
+	if os.path.exists(path):
+		callers = get_callgraph(path)
+		for caller in callers:
+			for callee in caller.callees:
+				values = dict()
+				values['binary'] = bin
+				if caller.func_name:
+					values['func'] = caller.func_name
+				else:
+					values['func'] = '0x%08x' % (caller.func_addr)
+				if isinstance(callee, int):
+					values['target'] = '0x%08x' % (callee)
+				else:
+					values['target'] = callee
+
+				sql.append_record(binary_call_table, values)
+
+			for syscall in caller.syscalls:
+				values = dict()
+				values['binary'] = bin
+				if caller.func_name:
+					values['func'] = caller.func_name
+				else:
+					values['func'] = '0x%08x' % (caller.func_addr)
+				if isinstance(syscall, int):
+					values['syscall'] = syscall
+					values['source'] = ''
+				else:
+					values['syscall'] = -1
+					values['source'] = syscall
+
+				sql.append_record(binary_syscall_table, values)
+	sql.commit()
+	if ref:
+		if not package.dereference_dir(dir, ref):
+			return
+	shutil.rmtree(dir)
+
+def BinaryCallgraph_job_name(args):
+	return "Binary Callgraph: " + args[1] + " in " + args[0]
+
+BinaryCallgraph = Task(
+	name="Binary Callgraph",
+	func=BinaryCallgraph_run,
+	arg_defs=["Package Name", "Binary Path", "Unpack Path"],
+	job_name=BinaryCallgraph_job_name)
+
+def BinaryCallInfo_run(jmgr, sql, args):
+	(dir, pkgname, version) = package.unpack_package(args[0])
+	if not dir:
+		return
+	binaries = package.walk_package(dir)
+	if not binaries:
+		shutil.rmtree(dir)
+		return
+	for (bin, type) in binaries:
+		ref = package.reference_dir(dir)
+		BinaryCallgraph.create_job(jmgr, [pkgname, bin, dir, ref])
+
+def BinaryCallInfo_job_name(args):
+	return "Binary Call Info: " + args[0]
+
+BinaryCallInfo = Task(
+	name="Binary Call Info",
+	func=BinaryCallInfo_run,
+	arg_defs=["Package Name"],
+	job_name=BinaryCallInfo_job_name)
 
 if __name__ == "__main__":
 	for caller in get_callgraph(sys.argv[1]):

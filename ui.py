@@ -28,6 +28,7 @@ def show_list(screen, name, items, print_func, extra_keys=None,
 		n = maxy - 3
 	(winy, winx) = center(screen, n + 3, 60)
 	start = 0
+	left = 0
 	win = None
 	while True:
 		if not win:
@@ -37,7 +38,11 @@ def show_list(screen, name, items, print_func, extra_keys=None,
 			win.addstr(1, 1, "{0}: {1}".format(name, len(items)))
 			y = 2
 			for i in range(n):
-				win.addstr(y, 1, print_func(items[start + i]))
+				s = print_func(items[start + i])
+				s = s[left:]
+				if len(s) > 58:
+					s = s[:58]
+				win.addstr(y, 1, s)
 				y = y + 1
 
 		c = win.getch()
@@ -54,6 +59,17 @@ def show_list(screen, name, items, print_func, extra_keys=None,
 				start += 1
 				del win
 				win = None
+			continue
+		if c == curses.KEY_LEFT:
+			if left > 0:
+				left -= 1
+				del win
+				win = None
+			continue
+		if c == curses.KEY_RIGHT:
+			left += 1
+			del win
+			win = None
 			continue
 		if extra_keys:
 			win.redrawwin()
