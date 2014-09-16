@@ -94,9 +94,10 @@ class Worker(Process):
 		signal.signal(signal.SIGINT, signal.SIG_IGN)
 		current = current_process()
 		print "Worker start running:", current.name
-
-		log = os.open(current.name + ".log",
-				os.O_RDWR|os.O_CREAT|os.O_TRUNC)
+		logfile = current.name + ".log"
+		if os.path.exists(logfile):
+			os.system('cat ' + logfile + ' >> ' + logfile + '.bak')
+		log = os.open(logfile, os.O_RDWR|os.O_CREAT|os.O_TRUNC)
 		os.dup2(log, 1)
 		os.dup2(log, 2)
 

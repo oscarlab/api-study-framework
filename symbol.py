@@ -174,6 +174,8 @@ def BinaryInfo_run(jmgr, sql, args):
 		shutil.rmtree(dir)
 		return
 	for (bin, type) in binaries:
+		if type == 'lnk':
+			continue
 		ref = package.reference_dir(dir)
 		BinaryDependency.create_job(jmgr, [pkgname, bin, dir, ref])
 		ref = package.reference_dir(dir)

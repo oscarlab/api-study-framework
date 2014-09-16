@@ -177,11 +177,14 @@ def walk_package(dir):
 			path = root + '/' + f
 			rel_path = '/' + rel_root + '/' + f
 			s = os.lstat(path)
-			if stat.S_ISLNK(s.st_mode):
-				continue
-			if re.match('lib[0-9A-Za-z_]+.so(.[0-9]+)?', f):
+			if re.match('(lib)?[0-9A-Za-z_]+.so[0-9\.]*', f):
+				if stat.S_ISLNK(s.st_mode):
+					binaries.append((rel_path, 'lnk'))
+					continue
 				if check_elf(path):
 					binaries.append((rel_path, 'lib'))
+				continue
+			if stat.S_ISLNK(s.st_mode):
 				continue
 			if s.st_mode & (stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH):
 				if check_elf(path):
@@ -197,22 +200,42 @@ binary_list_table = Table('binary_list', [
 			('type', 'TEXT', 'NOT NULL')],
 			['package_name', 'binary'])
 
+binary_link_table = Table('binary_link', [
+			('package_name', 'TEXT', 'NOT NULL'),
+			('link', 'TEXT', 'NOT NULL'),
+			('target', 'TEXT', 'NOT NULL'),
+			('real_package', 'TEXT', ''),
+			('version', 'TEXT', 'NOT NULL')],
+			['link', 'target'])
+
 def BinaryList_run(jmgr, sql, args):
 	sql.connect_table(binary_list_table)
+	sql.connect_table(binary_link_table)
 	(dir, pkgname, version) = unpack_package(args[0])
 	if not dir:
 		return
 	binaries = walk_package(dir)
 	if binaries:
 		for (bin, type) in binaries:
-			values = dict()
-			values['package_name'] = args[0]
-			values['binary'] = bin
-			values['type'] = type
-			values['real_package'] = pkgname
-			values['version'] = version
+			if type == 'lnk':
+				link = os.readlink(dir + bin)
+				values = dict()
+				values['package_name'] = args[0]
+				values['link'] = bin
+				values['target'] = os.path.join(os.path.dirname(bin), link)
+				values['real_package'] = pkgname
+				values['version'] = version
 
-			sql.append_record(binary_list_table, values)
+				sql.append_record(binary_link_table, values)
+			else:
+				values = dict()
+				values['package_name'] = args[0]
+				values['binary'] = bin
+				values['type'] = type
+				values['real_package'] = pkgname
+				values['version'] = version
+
+				sql.append_record(binary_list_table, values)
 	sql.commit()
 	shutil.rmtree(dir)
 

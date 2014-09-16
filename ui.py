@@ -8,7 +8,7 @@ import sys
 import subprocess
 import re
 import curses
-from curses.textpad import Textbox
+import signal
 
 def center(win, h, w):
 	(maxh, maxw) = win.getmaxyx()
@@ -142,6 +142,9 @@ def confirm_exit(screen):
 	return text == "exit"
 
 def make_screen(jmgr, wmgr, tasks):
+	sighandler = signal.getsignal(signal.SIGINT)
+	signal.signal(signal.SIGINT, signal.SIG_IGN)
+	ret = False
 	screen = curses.initscr()
 	screen.border(0)
 	curses.noecho()
@@ -179,11 +182,13 @@ def make_screen(jmgr, wmgr, tasks):
 			show_message(screen, "A new worker is created")
 		elif c == ord('e'):
 			if confirm_exit(screen):
-				curses.endwin()
-				return True
+				ret = True
+				break
 		elif c == ord('q'):
 			break
 		screen.redrawwin()
 		screen.refresh()
+
 	curses.endwin()
-	return False
+	signal.signal(signal.SIGINT, sighandler)
+	return ret
