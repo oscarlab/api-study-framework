@@ -79,6 +79,7 @@ class JobManager:
 			self.more_queue.put(Job(j.id, name, func, args))
 
 	def clear_finished_jobs(self):
+		self.update_queue()
 		self.jobs = [j for j in self.jobs if j not in self.done_jobs]
 		self.don_jobs = []
 
