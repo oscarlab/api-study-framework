@@ -466,6 +466,7 @@ def get_callgraph(binaryname):
 			if next_ret:
 				func.closed = True
 
+	binary.close()
 	return func_list
 
 binary_call_table = Table('binary_call', [

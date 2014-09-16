@@ -143,6 +143,7 @@ def unpack_package(name):
 
 def reference_dir(dir):
 	(file, path) = tempfile.mkstemp(dir=dir + '/refs')
+	file.close()
 	ref = path[len(dir) + 6:]
 	return ref
 
