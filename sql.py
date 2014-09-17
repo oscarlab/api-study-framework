@@ -96,7 +96,6 @@ class SQLite:
 			retry = False
 			try:
 				query = table.insert_record(values)
-				print "SQL:", query
 				self.db.execute(query)
 			except sqlite3.OperationalError:
 				retry = True
