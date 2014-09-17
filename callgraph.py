@@ -3,6 +3,7 @@
 from task import Task
 import package
 from sql import Table
+import syscall
 
 import os
 import sys
@@ -10,16 +11,6 @@ import re
 import subprocess
 import shutil
 import struct
-
-def prepare_syscalls():
-	res = {}
-	with open("systable.h", "r") as text:
-		for line in text:
-			value, key = line.split()
-			res[int(key)] = value
-	return res
-
-syscalls_info = prepare_syscalls()
 
 def is_hex(s):
 	try:
@@ -74,7 +65,7 @@ class Caller:
 				result += "\n\tcall: " + c
 		for s in self.syscalls:
 			if isinstance(s, int):
-				result += "\n\tsyscall: " + syscalls_info[s]
+				result += "\n\tsyscall: " + syscall.syscalls[s]
 			else:
 				result += "\n\tsyscall: " + s
 		if self.closed:

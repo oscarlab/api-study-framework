@@ -8,6 +8,7 @@ import package
 import package_popularity
 import symbol
 import callgraph
+import syscall
 
 import os
 import sys
@@ -32,6 +33,7 @@ def main():
 	Task.register(callgraph.BinaryCallInfoByPrefixes)
 	Task.register(callgraph.BinaryCallInfoByRanks)
 	Task.register(package_popularity.PackagePopularity)
+	Task.register(syscall.ListSyscall)
 
 	jmgr = JobManager()
 	wmgr = WorkerManager(jmgr, multiprocessing.cpu_count())
