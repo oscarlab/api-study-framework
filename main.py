@@ -15,6 +15,22 @@ import sys
 import re
 from datetime import datetime
 import multiprocessing
+import importlib
+
+config = None
+
+def get_config(key, default=None):
+	global config
+	if config is None:
+		try:
+			config_module = importlib.import_module('config')
+			config = config_module.config
+		except ImportError:
+			config = {}
+
+	if key in config:
+		return config[key]
+	return default
 
 def main():
 	# Task.register(ExampleTask)

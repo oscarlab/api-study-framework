@@ -1,0 +1,8 @@
+#!/usr/bin/python
+
+config = {
+	'package_source':	'sources.list',
+	'package_arch':		'amd64',
+	'package_options':	{},
+	'sqlite_db':		'syscall_popularity.db',
+}

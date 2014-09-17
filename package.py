@@ -3,6 +3,7 @@
 from task import Task
 from package_popularity import package_popularity_table
 from sql import Table
+from main import get_config
 
 import os
 import sys
@@ -106,12 +107,28 @@ PackageListByRanks = Task(
 	job_name=PackageListByRanks_job_name)
 
 def unpack_package(name):
+	package_source = get_config('package_source')
+	package_arch = get_config('package_arch')
+	package_options = get_config('package_options')
+
 	cwd = os.getcwd()
 	dir = tempfile.mkdtemp()
 	os.chdir(dir)
 	try:
-		process = subprocess.Popen(["apt-get", "download", name],
-				stdout = subprocess.PIPE)
+		cmd = ["apt-get", "download"]
+		if package_source:
+			cmd.append("-o")
+			cmd.append("Dir::Etc::SourceList=" + package_source)
+		if package_arch:
+			cmd.append("-o")
+			cmd.append("APT::Architectures=" + package_arch)
+		if package_options:
+			for (opt, val) in package_options.items():
+				cmd.append("-o")
+				cmd.append(opt + "=" + val)
+		cmd.append(name)
+		print ' '.join(cmd)
+		process = subprocess.Popen(cmd, stdout = subprocess.PIPE)
 		(stdout, stderr) = process.communicate()
 		if process.returncode != 0:
 			raise Exception("Cannot download \'" + name + "\'")

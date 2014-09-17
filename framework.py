@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from sql import SQLite
+from sql import SQL
 
 import os
 import fnmatch
@@ -102,7 +102,7 @@ class Worker(Process):
 		os.dup2(log, 1)
 		os.dup2(log, 2)
 
-		sql = SQLite()
+		sql = SQL.get_engine('sqlite.SQLite')
 
 		while True:
 			j = self.job_manager.work_queue.get()
