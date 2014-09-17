@@ -3,7 +3,7 @@
 from task import Task
 from package_popularity import package_popularity_table
 from sql import Table
-from main import get_config
+from main import get_config, root_dir
 
 import os
 import sys
@@ -106,39 +106,71 @@ PackageListByRanks = Task(
 	arg_defs=["Minimum Rank", "Maximum Rank"],
 	job_name=PackageListByRanks_job_name)
 
+def apt_options_for_source(source):
+	return [
+		"-o", "Dir::Etc::SourceList=" + os.path.join(root_dir, source),
+		"-o", "Dir::Etc::SourceParts=-",
+		"-o", "Dir::Cache=" + os.path.join(root_dir, 'apt/cache'),
+		"-o", "Dir::State::Lists=" + os.path.join(root_dir, 'apt/lists'),
+		"-o", "Dir::State::Status=" + os.path.join(root_dir, 'apt/status'),
+	]
+
+def update_apt(source=None):
+	cmd = ["apt-get"]
+
+	if source:
+		for dir in ['apt', 'apt/lists', 'apt/cache']:
+			if not os.path.exists(dir):
+				os.mkdir(dir)
+		if not os.path.exists('apt/status'):
+			open('apt/status', 'w').close()
+		cmd += apt_options_for_source(source)
+
+	cmd += ["update"]
+	print "updating APT..."
+	process = subprocess.Popen(cmd, stdout = subprocess.PIPE)
+	(stdout, stderr) = process.communicate()
+	if process.returncode != 0:
+		raise Exception("Cannot update package")
+
+def download_from_apt(name, source=None, arch=None, options=None):
+	cmd = ["apt-get"]
+
+	if source:
+		cmd += apt_options_for_source(source)
+
+	if arch:
+		cmd += ["-o", "APT::Architectures=" + arch]
+	if options:
+		for (opt, val) in options.items():
+			cmd += ["-o", opt + "=" + val]
+
+	cmd += ["download", name]
+
+	process = subprocess.Popen(cmd + ["--print-uris"], stdout = subprocess.PIPE)
+	(stdout, stderr) = process.communicate()
+	if process.returncode != 0:
+		raise Exception("Cannot download \'" + name + "\'")
+	filename = stdout.split()[1]
+
+	process = subprocess.Popen(cmd, stdout = subprocess.PIPE)
+	(stdout, stderr) = process.communicate()
+	if process.returncode != 0:
+		raise Exception("Cannot download \'" + name + "\'")
+
+	if not os.path.exists(filename):
+		raise Exception("\'" + name + "\' is not properly downloaded")
+	return filename
+
 def unpack_package(name):
 	package_source = get_config('package_source')
 	package_arch = get_config('package_arch')
 	package_options = get_config('package_options')
-
-	cwd = os.getcwd()
 	dir = tempfile.mkdtemp()
 	os.chdir(dir)
 	try:
-		cmd = ["apt-get", "download"]
-		if package_source:
-			cmd.append("-o")
-			cmd.append("Dir::Etc::SourceList=" + package_source)
-		if package_arch:
-			cmd.append("-o")
-			cmd.append("APT::Architectures=" + package_arch)
-		if package_options:
-			for (opt, val) in package_options.items():
-				cmd.append("-o")
-				cmd.append(opt + "=" + val)
-		cmd.append(name)
-		print ' '.join(cmd)
-		process = subprocess.Popen(cmd, stdout = subprocess.PIPE)
-		(stdout, stderr) = process.communicate()
-		if process.returncode != 0:
-			raise Exception("Cannot download \'" + name + "\'")
-		downloaded = list(os.walk('.'))
-		if len(downloaded) != 1:
-			raise Exception("\'" + name + "\' is not properly downloaded")
-		(root, subdirs, files) = downloaded[0]
-		if len(files) != 1:
-			raise Exception("\'" + name + "\' is not properly downloaded")
-		filename = files[0]
+		filename = download_from_apt(name, package_source,
+				package_arch, package_options)
 		result = re.match('([^_]+)_([^_]+)_([^.]+).deb', filename)
 		if not result:
 			raise Exception("\'" + name + "\' is not properly downloaded")
@@ -151,11 +183,11 @@ def unpack_package(name):
 		if result != 0:
 			raise Exception("Cannot unpack \'" + name + "\'")
 	except:
-		os.chdir(cwd)
+		os.chdir(root_dir)
 		shutil.rmtree(dir)
 		raise
 	os.mkdir('refs')
-	os.chdir(cwd)
+	os.chdir(root_dir)
 	return (dir, name, version)
 
 def reference_dir(dir):

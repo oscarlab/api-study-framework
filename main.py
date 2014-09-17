@@ -51,6 +51,8 @@ def main():
 	Task.register(package_popularity.PackagePopularity)
 	Task.register(syscall.ListSyscall)
 
+	package.update_apt(get_config('package_source'))
+
 	jmgr = JobManager()
 	wmgr = WorkerManager(jmgr, multiprocessing.cpu_count())
 
@@ -61,6 +63,8 @@ def main():
 			if make_screen(jmgr, wmgr, Task.registered_tasks):
 				wmgr.exit()
 				return
+
+root_dir = os.getcwd()
 
 if __name__ == "__main__":
 	startTime = datetime.now()
