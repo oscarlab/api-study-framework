@@ -4,6 +4,7 @@ from task import Task
 import package
 from sql import Table
 import syscall
+from symbol import get_symbols
 
 import os
 import sys
@@ -460,6 +461,79 @@ def get_callgraph(binaryname):
 	binary.close()
 	return func_list
 
+class SymbolCaller:
+	def __init__(self, name, callees, syscalls):
+		self.name = name
+		self.callees = callees
+		self.traced_callees = set()
+		self.syscalls = syscalls
+
+	def __str__(self):
+		result = '%s:' % (self.name)
+		for c in self.callees:
+			if isinstance(c, int):
+				result += "\n\tcall: " + "%08x" % (c)
+			else:
+				result += "\n\tcall: " + c
+		for s in self.syscalls:
+			if isinstance(s, int) and s in syscall.syscalls:
+				result += "\n\tsyscall: " + syscall.syscalls[s]
+			else:
+				result += "\n\tsyscall: " + str(s)
+		return result
+
+def get_callgraph_recursive(binaryname):
+	calls = get_callgraph(binaryname)
+	if not calls:
+		return None
+
+	symbols = get_symbols(binaryname)
+	func_list = []
+	for symbol in symbols:
+		if not symbol.defined:
+			continue
+
+		for call in calls:
+			if call.func_name and symbol.name == call.func_name:
+				func_list.append(SymbolCaller(call.func_name, call.callees, call.syscalls))
+
+	run = True
+	while run:
+		run = False
+		for func in func_list:
+			new_callees = set()
+			for call in calls:
+				if call.func_name:
+					if call.func_name not in func.callees:
+						continue
+					new = call.func_name
+				else:
+					if call.func_addr not in func.callees:
+						continue
+					new = call.func_addr
+				if new in func.callees or new in func.traced_callees:
+					continue
+				new_callees |= set([new])
+				func.syscalls |= call.syscalls
+			if new_callees:
+				run = True
+			func.traced_callees |= func.callees
+			func.callees = new_callees
+
+	for func in func_list:
+		func.traced_callees |= func.callees
+		func.callees = set()
+		for symbol in symbols:
+			if symbol.defined:
+				continue
+
+			if symbol.name in func.traced_callees:
+				func.callees |= set([symbol.name])
+
+		func.traced_callees = set()
+
+	return func_list
+
 binary_call_table = Table('binary_call', [
 			('binary', 'TEXT', 'NOT NULL'),
 			('func', 'TEXT', 'NOT NULL'),
@@ -610,5 +684,5 @@ BinaryCallInfoByRanks = Task(
 	job_name=BinaryCallInfoByRanks_job_name)
 
 if __name__ == "__main__":
-	for caller in get_callgraph(sys.argv[1]):
+	for caller in get_callgraph_recursive(sys.argv[1]):
 		print caller
