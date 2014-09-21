@@ -65,6 +65,22 @@ class Table:
 			query += ' WHERE ' + condition
 		return query
 
+	def update_record(self, values, condition):
+		query = 'UPDATE ' + self.name + ' SET '
+		delim = ''
+		has_values = False
+		for (field, type, attr) in self.fields:
+			if field in values:
+				has_values = True
+				query += delim
+				delim = ', '
+				query += field + '=\'' + str(values[field]) + '\''
+		if not has_values:
+			raise Exception('syntax error: update ' + self.name)
+		if condition:
+			query += ' WHERE ' + condition
+		return query
+
 class SQL:
 	def __init__(self):
 		return
@@ -75,7 +91,8 @@ class SQL:
 	# def connect_table(self, table):
 	# def append_record(self, table, values):
 	# def search_record(self, table, condition=None, fields=None):
-	# def delete_record(self, table, confition=None):
+	# def delete_record(self, table, condition=None):
+	# def update_record(self, table, values, condition=None):
 
 	@classmethod
 	def get_engine(cls, name):
@@ -121,3 +138,6 @@ class SQLPrintQuery(SQL):
 
 	def delete_record(self, table, condition=None):
 		print table.delete_record(condition)
+
+	def update_record(self, table, values, condition=None):
+		print table.update_record(values, condition)

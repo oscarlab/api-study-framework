@@ -65,3 +65,6 @@ class PostgreSQL(SQL):
 
 	def delete_record(self, table, condition=None):
 		self.postgresql_execute(table.delete_record(condition))
+
+	def update_record(self, table, values, condition=None):
+		self.postgresql_execute(table.update_record(values, condition))

@@ -5,7 +5,7 @@ import package
 from sql import Table
 import syscall
 from symbol import get_symbols
-from binary import get_binary_id
+from binary import get_binary_id, update_binary_callgraph
 
 import os
 import sys
@@ -101,8 +101,9 @@ class Call_Inst(Inst):
 		return Inst.__str__(self) + ' call ' + self.target
 
 class Syscall_Inst(Inst):
-	def __init__(self, inst_addr, syscall=-1, target=''):
+	def __init__(self, inst_addr, assign, syscall=-1, target=''):
 		Inst.__init__(self, inst_addr)
+		self.assign = assign
 		self.syscall = syscall
 		self.target = target
 
@@ -189,7 +190,7 @@ def get_callgraph(binaryname):
 
 	#Below dict gives the mapping of register that has to be considered.For eg if group is 1 consider rbx
 	main_register = {i: j[0] for i, j in enumerate(registers)}
-	register_values = {i[0]: None for i in registers}
+	register_values = {i[0]: (None, 0) for i in registers}
 
 	# List used to store address and callq functions along with retq
 	func_list = []
@@ -298,9 +299,9 @@ def get_callgraph(binaryname):
 				if source.startswith('0x'):
 					if not is_hex(source[2:]):
 						continue
-					register_values[d_reg] = int(source[2:], 16)
+					register_values[d_reg] = (int(source[2:], 16), inst_addr)
 				else:
-					register_values[d_reg] = int(source)
+					register_values[d_reg] = (int(source), inst_addr)
 				continue
 
 			#if source_reg is not direct value ,rather register itself or mem location
@@ -308,7 +309,7 @@ def get_callgraph(binaryname):
 				register_values[d_reg] = register_values[s_reg]
 				continue
 
-			register_values[d_reg] = source
+			register_values[d_reg] = (source, inst_addr)
 			continue
 
 		if inst == 'xor':
@@ -323,7 +324,7 @@ def get_callgraph(binaryname):
 					d_reg = main_register[i]
 
 			if s_reg == d_reg:
-				register_values[d_reg] = 0
+				register_values[d_reg] = (0, inst_addr)
 			continue
 
 		if inst.startswith('lea'):
@@ -363,10 +364,10 @@ def get_callgraph(binaryname):
 
 					if func_name == 'syscall':
 						rdi = register_values['%rdi']
-						if isinstance(rdi, int):
-							syscall_list.append(Syscall_Inst(inst_addr, syscall=rdi))
+						if isinstance(rdi[0], int):
+							syscall_list.append(Syscall_Inst(inst_addr, rdi[1], rdi[0]))
 						else:
-							syscall_list.append(Syscall_Inst(inst_addr, target=rdi))
+							syscall_list.append(Syscall_Inst(inst_addr, rdi[1], target=rdi[0]))
 						continue
 
 					if func_addr >= text_area[0] and func_addr < text_area[1]:
@@ -390,10 +391,10 @@ def get_callgraph(binaryname):
 
 					if func_name == 'syscall':
 						rdi = register_values['%rdi']
-						if isinstance(rdi, int):
-							syscall_list.append(Syscall_Inst(inst_addr, syscall=rdi))
+						if isinstance(rdi[0], int):
+							syscall_list.append(Syscall_Inst(inst_addr, rdi[1], rdi[0]))
 						else:
-							syscall_list.append(Syscall_Inst(inst_addr, target=rdi))
+							syscall_list.append(Syscall_Inst(inst_addr, rdi[1], target=rdi[0]))
 						continue
 
 				if func_addr >= text_area[0] and func_addr < text_area[1]:
@@ -430,10 +431,10 @@ def get_callgraph(binaryname):
 
 		if inst == 'syscall':
 			rax = register_values['%rax']
-			if isinstance(rax, int):
-				syscall_list.append(Syscall_Inst(inst_addr, syscall=rax))
+			if isinstance(rax[0], int):
+				syscall_list.append(Syscall_Inst(inst_addr, rax[1], rax[0]))
 			else:
-				syscall_list.append(Syscall_Inst(inst_addr, target=rax))
+				syscall_list.append(Syscall_Inst(inst_addr, rax[1], target=rax[0]))
 			continue
 
 	def Caller_cmp(x, y):
@@ -480,6 +481,9 @@ def get_callgraph(binaryname):
 		while next_syscall:
 			if next_func and next_syscall.inst_addr >= next_func.func_addr:
 				break
+			if next_syscall.assign < func.func_addr:
+				next_syscall.syscall = -1
+				next_syscall.target = '@%x' % next_syscall.inst_addr
 			if next_syscall.syscall != -1:
 				func.add_syscalls([next_syscall.syscall])
 			else:
@@ -620,9 +624,7 @@ def BinaryCallgraph_run(jmgr, sql, args):
 	path = dir + '/' + bin
 	condition = 'bin_id=\'' + str(bin_id) + '\''
 	sql.delete_record(binary_call_table, condition)
-	sql.delete_record(binary_unknown_call_table, condition)
 	sql.delete_record(binary_syscall_table, condition)
-	sql.delete_record(binary_unknown_syscall_table, condition)
 	if os.path.exists(path):
 		callers = get_callgraph(path)
 		for caller in callers:
@@ -634,7 +636,7 @@ def BinaryCallgraph_run(jmgr, sql, args):
 				if isinstance(callee, str) and callee.startswith('<'):
 					values['target'] = callee[1:-1]
 					try:
-						sql.append_record(binary_unknown_call_table, values, replace=False)
+						sql.append_record(binary_unknown_call_table, values)
 					except:
 						pass
 					continue
@@ -654,13 +656,14 @@ def BinaryCallgraph_run(jmgr, sql, args):
 				if isinstance(syscall, str):
 					values['target'] = syscall[1:-1]
 					try:
-						sql.append_record(binary_unknown_syscall_table, values, replace=False)
+						sql.append_record(binary_unknown_syscall_table, values)
 					except:
 						pass
 					continue
 
 				values['syscall'] = syscall
 				sql.append_record(binary_syscall_table, values)
+	update_binary_callgraph(sql, bin_id)
 	sql.commit()
 	if ref:
 		if not package.dereference_dir(dir, ref):
