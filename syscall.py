@@ -20,11 +20,12 @@ syscalls = get_syscalls()
 
 syscall_table = Table('syscall', [
 			('number', 'INT', 'NOT NULL'),
-			('name', 'TEXT', 'NOT NULL')],
+			('name', 'VARCHAR(40)', 'NOT NULL')],
 			['number'])
 
 def syscall_run(jmgr, sql, args):
 	sql.connect_table(syscall_table)
+	sql.delete_record(syscall_table)
 
 	for (number, name) in syscalls.items():
 		values = dict()

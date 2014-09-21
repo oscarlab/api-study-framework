@@ -5,6 +5,7 @@ import package
 from sql import Table
 import syscall
 from symbol import get_symbols
+from binary import get_binary_id
 
 import os
 import sys
@@ -65,10 +66,10 @@ class Caller:
 			else:
 				result += "\n\tcall: " + c
 		for s in self.syscalls:
-			if isinstance(s, int):
+			if isinstance(s, int) and s in syscall.syscalls:
 				result += "\n\tsyscall: " + syscall.syscalls[s]
 			else:
-				result += "\n\tsyscall: " + s
+				result += "\n\tsyscall: " + str(s)
 		if self.closed:
 			result += "\n\tfunction closed"
 		return result
@@ -83,26 +84,33 @@ class Inst:
 		return '%08x:' % (self.inst_addr)
 
 class Call_Inst(Inst):
-	def __init__(self, inst_addr, call_target):
+	def __init__(self, inst_addr, call_addr=0, call_name=None, target=''):
 		Inst.__init__(self, inst_addr)
-		self.call_target = call_target
+		self.call_addr = call_addr
+		self.call_name = call_name
+		self.target = target
 
 	def __str__(self):
-		if isinstance(self.call_target, str):
-			return Inst.__str__(self) + ' call ' + self.call_target
-		else:
-			return Inst.__str__(self) + ' call 0x%08x' % (self.call_target)
+		if self.call_addr and self.call_name:
+			return Inst.__str__(self) + ' call 0x%08x: ' % (self.call_addr) + self.call_name
+		if self.call_addr:
+			return Inst.__str__(self) + ' call 0x%08x' % (self.call_addr)
+		if self.call_name:
+			return Inst.__str__(self) + ' call ' + self.call_name
+
+		return Inst.__str__(self) + ' call ' + self.target
 
 class Syscall_Inst(Inst):
-	def __init__(self, inst_addr, syscall_no):
+	def __init__(self, inst_addr, syscall=-1, target=''):
 		Inst.__init__(self, inst_addr)
-		self.syscall_no = syscall_no
+		self.syscall = syscall
+		self.target = target
 
 	def __str__(self):
-		if isinstance(self.syscall_no, str):
-			return Inst.__str__(self) + ' syscall ' + self.syscall_no
-		else:
-			return Inst.__str__(self) + ' syscall %d' % (self.syscall_no)
+		if self.syscall != -1:
+			return Inst.__str__(self) + ' syscall ' + self.syscall
+
+		return Inst.__str__(self) + ' syscall ' + self.target
 
 def get_callgraph(binaryname):
 	process = subprocess.Popen(["readelf", "--dyn-syms","-W", binaryname],
@@ -339,22 +347,35 @@ def get_callgraph(binaryname):
 
 				if addr >= text_area[0] and addr < text_area[1]:
 					Caller.register_caller(func_list, addr)
-					call_list.append(Call_Inst(inst_addr, addr))
+					call_list.append(Call_Inst(inst_addr, call_addr=addr))
 			continue
 
 		if inst == 'callq':
 			if re.match(r'[a-f0-9]+$', args[0]):
 				func_addr = int(args[0], 16)
+				func_name = None
 
 				# Direct call
 				match = re.match(r"\<([a-zA-Z0-9_]+)(@plt)?(\+0x[a-f0-9]+)?\>$", args[1])
 				if match:
-					if match.group(3):
-						Caller.register_caller(func_list, func_addr)
-						call_list.append(Call_Inst(inst_addr, func_addr))
-					else:
+					if not match.group(3):
 						func_name = match.group(1)
-						call_list.append(Call_Inst(inst_addr, func_name))
+
+					if func_name == 'syscall':
+						rdi = register_values['%rdi']
+						if isinstance(rdi, int):
+							syscall_list.append(Syscall_Inst(inst_addr, syscall=rdi))
+						else:
+							syscall_list.append(Syscall_Inst(inst_addr, target=rdi))
+						continue
+
+					if func_addr >= text_area[0] and func_addr < text_area[1]:
+						Caller.register_caller(func_list, func_addr, func_name)
+						call_list.append(Call_Inst(inst_addr, call_addr=func_addr, call_name=func_name))
+					elif func_name:
+						call_list.append(Call_Inst(inst_addr, call_name=func_name))
+					else:
+						call_list.append(Call_Inst(inst_addr, target=args[0]))
 					continue
 
 				# Indirect call (*ABS*+0x...@plt)
@@ -364,17 +385,22 @@ def get_callgraph(binaryname):
 					if not is_hex(addr):
 						continue
 					func_addr = int(addr, 16)
-					func_name = None
-					if func_addr in dynsym_list.keys():
+					if func_addr in dynsym_list:
 						func_name = dynsym_list[func_addr]
-					else:
-						Caller.register_caller(func_list, func_addr)
-						func_name = func_addr
-					call_list.append(Call_Inst(inst_addr, func_name))
-					continue
 
-				Caller.register_caller(func_list, func_addr)
-				call_list.append(Call_Inst(inst_addr, func_addr))
+					if func_name == 'syscall':
+						rdi = register_values['%rdi']
+						if isinstance(rdi, int):
+							syscall_list.append(Syscall_Inst(inst_addr, syscall=rdi))
+						else:
+							syscall_list.append(Syscall_Inst(inst_addr, target=rdi))
+						continue
+
+				if func_addr >= text_area[0] and func_addr < text_area[1]:
+					Caller.register_caller(func_list, func_addr)
+					call_list.append(Call_Inst(inst_addr, call_addr=func_addr, call_name=func_name))
+				else:
+					call_list.append(Call_Inst(inst_addr, target=args[0]))
 				continue
 
 			# Indirect calls (*offset(%rip))
@@ -391,7 +417,7 @@ def get_callgraph(binaryname):
 						func_addr = struct.unpack('L', binary.read(8))[0]
 						break
 				if not func_addr:
-					call_list.append(Call_Inst(inst_addr, '<' + args[0] + '>'))
+					call_list.append(Call_Inst(inst_addr, target=args[0]))
 					continue
 				func_name = None
 				if func_addr in dynsym_list.keys():
@@ -399,11 +425,15 @@ def get_callgraph(binaryname):
 				else:
 					Caller.register_caller(func_list, func_addr)
 					func_name = func_addr
-				call_list.append(Call_Inst(inst_addr, func_name))
+				call_list.append(Call_Inst(inst_addr, call_addr=func_addr, call_name=func_name))
 			continue
 
 		if inst == 'syscall':
-			syscall_list.append(Syscall_Inst(inst_addr, register_values['%rax']))
+			rax = register_values['%rax']
+			if isinstance(rax, int):
+				syscall_list.append(Syscall_Inst(inst_addr, syscall=rax))
+			else:
+				syscall_list.append(Syscall_Inst(inst_addr, target=rax))
 			continue
 
 	def Caller_cmp(x, y):
@@ -439,13 +469,21 @@ def get_callgraph(binaryname):
 		while next_call:
 			if next_func and next_call.inst_addr >= next_func.func_addr:
 				break
-			func.add_callees([next_call.call_target])
+			if next_call.call_addr:
+				func.add_callees([next_call.call_addr])
+			elif next_call.call_name:
+				func.add_callees([next_call.call_name])
+			else:
+				func.add_callees(['<' + next_call.target + '>'])
 			next_call = iter_next(call_iter)
 
 		while next_syscall:
 			if next_func and next_syscall.inst_addr >= next_func.func_addr:
 				break
-			func.add_syscalls([next_syscall.syscall_no])
+			if next_syscall.syscall != -1:
+				func.add_syscalls([next_syscall.syscall])
+			else:
+				func.add_syscalls(['<' + next_syscall.target + '>'])
 			next_syscall = iter_next(syscall_iter)
 
 		if next_func:
@@ -535,76 +573,100 @@ def get_callgraph_recursive(binaryname):
 	return func_list
 
 binary_call_table = Table('binary_call', [
-			('binary', 'TEXT', 'NOT NULL'),
-			('func', 'TEXT', 'NOT NULL'),
-			('target', 'TEXT', ''),
-			('source', 'TEXT', '')],
-			['binary', 'func', 'target', 'source'])
+			('bin_id', 'INT', 'NOT NULL'),
+			('func_addr', 'INT', 'NOT NULL'),
+			('call_addr', 'INT', ''),
+			('call_name', 'VARCHAR', '')])
+
+binary_unknown_call_table = Table('binary_unknown_call', [
+			('bin_id', 'INT', 'NOT NULL'),
+			('func_addr', 'INT', 'NOT NULL'),
+			('target', 'VARCHAR', 'NOT NULL'),
+			('call_addr', 'INT', ''),
+			('call_name', 'VARCHAR', '')],
+			['bin_id', 'func_addr', 'target'])
 
 binary_syscall_table = Table('binary_syscall', [
-			('binary', 'TEXT', 'NOT NULL'),
-			('func', 'TEXT', 'NOT NULL'),
-			('syscall', 'INTEGER', ''),
-			('source', 'TEXT', '')],
-			['binary', 'func', 'syscall', 'source'])
+			('bin_id', 'INT', 'NOT NULL'),
+			('func_addr', 'INT', 'NOT NULL'),
+			('syscall', 'SMALLINT', 'NOT NULL')])
+
+binary_unknown_syscall_table = Table('binary_unknown_syscall', [
+			('bin_id', 'INT', 'NOT NULL'),
+			('func_addr', 'INT', 'NOT NULL'),
+			('target', 'VARCHAR', 'NOT NULL'),
+			('syscall', 'SMALLINT', '')],
+			['bin_id', 'func_addr', 'target'])
 
 def BinaryCallgraph_run(jmgr, sql, args):
 	sql.connect_table(binary_call_table)
+	sql.connect_table(binary_unknown_call_table)
 	sql.connect_table(binary_syscall_table)
+	sql.connect_table(binary_unknown_syscall_table)
 	pkgname = args[0]
 	bin = args[1]
+	bin_id = get_binary_id(sql, bin)
 	dir = args[2]
+	unpacked = False
 	if not dir:
 		(dir, pkgname, version) = package.unpack_package(args[0])
 		if not dir:
 			return
+		unpacked = True
 	if len(args) > 3:
 		ref = args[3]
 	else:
 		ref = None
 	path = dir + '/' + bin
+	condition = 'bin_id=\'' + str(bin_id) + '\''
+	sql.delete_record(binary_call_table, condition)
+	sql.delete_record(binary_unknown_call_table, condition)
+	sql.delete_record(binary_syscall_table, condition)
+	sql.delete_record(binary_unknown_syscall_table, condition)
 	if os.path.exists(path):
 		callers = get_callgraph(path)
 		for caller in callers:
 			for callee in caller.callees:
 				values = dict()
-				values['binary'] = bin
-				if caller.func_name:
-					values['func'] = caller.func_name
+				values['bin_id'] = bin_id
+				values['func_addr'] = caller.func_addr
+				
+				if isinstance(callee, str) and callee.startswith('<'):
+					values['target'] = callee[1:-1]
+					try:
+						sql.append_record(binary_unknown_call_table, values, replace=False)
+					except:
+						pass
+					continue
+
+				if isinstance(callee, str):
+					values['call_name'] = callee
 				else:
-					values['func'] = '0x%08x' % (caller.func_addr)
-				if isinstance(callee, int):
-					values['target'] = '0x%08x' % (callee)
-					values['source'] = ''
-				elif callee.startswith('<'):
-					values['target'] = ''
-					values['source'] = callee[1:-1]
-				else:
-					values['target'] = callee
-					values['source'] = ''
+					values['call_addr'] = callee
 
 				sql.append_record(binary_call_table, values)
 
 			for syscall in caller.syscalls:
 				values = dict()
-				values['binary'] = bin
-				if caller.func_name:
-					values['func'] = caller.func_name
-				else:
-					values['func'] = '0x%08x' % (caller.func_addr)
-				if isinstance(syscall, int):
-					values['syscall'] = syscall
-					values['source'] = ''
-				else:
-					values['syscall'] = -1
-					values['source'] = syscall
+				values['bin_id'] = bin_id
+				values['func_addr'] = caller.func_addr
 
+				if isinstance(syscall, str):
+					values['target'] = syscall[1:-1]
+					try:
+						sql.append_record(binary_unknown_syscall_table, values, replace=False)
+					except:
+						pass
+					continue
+
+				values['syscall'] = syscall
 				sql.append_record(binary_syscall_table, values)
 	sql.commit()
 	if ref:
 		if not package.dereference_dir(dir, ref):
 			return
-	shutil.rmtree(dir)
+	if unpacked:
+		shutil.rmtree(dir)
 
 def BinaryCallgraph_job_name(args):
 	return "Binary Callgraph: " + args[1] + " in " + args[0]
@@ -684,5 +746,9 @@ BinaryCallInfoByRanks = Task(
 	job_name=BinaryCallInfoByRanks_job_name)
 
 if __name__ == "__main__":
-	for caller in get_callgraph_recursive(sys.argv[1]):
-		print caller
+	if sys.argv[1] == '-r':
+		for caller in get_callgraph_recursive(sys.argv[2]):
+			print caller
+	else:
+		for caller in get_callgraph(sys.argv[1]):
+			print caller

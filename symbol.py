@@ -3,6 +3,7 @@
 from task import Task
 import package
 from sql import Table
+from binary import get_binary_id
 
 import os
 import sys
@@ -15,13 +16,14 @@ from multiprocessing import Value
 # When the scope is U (Undefined) , the libpath gives the path where it is actually defined
 
 class Symbol:
-	def __init__(self, name, defined, version):
+	def __init__(self, name, defined, addr, version):
 		self.name = name
 		self.defined = defined
+		self.addr = addr
 		self.version = version
 
 	def __str__(self):
-		return "Name: %50s\tScope: %2s\tVersion: %10s" % (self.name, self.scope, self.version)
+		return "Addr: %08x\tName: %50s\tScope: %2s\tVersion: %10s" % (self.addr, self.name, self.scope, self.version)
 
 def get_symbols(binary):
 	process = subprocess.Popen(["readelf", "--dyn-syms", "-W", binary],
@@ -34,7 +36,7 @@ def get_symbols(binary):
 			continue
 		if parts[3] != 'FUNC' and parts[3] != 'IFUNC':
 			continue
-		if parts[4] != 'GLOBAL' and parts[4] != 'WEAK':
+		if parts[4] == 'LOCAL':
 			continue
 
 		match = re.search('@', parts[7])
@@ -46,47 +48,55 @@ def get_symbols(binary):
 			name = parts[7]
 			version = ''
 
+		addr = int(parts[1], 16)
+
 		if parts[6] == 'UND':
-			sym = Symbol(name, False, version)
+			sym = Symbol(name, False, 0, version)
 			symbol_list.append(sym)
 		elif parts[6].isdigit():
-			sym = Symbol(name, True, version)
+			sym = Symbol(name, True, addr, version)
 			symbol_list.append(sym)
 
 	process.wait()
 	return symbol_list
 
 binary_symbol_table = Table('binary_symbol', [
-			('binary', 'TEXT', 'NOT NULL'),
-			('name', 'TEXT', 'NOT NULL'),
+			('bin_id', 'INT', 'NOT NULL'),
+			('symbol_name', 'VARCHAR', 'NOT NULL'),
 			('defined', 'BOOLEAN', 'NOT NULL'),
-			('version', 'TEXT', '')],
-			['binary', 'name'])
+			('func_addr','INT', ''),
+			('version', 'VARCHAR', '')],
+			['bin_id', 'symbol_name', 'version'])
 
 def BinarySymbol_run(jmgr, sql, args):
 	sql.connect_table(binary_symbol_table)
 	pkgname = args[0]
 	bin = args[1]
+	bin_id = get_binary_id(sql, bin)
 	dir = args[2]
+	unpacked = False
 	if not dir:
 		(dir, pkgname, version) = package.unpack_package(args[0])
 		if not dir:
 			return
+		unpacked = True
 	if len(args) > 3:
 		ref = args[3]
 	else:
 		ref = None
 	path = dir + '/' + bin
+	sql.delete_record(binary_symbol_table, 'bin_id=\'' + str(bin_id) + '\'')
 	if os.path.exists(path):
 		symbols = get_symbols(path)
 		for sym in symbols:
 			values = dict()
-			values['binary'] = args[1]
-			values['name'] = sym.name
+			values['bin_id'] = bin_id
+			values['symbol_name'] = sym.name
 			if sym.defined:
 				values['defined'] = 'True'
 			else:
 				values['defined'] = 'False'
+			values['func_addr'] = sym.addr
 			values['version'] = sym.version
 
 			sql.append_record(binary_symbol_table, values)
@@ -94,7 +104,8 @@ def BinarySymbol_run(jmgr, sql, args):
 	if ref:
 		if not package.dereference_dir(dir, ref):
 			return
-	shutil.rmtree(dir)
+	if unpacked:
+		shutil.rmtree(dir)
 
 def BinarySymbol_job_name(args):
 	return "Binary Symbol: " + args[1] + " in " + args[0]
@@ -124,29 +135,33 @@ def get_dependencies(binary):
 	return dependency_list
 
 binary_dependency_table = Table('binary_dependency', [
-			('binary', 'TEXT', 'NOT NULL'),
-			('dependency', 'TEXT', 'NOT NULL')],
-			['binary', 'dependency'])
+			('bin_id', 'INT', 'NOT NULL'),
+			('dependency', 'VARCHAR', 'NOT NULL')],
+			['bin_id', 'dependency'])
 
 def BinaryDependency_run(jmgr, sql, args):
 	sql.connect_table(binary_dependency_table)
 	pkgname = args[0]
 	bin = args[1]
+	bin_id = get_binary_id(sql, bin)
 	dir = args[2]
+	unpacked = False
 	if not dir:
 		(dir, pkgname, version) = package.unpack_package(args[0])
 		if not dir:
 			return
+		unpacked = True
 	if len(args) > 3:
 		ref = args[3]
 	else:
 		ref = None
 	path = dir + '/' + bin
+	sql.delete_record(binary_dependency_table, 'bin_id=\'' + str(bin_id) + '\'')
 	if os.path.exists(path):
 		dependencies = get_dependencies(path)
 		for dep in dependencies:
 			values = dict()
-			values['binary'] = bin
+			values['bin_id'] = bin_id
 			values['dependency'] = dep
 
 			sql.append_record(binary_dependency_table, values)
@@ -154,7 +169,8 @@ def BinaryDependency_run(jmgr, sql, args):
 	if ref:
 		if not package.dereference_dir(dir, ref):
 			return
-	shutil.rmtree(dir)
+	if unpacked:
+		shutil.rmtree(dir)
 
 def BinaryDependency_job_name(args):
 	return "Binary Dependency: " + args[1] + " in " + args[0]

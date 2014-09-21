@@ -27,17 +27,20 @@ class Table:
 				delim = ', '
 				query += key
 			query += ')'
-		query += ');'
+		query += ')'
 		return query
 
 	def insert_record(self, values):
-		query = 'REPLACE INTO ' + self.name + ' VALUES '
+		query = 'INSERT INTO ' + self.name + ' VALUES '
 		delim = '('
 		for (field, type, attr) in self.fields:
 			query += delim
 			delim = ', '
-			query += '\'' + str(values[field]) + '\''
-		query += ');'
+			if field in values:
+				query += '\'' + str(values[field]) + '\''
+			else:
+				query += 'NULL'
+		query += ')'
 		return query
 
 	def select_record(self, condition, fields):
@@ -54,8 +57,12 @@ class Table:
 		query += ' FROM ' + self.name
 		if condition:
 			query += ' WHERE ' + condition
-		query += ';'
-		print query
+		return query
+
+	def delete_record(self, condition):
+		query = 'DELETE FROM ' + self.name
+		if condition:
+			query += ' WHERE ' + condition
 		return query
 
 class SQL:
@@ -66,8 +73,9 @@ class SQL:
 	# def __del__(self):
 	# def commit(self):
 	# def connect_table(self, table):
-	# def append_record(self, table, values, commit=False):
+	# def append_record(self, table, values):
 	# def search_record(self, table, condition=None, fields=None):
+	# def delete_record(self, table, confition=None):
 
 	@classmethod
 	def get_engine(cls, name):
@@ -87,3 +95,29 @@ class SQL:
 		if not issubclass(obj, SQL):
 			return None
 		return obj()
+
+class SQLPrintQuery(SQL):
+	def __init__(self):
+		SQL.__init__(self)
+		self.tables = []
+
+	def __del__(self):
+		return
+
+	def commit(self):
+		return
+
+	def connect_table(self, table):
+		if table in self.tables:
+			return
+		self.tables.append(table)
+		print table.create_table()
+
+	def append_record(self, table, values):
+		print table.insert_record(values)
+
+	def search_record(self, table, condition=None, fields=None):
+		return None
+
+	def delete_record(self, table, condition=None):
+		print table.delete_record(condition)

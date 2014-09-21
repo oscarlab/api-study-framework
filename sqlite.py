@@ -21,49 +21,49 @@ class SQLite(SQL):
 	def commit(self):
 		self.db.commit()
 
-	def connect_table(self, table):
-		if table not in self.tables:
-			query = '''SELECT name FROM sqlite_master WHERE
-				type=\'table\' AND name=\'''' + table.name + '\''
-			retry = True
-			while retry:
-				cur = self.db.cursor()
-				retry = False
-				try:
-					cur.execute(query)
-					result = cur.fetchone()
-				except sqlite3.OperationalError:
-					retry = True
-				cur.close()
-			if not result:
-				try:
-					self.db.execute(table.create_table())
-				except sqlite3.OperationalError:
-					pass
-				self.db.commit()
-			self.tables.append(table)
-
-	def append_record(self, table, values, commit=False):
+	def sqlite_execute(self, query):
 		retry = True
 		while retry:
 			retry = False
 			try:
-				query = table.insert_record(values)
 				self.db.execute(query)
-			except sqlite3.OperationalError:
+			except sqlite3.OperationalError as err:
+				if err.message != 'database is locked':
+					print err.message + ':', query
+					raise err
 				retry = True
-		if commit:
-			self.db.commit()
 
-	def search_record(self, table, condition=None, fields=None):
+	def sqlite_query(self, query):
 		retry = True
 		while retry:
 			cur = self.db.cursor()
 			retry = False
 			try:
-				cur.execute(table.select_record(condition, fields))
-				result = cur.fetchall()
-			except sqlite3.OperationalError:
+				cur.execute(query)
+				results = cur.fetchall()
+			except sqlite3.OperationalError as err:
+				if err.message != 'database is locked':
+					cur.close()
+					print err.message + ':', query
+					raise err
 				retry = True
 			cur.close()
-		return result
+		return results
+
+	def connect_table(self, table):
+		if table not in self.tables:
+			query = 'SELECT name FROM sqlite_master WHERE type=\'table\' AND name=\'' + table.name + '\''
+			if not self.sqlite_query(query):
+				self.sqlite_execute(table.create_table())
+				self.db.commit()
+
+			self.tables.append(table)
+
+	def append_record(self, table, values):
+		self.sqlite_execute(table.insert_record(values))
+
+	def search_record(self, table, condition=None, fields=None):
+		return self.sqlite_query(table.select_record(condition, fields))
+
+	def delete_record(self, table, condition=None):
+		self.sqlite_execute(table.delete_record(condition))

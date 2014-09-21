@@ -3,6 +3,7 @@
 from task import Task
 from package_popularity import package_popularity_table
 from sql import Table
+from binary import get_binary_id
 from main import get_config, root_dir
 
 import os
@@ -116,7 +117,7 @@ def apt_options_for_source(source):
 	]
 
 def update_apt(source=None):
-	cmd = ["apt-get"]
+	cmd = ["apt-get", "update"]
 
 	if source:
 		for dir in ['apt', 'apt/lists', 'apt/cache']:
@@ -126,15 +127,15 @@ def update_apt(source=None):
 			open('apt/status', 'w').close()
 		cmd += apt_options_for_source(source)
 
-	cmd += ["update"]
 	print "updating APT..."
-	process = subprocess.Popen(cmd, stdout = subprocess.PIPE)
+	process = subprocess.Popen(cmd, stdout = subprocess.PIPE,
+			stderr = subprocess.PIPE)
 	(stdout, stderr) = process.communicate()
 	if process.returncode != 0:
-		raise Exception("Cannot update package")
+		print "Cannot update package"
 
 def download_from_apt(name, source=None, arch=None, options=None):
-	cmd = ["apt-get"]
+	cmd = ["apt-get", "download"]
 
 	if source:
 		cmd += apt_options_for_source(source)
@@ -145,15 +146,13 @@ def download_from_apt(name, source=None, arch=None, options=None):
 		for (opt, val) in options.items():
 			cmd += ["-o", opt + "=" + val]
 
-	cmd += ["download", name]
-
-	process = subprocess.Popen(cmd + ["--print-uris"], stdout = subprocess.PIPE)
+	process = subprocess.Popen(cmd + ["--print-uris", name], stdout = subprocess.PIPE)
 	(stdout, stderr) = process.communicate()
 	if process.returncode != 0:
 		raise Exception("Cannot download \'" + name + "\'")
 	filename = stdout.split()[1]
 
-	process = subprocess.Popen(cmd, stdout = subprocess.PIPE)
+	process = subprocess.Popen(cmd + [name], stdout = subprocess.PIPE)
 	(stdout, stderr) = process.communicate()
 	if process.returncode != 0:
 		raise Exception("Cannot download \'" + name + "\'")
@@ -243,20 +242,18 @@ def walk_package(dir):
 	return binaries
 
 binary_list_table = Table('binary_list', [
-			('package_name', 'TEXT', 'NOT NULL'),
-			('binary', 'TEXT', 'NOT NULL'),
-			('real_package', 'TEXT', ''),
-			('version', 'TEXT', 'NOT NULL'),
-			('type', 'TEXT', 'NOT NULL')],
-			['package_name', 'binary'])
+			('package_name', 'VARCHAR', 'NOT NULL'),
+			('bin_id', 'INT', 'NOT NULL'),
+			('version', 'VARCHAR', 'NOT NULL'),
+			('type', 'CHAR(3)', 'NOT NULL')],
+			['package_name', 'bin_id'])
 
 binary_link_table = Table('binary_link', [
-			('package_name', 'TEXT', 'NOT NULL'),
-			('link', 'TEXT', 'NOT NULL'),
-			('target', 'TEXT', 'NOT NULL'),
-			('real_package', 'TEXT', ''),
-			('version', 'TEXT', 'NOT NULL')],
-			['link', 'target'])
+			('package_name', 'VARCHAR', 'NOT NULL'),
+			('link_id', 'INT', 'NOT NULL'),
+			('target_id', 'INT', 'NOT NULL'),
+			('version', 'VARCHAR', 'NOT NULL')],
+			['link_id', 'target_id'])
 
 def BinaryList_run(jmgr, sql, args):
 	sql.connect_table(binary_list_table)
@@ -265,24 +262,28 @@ def BinaryList_run(jmgr, sql, args):
 	if not dir:
 		return
 	binaries = walk_package(dir)
+	condition = 'package_name=\'' + pkgname + '\''
+	sql.delete_record(binary_list_table, condition)
+	sql.delete_record(binary_link_table, condition)
 	if binaries:
 		for (bin, type) in binaries:
+			bin_id = get_binary_id(sql, bin)
 			if type == 'lnk':
 				link = os.readlink(dir + bin)
+				target = os.path.join(os.path.dirname(bin), link)
+				target_id = get_binary_id(sql, target)
 				values = dict()
-				values['package_name'] = args[0]
-				values['link'] = bin
-				values['target'] = os.path.join(os.path.dirname(bin), link)
-				values['real_package'] = pkgname
+				values['package_name'] = pkgname
+				values['link_id'] = bin_id
+				values['target_id'] = target_id
 				values['version'] = version
 
 				sql.append_record(binary_link_table, values)
 			else:
 				values = dict()
-				values['package_name'] = args[0]
-				values['binary'] = bin
+				values['package_name'] = pkgname
+				values['bin_id'] = bin_id
 				values['type'] = type
-				values['real_package'] = pkgname
 				values['version'] = version
 
 				sql.append_record(binary_list_table, values)

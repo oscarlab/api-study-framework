@@ -9,18 +9,18 @@ import re
 import urllib2
 
 package_popularity_table = Table('package_popularity', [
+			('package_name', 'VARCHAR', 'NOT NULL'),
 			('rank', 'INT', 'NOT NULL'),
-			('package_name', 'TEXT', 'NOT NULL'),
-			('inst', 'INT', ''),
-			('vote', 'INT', ''),
-			('old', 'INT', ''),
-			('recent', 'INT', ''),
-			('no_files', 'INT', '')], ['rank'])
+			('inst', 'INT', 'NOT NULL'),
+			('vote', 'INT', 'NOT NULL')],
+			['package_name'])
 
 def package_popularity_run(jmgr, sql, args):
 	sql.connect_table(package_popularity_table)
 
 	data = urllib2.urlopen("http://popcon.debian.org/by_inst");
+
+	sql.delete_record(package_popularity_table)
 	for line in data:
 		# Ignore comments
 		if not line.startswith('#'):
@@ -30,13 +30,10 @@ def package_popularity_run(jmgr, sql, args):
 
 			result = line.strip().split()
 			values = dict()
-			values['rank'] = result[0]
 			values['package_name'] = result[1]
-			values['inst'] = result[2]
-			values['vote'] = result[3]
-			values['old'] = result[4]
-			values['recent'] = result[5]
-			values['no_files'] = result[6]
+			values['rank'] = int(result[0])
+			values['inst'] = int(result[2])
+			values['vote'] = int(result[3])
 
 			sql.append_record(package_popularity_table, values)
 	sql.commit()

@@ -45,6 +45,7 @@ def main():
 	Task.register(symbol.BinaryInfoByNames)
 	Task.register(symbol.BinaryInfoByPrefixes)
 	Task.register(symbol.BinaryInfoByRanks)
+	Task.register(callgraph.BinaryCallgraph)
 	Task.register(callgraph.BinaryCallInfoByNames)
 	Task.register(callgraph.BinaryCallInfoByPrefixes)
 	Task.register(callgraph.BinaryCallInfoByRanks)
@@ -52,9 +53,10 @@ def main():
 	Task.register(syscall.ListSyscall)
 
 	package.update_apt(get_config('package_source'))
+	sql_engine = get_config('sql_engine', 'sqlite.SQLite')
 
 	jmgr = JobManager()
-	wmgr = WorkerManager(jmgr, multiprocessing.cpu_count())
+	wmgr = WorkerManager(jmgr, sql_engine, multiprocessing.cpu_count())
 
 	while True:
 		try:

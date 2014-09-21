@@ -1,54 +1,77 @@
-DROP TABLE IF EXISTS binary_callgraph;
-CREATE TABLE binary_callgraph (
-    binary_name CHAR(80) NOT NULL,
-    symbol_name CHAR(40) NOT NULL,
-    target CHAR(40) NOT NULL,
-    PRIMARY KEY (binary_name, symbol_name, target));
+CREATE TABLE IF NOT EXISTS analysis_call (
+bin_id INT NOT NULL, func_addr INT NOT NULL, call_name VARCHAR NOT NULL,
+PRIMARY KEY (bin_id, func_addr, call_name));
 
-CREATE TEMP TABLE binary_name AS
-    SELECT DISTINCT binary_name FROM binary_list
-    WHERE type = 'lib';
+CREATE TABLE IF NOT EXISTS analysis_syscall (
+bin_id INT NOT NULL, func_addr INT NOT NULL, syscall INT NOT NULL,
+PRIMARY KEY (bin_id, func_addr, syscall));
+
+CREATE TEMP TABLE lib_id AS
+SELECT DISTINCT bin_id FROM binary_list
+WHERE type = 'lib';
 
 CREATE OR REPLACE FUNCTION analysis_callgraph ()
 RETURNS void AS $$
 DECLARE
-    total INT;
-    cnt INT;
-    b CHAR(80);
+	total INT := COUNT(*) FROM lib_id;
+	cnt INT := 0;
+	b INT;
 
 BEGIN
-    FOR b IN (SELECT * FROM binary_name) LOOP
-        CREATE TEMP TABLE single_binary_call AS
-            SELECT DISTINCT func_name, target FROM binary_call
-            WHERE binary_name = b AND target IS NOT NULL;
+	FOR b IN (SELECT * FROM lib_id) LOOP
+		CREATE TEMP TABLE lib_entry AS
+		SELECT DISTINCT func_addr FROM binary_symbol
+		WHERE bin_id = b AND defined = True AND func_addr != 0;
 
-        CREATE TEMP TABLE single_binary_symbol AS
-            SELECT DISTINCT symbol_name FROM binary_symbol
-            WHERE binary_name = b;
+		CREATE TEMP TABLE lib_local_call AS
+		SELECT DISTINCT func_addr, call_addr FROM binary_call
+		WHERE bin_id = b AND call_addr IS NOT NULL;
 
-        WITH RECURSIVE
-        single_binary_callgraph (symbol_name, target)
-        AS (
-            SELECT t2.symbol_name, t1.target FROM
-                single_binary_call AS t1
-                INNER JOIN
-                single_binary_symbol AS t2
-                ON t1.func_name = t2.symbol_name
-            UNION DISTINCT
-            SELECT t4.symbol_name, t3.target FROM
-                single_binary_call AS t3
-                INNER JOIN
-                single_binary_callgraph AS t4
-                ON t3.func_name = t4.symbol_name
-        )
-        INSERT INTO binary_callgraph
-            SELECT b, symbol_name, target FROM single_binary_callgraph;
+		CREATE TEMP TABLE lib_exit AS
+		SELECT DISTINCT func_addr, call_name FROM binary_call
+		WHERE bin_id = b AND call_name IS NOT NULL;
 
-        DROP TABLE single_binary_call;
-        DROP TABLE single_binary_symbol;
+		CREATE TEMP TABLE lib_syscall AS
+		SELECT DISTINCT func_addr, syscall FROM binary_syscall
+		WHERE bin_id = b;
 
-        RAISE NOTICE '%', b;
-    END LOOP;
+		CREATE TEMP TABLE lib_callgraph
+		(func_addr INT NOT NULL, call_addr INT NOT NULL);
+
+		WITH RECURSIVE
+		analysis (func_addr, call_addr)
+		AS (
+			SELECT func_addr, func_addr FROM lib_entry
+			UNION
+			SELECT t1.func_addr, t2.call_addr FROM
+			analysis AS t1
+			INNER JOIN
+			lib_local_call AS t2
+			ON t1.call_addr = t2.func_addr
+		)
+		INSERT INTO lib_callgraph SELECT * FROM analysis;
+
+		DELETE FROM analysis_call WHERE bin_id = b;
+		INSERT INTO analysis_call
+		SELECT DISTINCT b, t1.func_addr, t2.call_name FROM
+		lib_callgraph AS t1 INNER JOIN lib_exit AS t2
+		ON t1.call_addr = t2.func_addr;
+
+		DELETE FROM analysis_syscall WHERE bin_id = b;
+		INSERT INTO analysis_syscall
+		SELECT DISTINCT b, t1.func_addr, t2.syscall FROM
+		lib_callgraph AS t1 INNER JOIN lib_syscall AS t2
+		on t1.call_addr = t2.func_addr;
+
+		DROP TABLE lib_entry;
+		DROP TABLE lib_local_call;
+		DROP TABLE lib_exit;
+		DROP TABLE lib_callgraph;
+		DROP TABLE lib_syscall;
+
+		cnt := cnt + 1;
+		RAISE NOTICE '% / %', cnt, total;
+	END LOOP;
 END;
 $$ LANGUAGE plpgsql;
 
