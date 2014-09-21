@@ -31,7 +31,6 @@ class PostgreSQL(SQL):
 		except psycopg2.Error as err:
 			cur.close()
 			self.db.rollback()
-			print err.message + ':', query
 			raise err
 		cur.close()
 	
@@ -43,7 +42,6 @@ class PostgreSQL(SQL):
 		except psycopg2.Error as err:
 			cur.close()
 			self.db.rollback()
-			print err.message + ':', query
 			raise err
 		cur.close()
 		return results

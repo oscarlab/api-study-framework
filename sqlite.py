@@ -29,7 +29,6 @@ class SQLite(SQL):
 				self.db.execute(query)
 			except sqlite3.OperationalError as err:
 				if err.message != 'database is locked':
-					print err.message + ':', query
 					raise err
 				retry = True
 
@@ -44,7 +43,6 @@ class SQLite(SQL):
 			except sqlite3.OperationalError as err:
 				if err.message != 'database is locked':
 					cur.close()
-					print err.message + ':', query
 					raise err
 				retry = True
 			cur.close()
