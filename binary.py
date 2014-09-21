@@ -11,7 +11,7 @@ binary_id_table = Table('binary_id', [
 			('binary_name', 'VARCHAR', 'UNIQUE'),
 			('callgraph_generated', 'BOOLEAN', ''),
 			('dep_generated', 'BOOLEAN', ''),
-			('analysis_generated', 'BOOLEAN', '')]
+			('analysis_generated', 'BOOLEAN', '')],
 			['id'])
 
 def get_binary_id(sql, binary_name):
