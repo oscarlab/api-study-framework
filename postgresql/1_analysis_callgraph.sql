@@ -76,7 +76,9 @@ BEGIN
 		lib_callgraph AS t1 INNER JOIN lib_syscall AS t2
 		on t1.call_addr = t2.func_addr;
 
-		UPDATE binary_id SET callgraph_generated = True
+		UPDATE binary_id SET
+		callgraph_generated = True,
+		dep_generated = False,
 		WHERE id = b;
 
 		DROP TABLE lib_entry;

@@ -3,7 +3,7 @@
 from task import Task
 import package
 from sql import Table
-from binary import get_binary_id
+from binary import get_binary_id, update_binary_callgraph, update_binary_dep
 
 import os
 import sys
@@ -100,6 +100,7 @@ def BinarySymbol_run(jmgr, sql, args):
 			values['version'] = sym.version
 
 			sql.append_record(binary_symbol_table, values)
+	update_binary_callgraph(sql, bin_id)
 	sql.commit()
 	if ref:
 		if not package.dereference_dir(dir, ref):
@@ -165,6 +166,7 @@ def BinaryDependency_run(jmgr, sql, args):
 			values['dependency'] = dep
 
 			sql.append_record(binary_dependency_table, values)
+	update_binary_dep(sql, bin_id)
 	sql.commit()
 	if ref:
 		if not package.dereference_dir(dir, ref):
