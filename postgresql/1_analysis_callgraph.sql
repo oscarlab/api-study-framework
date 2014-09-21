@@ -78,7 +78,7 @@ BEGIN
 
 		UPDATE binary_id SET
 		callgraph_generated = True,
-		dep_generated = False,
+		dep_generated = False
 		WHERE id = b;
 
 		DROP TABLE lib_entry;
