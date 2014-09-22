@@ -177,15 +177,20 @@ def get_callgraph(binary_name):
 	process = subprocess.Popen(["readelf", "--section-headers", "-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
 
 	text_area = None
+	init_addr = None
+	fini_addr = None
 	for line in process.stdout:
-		parts = line.strip().split()
-		if len(parts) < 6:
+		parts = line[6:].strip().split()
+		if len(parts) < 5:
 			continue
-		if parts[1] != '.text':
-			continue
-		if not is_hex(parts[3]) or not is_hex(parts[5]):
-			break
-		text_area = (int(parts[3], 16), int(parts[3], 16) + int(parts[5], 16))
+
+		if parts[0] == '.text':
+			text_area = (int(parts[2], 16), int(parts[2], 16) + int(parts[4], 16))
+
+		if parts[0] == '.init':
+			init_addr = int(parts[2], 16)
+		if parts[0] == '.fini':
+			fini_addr = int(parts[2], 16)
 
 	if process.wait() != 0:
 		raise Exception('process failed: readelf --section-headers')
@@ -219,7 +224,13 @@ def get_callgraph(binary_name):
 
 	binary = open(binary_name, 'rb')
 
-	process = subprocess.Popen(["objdump", "-d", binary_name, "-j", ".text"], stdout=subprocess.PIPE, stderr=main.null_dev)
+	cmd = ["objdump", "-d", binary_name, "-j", ".text"]
+	if init_addr:
+		cmd += ["-j", ".init"]
+	if fini_addr:
+		cmd += ["-j", ".fini"]
+
+	process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=main.null_dev)
 
 	linenbr = 0
 	for line in process.stdout:
@@ -455,12 +466,16 @@ def get_callgraph(binary_name):
 			continue
 
 	if process.wait() != 0:
-		raise Exception('process failed: objdump -d -j .text')
+		raise Exception('process failed: objdump -d')
 
 	binary.close()
 
 	if entry_addr:
 		Caller.register_caller(func_list, entry_addr)
+	if init_addr:
+		Caller.register_caller(func_list, init_addr)
+	if fini_addr:
+		Caller.register_caller(func_list, fini_addr)
 
 	def Caller_cmp(x, y):
 		return x.func_addr - y.func_addr

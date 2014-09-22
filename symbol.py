@@ -58,6 +58,19 @@ def get_symbols(binary):
 			symbol_list.append(sym)
 
 	process.wait()
+
+	process = subprocess.Popen(["readelf", "--section-headers", "-W", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
+
+	for line in process.stdout:
+		parts = line[6:].strip().split()
+		if len(parts) < 2:
+			continue
+		if parts[0] in ['.init', '.fini']:
+			addr = int(parts[2], 16)
+			sym = Symbol(parts[0], True, addr, None)
+			symbol_list.append(sym)
+	process.wait()
+
 	return symbol_list
 
 binary_symbol_table = Table('binary_symbol', [

@@ -93,6 +93,7 @@ BEGIN
 
 		UPDATE binary_id SET
 		callgraph_generated = True,
+		dep_generated = False,
 		footprint_generated = False
 		WHERE id = b;
 
