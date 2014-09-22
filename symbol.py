@@ -125,11 +125,15 @@ def get_dependencies(binary):
 	for line in process.stdout:
 		result = re.search('(lib[0-9A-Za-z_]+.so(.[0-9]+)?) =>', line)
 		if result:
-			dependency_list.append(result.group(1))
+			dep = result.group(1)
+			if dep not in dependency_list:
+				dependency_list.append(dep)
 			continue
 		result = re.search('(ld(-[0-9A-Za-z_\\-]+)?.so(.[0-9]+)?) ', line)
 		if result:
-			dependency_list.append(result.group(1))
+			dep = result.group(1)
+			if dep not in dependency_list:
+				dependency_list.append(dep)
 			continue
 
 	process.wait()
