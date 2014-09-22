@@ -115,6 +115,21 @@ class Syscall_Inst(Inst):
 		return Inst.__str__(self) + ' syscall ' + self.target
 
 def get_callgraph(binary_name):
+	process = subprocess.Popen(["readelf", "--file-header","-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
+
+	entry_addr = None
+	for line in process.stdout:
+		results = re.match(r"([^\:]+)\: +(.+)", line.strip())
+		if results:
+			key = results.group(1)
+			val = results.group(2)
+			if key == 'Entry point address':
+				entry_addr = int(val[2:], 16)
+				continue
+
+	if process.wait() != 0:
+		raise Exception('process failed: readelf --file-header')
+
 	process = subprocess.Popen(["readelf", "--dyn-syms","-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
 
 	dynsym_list = {}
@@ -442,6 +457,11 @@ def get_callgraph(binary_name):
 	if process.wait() != 0:
 		raise Exception('process failed: objdump -d -j .text')
 
+	binary.close()
+
+	if entry_addr:
+		Caller.register_caller(func_list, entry_addr)
+
 	def Caller_cmp(x, y):
 		return x.func_addr - y.func_addr
 
@@ -505,7 +525,6 @@ def get_callgraph(binary_name):
 			if next_ret:
 				func.closed = True
 
-	binary.close()
 	return func_list
 
 class SymbolCaller:
