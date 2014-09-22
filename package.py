@@ -4,7 +4,7 @@ from task import Task
 from package_popularity import package_popularity_table
 from sql import Table
 from binary import get_binary_id, update_binary_dep
-from main import get_config, root_dir
+import main
 
 import os
 import sys
@@ -15,8 +15,7 @@ import stat
 import tempfile
 
 def get_packages():
-	process = subprocess.Popen(["apt-cache", "pkgnames"],
-			stdout=subprocess.PIPE)
+	process = subprocess.Popen(["apt-cache", "pkgnames"], stdout=subprocess.PIPE, stderr=main.null_dev)
 	(stdout, stderr) = process.communicate()
 	return stdout.split()
 
@@ -48,8 +47,7 @@ def get_packages_by_ranks(sql, min, max):
 	return result
 
 def PackageInfo_run(jmgr, sql, args):
-	process = subprocess.Popen(["apt-cache", "showpkg", args[0]],
-			stdout=subprocess.PIPE)
+	process = subprocess.Popen(["apt-cache", "showpkg", args[0]], stdout=subprocess.PIPE, stderr=main.null_dev)
 	(stdout, stderr) = process.communicate()
 	print stdout
 
@@ -109,11 +107,11 @@ PackageListByRanks = Task(
 
 def apt_options_for_source(source):
 	return [
-		"-o", "Dir::Etc::SourceList=" + os.path.join(root_dir, source),
+		"-o", "Dir::Etc::SourceList=" + os.path.join(main.root_dir, source),
 		"-o", "Dir::Etc::SourceParts=-",
-		"-o", "Dir::Cache=" + os.path.join(root_dir, 'apt/cache'),
-		"-o", "Dir::State::Lists=" + os.path.join(root_dir, 'apt/lists'),
-		"-o", "Dir::State::Status=" + os.path.join(root_dir, 'apt/status'),
+		"-o", "Dir::Cache=" + os.path.join(main.root_dir, 'apt/cache'),
+		"-o", "Dir::State::Lists=" + os.path.join(main.root_dir, 'apt/lists'),
+		"-o", "Dir::State::Status=" + os.path.join(main.root_dir, 'apt/status'),
 	]
 
 def update_apt(source=None):
@@ -146,13 +144,13 @@ def download_from_apt(name, source=None, arch=None, options=None):
 		for (opt, val) in options.items():
 			cmd += ["-o", opt + "=" + val]
 
-	process = subprocess.Popen(cmd + ["--print-uris", name], stdout = subprocess.PIPE)
+	process = subprocess.Popen(cmd + ["--print-uris", name], stdout=subprocess.PIPE, stderr=main.null_dev)
 	(stdout, stderr) = process.communicate()
 	if process.returncode != 0:
 		raise Exception("Cannot download \'" + name + "\'")
 	filename = stdout.split()[1]
 
-	process = subprocess.Popen(cmd + [name], stdout = subprocess.PIPE)
+	process = subprocess.Popen(cmd + [name], stdout=subprocess.PIPE, stderr=main.null_dev)
 	(stdout, stderr) = process.communicate()
 	if process.returncode != 0:
 		raise Exception("Cannot download \'" + name + "\'")
@@ -162,9 +160,9 @@ def download_from_apt(name, source=None, arch=None, options=None):
 	return filename
 
 def unpack_package(name):
-	package_source = get_config('package_source')
-	package_arch = get_config('package_arch')
-	package_options = get_config('package_options')
+	package_source = main.get_config('package_source')
+	package_arch = main.get_config('package_arch')
+	package_options = main.get_config('package_options')
 	dir = tempfile.mkdtemp()
 	os.chdir(dir)
 	try:
@@ -176,17 +174,15 @@ def unpack_package(name):
 		name = result.group(1)
 		version = result.group(2)
 		arch = result.group(3)
-		with open(os.devnull, 'w') as devnull:
-			result = subprocess.call(["dpkg", "-x", filename, "."],
-					stdout=devnull)
+		result = subprocess.call(["dpkg", "-x", filename, "."], stdout=main.null_dev, stderr=main.null_dev)
 		if result != 0:
 			raise Exception("Cannot unpack \'" + name + "\'")
 	except:
-		os.chdir(root_dir)
+		os.chdir(main.root_dir)
 		shutil.rmtree(dir)
 		raise
 	os.mkdir('refs')
-	os.chdir(root_dir)
+	os.chdir(main.root_dir)
 	return (dir, name, version)
 
 def reference_dir(dir):
@@ -215,8 +211,7 @@ PackageUnpack = Task(
 	job_name=PackageUnpack_job_name)
 
 def check_elf(path):
-	with open(os.devnull, 'w') as devnull:
-		return subprocess.call(["readelf", "-h", path], stdout=devnull) == 0
+	return subprocess.call(["readelf", "-h", path], stdout=main.null_dev, stderr=main.null_dev) == 0
 
 def walk_package(dir):
 	binaries = []

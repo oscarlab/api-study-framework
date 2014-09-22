@@ -4,6 +4,7 @@ from task import Task
 import package
 from sql import Table
 from binary import get_binary_id, update_binary_callgraph, update_binary_dep
+import main
 
 import os
 import sys
@@ -26,8 +27,7 @@ class Symbol:
 		return "Addr: %08x\tName: %50s\tScope: %2s\tVersion: %10s" % (self.addr, self.name, self.scope, self.version)
 
 def get_symbols(binary):
-	process = subprocess.Popen(["readelf", "--dyn-syms", "-W", binary],
-			stdout=subprocess.PIPE)
+	process = subprocess.Popen(["readelf", "--dyn-syms", "-W", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
 
 	symbol_list = []
 	for line in process.stdout:
@@ -119,7 +119,7 @@ BinarySymbol = Task(
 
 # get_dependencies() will return list of dependencies that binary depends on.
 def get_dependencies(binary):
-	process = subprocess.Popen(["ldd", binary], stdout=subprocess.PIPE)
+	process = subprocess.Popen(["ldd", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
 
 	dependency_list = []
 	for line in process.stdout:
