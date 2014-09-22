@@ -21,10 +21,10 @@ def get_job_id():
 
 class Job(object):
 	def __init__(self, id, name, func, args):
+		self.id = id
 		self.name = name
 		self.func = func
 		self.args = args
-		self.id = id
 
 	def __eq__(self, obj):
 		return self.id == obj.id
@@ -56,8 +56,7 @@ class JobManager:
 			s = self.done_queue.get(block = False)
 			if not s:
 				break
-			if s.success:
-				self.done_jobs.append(s)
+			self.done_jobs.append(s)
 
 		while not self.more_queue.empty():
 			j = self.more_queue.get(block = False)
@@ -67,7 +66,13 @@ class JobManager:
 
 	def get_jobs(self):
 		self.update_queue()
-		return [(j.id, j.name, j in self.done_jobs) for j in self.jobs]
+		jobs = []
+		for j in self.jobs:
+			s = None
+			if j in self.done_jobs:
+				s = next(s for s in self.done_jobs if s == j)
+			jobs.append((j.id, j.name, s))
+		return jobs
 
 	def add_job(self, name, func, args):
 		j = Job(get_job_id(), name, func, args)
@@ -77,12 +82,18 @@ class JobManager:
 		else:
 			self.more_queue.put(Job(j.id, name, func, args))
 
+	def requeue_job(self, id):
+		try:
+			job = next(j for j in self.jobs if j.id == id)
+		except:
+			return
+		self.add_job(job.name, job.func, job.args)
+
 	def clear_finished_jobs(self):
 		self.update_queue()
-		done_jobs = [j for j in self.jobs if j in self.done_jobs]
+		done_jobs = [s for s in self.done_jobs if s in self.jobs and s.success]
 		self.jobs = [j for j in self.jobs if j not in done_jobs]
-		self.done_jobs = [j for j in self.done_jobs if j not in done_jobs]
-		del done_jobs
+		self.done_jobs = [s for s in self.done_jobs if s not in done_jobs]
 
 class Worker(Process):
 	def __init__(self, job_manager, sql_engine):

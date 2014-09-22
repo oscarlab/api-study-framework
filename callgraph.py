@@ -612,69 +612,80 @@ def BinaryCallgraph_run(jmgr, sql, args):
 	sql.connect_table(binary_unknown_call_table)
 	sql.connect_table(binary_syscall_table)
 	sql.connect_table(binary_unknown_syscall_table)
+
 	pkgname = args[0]
 	bin = args[1]
-	bin_id = get_binary_id(sql, bin)
 	dir = args[2]
+
 	unpacked = False
 	if not dir:
 		(dir, pkgname, version) = package.unpack_package(args[0])
 		if not dir:
 			return
 		unpacked = True
+
 	if len(args) > 3:
 		ref = args[3]
 	else:
 		ref = None
-	path = dir + '/' + bin
-	condition = 'bin_id=\'' + str(bin_id) + '\''
-	sql.delete_record(binary_call_table, condition)
-	sql.delete_record(binary_syscall_table, condition)
-	if os.path.exists(path):
-		callers = get_callgraph(path)
-		for caller in callers:
-			for callee in caller.callees:
-				values = dict()
-				values['bin_id'] = bin_id
-				values['func_addr'] = caller.func_addr
-				
-				if isinstance(callee, str) and callee.startswith('<'):
-					values['target'] = callee[1:-1]
-					try:
-						sql.append_record(binary_unknown_call_table, values)
-					except:
-						pass
-					continue
 
-				if isinstance(callee, str):
-					values['call_name'] = callee
-				else:
-					values['call_addr'] = callee
+	exception = None
+	try:
+		path = dir + '/' + bin
+		bin_id = get_binary_id(sql, bin)
+		condition = 'bin_id=\'' + str(bin_id) + '\''
+		sql.delete_record(binary_call_table, condition)
+		sql.delete_record(binary_syscall_table, condition)
+		if os.path.exists(path):
+			callers = get_callgraph(path)
+			for caller in callers:
+				for callee in caller.callees:
+					values = dict()
+					values['bin_id'] = bin_id
+					values['func_addr'] = caller.func_addr
 
-				sql.append_record(binary_call_table, values)
+					if isinstance(callee, str) and callee.startswith('<'):
+						values['target'] = callee[1:-1]
+						try:
+							sql.append_record(binary_unknown_call_table, values)
+						except:
+							pass
+						continue
 
-			for syscall in caller.syscalls:
-				values = dict()
-				values['bin_id'] = bin_id
-				values['func_addr'] = caller.func_addr
+					if isinstance(callee, str):
+						values['call_name'] = callee
+					else:
+						values['call_addr'] = callee
 
-				if isinstance(syscall, str):
-					values['target'] = syscall[1:-1]
-					try:
-						sql.append_record(binary_unknown_syscall_table, values)
-					except:
-						pass
-					continue
+					sql.append_record(binary_call_table, values)
 
-				values['syscall'] = syscall
-				sql.append_record(binary_syscall_table, values)
-	update_binary_callgraph(sql, bin_id)
-	sql.commit()
+				for syscall in caller.syscalls:
+					values = dict()
+					values['bin_id'] = bin_id
+					values['func_addr'] = caller.func_addr
+
+					if isinstance(syscall, str):
+						values['target'] = syscall[1:-1]
+						try:
+							sql.append_record(binary_unknown_syscall_table, values)
+						except:
+							pass
+						continue
+
+					values['syscall'] = syscall
+					sql.append_record(binary_syscall_table, values)
+		update_binary_callgraph(sql, bin_id)
+		sql.commit()
+	except Exception as err:
+		exception = err
+
 	if ref:
 		if not package.dereference_dir(dir, ref):
 			return
 	if unpacked:
 		shutil.rmtree(dir)
+	if exception:
+		raise exception
 
 def BinaryCallgraph_job_name(args):
 	return "Binary Callgraph: " + args[1] + " in " + args[0]

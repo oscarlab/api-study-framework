@@ -80,9 +80,12 @@ def show_list(screen, name, items, print_func, extra_keys=None,
 	del win
 
 def print_job(job):
-	(id, name, done) = job
-	if done:
-		return "*{0}: {1}".format(id, name)
+	(id, name, status) = job
+	if status:
+		if status.success:
+			return "*{0}: {1}".format(id, name)
+		else:
+			return "!{0}: {1}".format(id, name)
 	else:
 		return " {0}: {1}".format(id, name)
 
@@ -151,11 +154,12 @@ def make_screen(jmgr, wmgr, tasks):
 	screen.addstr(1, 1, "Commands:")
 	screen.addstr(2, 3, "l - List all jobs")
 	screen.addstr(3, 3, "a - Add new job")
-	screen.addstr(4, 3, "c - Clear finished jobs")
-	screen.addstr(5, 3, "w - List all workers")
-	screen.addstr(6, 3, "n - Create new worker")
-	screen.addstr(7, 3, "e - End execution")
-	screen.addstr(8, 3, "q - Leave")
+	screen.addstr(4, 3, "r - requeue a job")
+	screen.addstr(5, 3, "c - Clear finished jobs")
+	screen.addstr(6, 3, "w - List all workers")
+	screen.addstr(7, 3, "n - Create new worker")
+	screen.addstr(8, 3, "e - End execution")
+	screen.addstr(9, 3, "q - Leave")
 	while True:
 		c = screen.getch()
 		if c == ord('l'):
@@ -172,6 +176,16 @@ def make_screen(jmgr, wmgr, tasks):
 
 			show_list(screen, "Tasks", keys, print_task,
 					task_keys, (jmgr, keys,))
+		elif c == ord('r'):
+			(y, x) = center(screen, 3, 30)
+			win = curses.newwin(3, 30, y, x)
+			win.border(0)
+			win.addstr(1, 1, "Job ID: ")
+			curses.echo()
+			id = int(win.getstr(1, 9))
+			del win
+			curses.noecho()
+			jmgr.requeue_job(id)
 		elif c == ord('c'):
 			jmgr.clear_finished_jobs()
 			show_message(screen, "finished jobs are cleared")

@@ -72,41 +72,52 @@ def BinarySymbol_run(jmgr, sql, args):
 	sql.connect_table(binary_symbol_table)
 	pkgname = args[0]
 	bin = args[1]
-	bin_id = get_binary_id(sql, bin)
 	dir = args[2]
+
 	unpacked = False
 	if not dir:
 		(dir, pkgname, version) = package.unpack_package(args[0])
 		if not dir:
 			return
 		unpacked = True
+
 	if len(args) > 3:
 		ref = args[3]
 	else:
 		ref = None
-	path = dir + '/' + bin
-	sql.delete_record(binary_symbol_table, 'bin_id=\'' + str(bin_id) + '\'')
-	if os.path.exists(path):
-		symbols = get_symbols(path)
-		for sym in symbols:
-			values = dict()
-			values['bin_id'] = bin_id
-			values['symbol_name'] = sym.name
-			if sym.defined:
-				values['defined'] = 'True'
-			else:
-				values['defined'] = 'False'
-			values['func_addr'] = sym.addr
-			values['version'] = sym.version
+	
+	exception = None
+	try:
+		path = dir + '/' + bin
+		bin_id = get_binary_id(sql, bin)
+		sql.delete_record(binary_symbol_table, 'bin_id=\'' + str(bin_id) + '\'')
+		if os.path.exists(path):
+			symbols = get_symbols(path)
+			for sym in symbols:
+				values = dict()
+				values['bin_id'] = bin_id
+				values['symbol_name'] = sym.name
+				if sym.defined:
+					values['defined'] = 'True'
+				else:
+					values['defined'] = 'False'
+				values['func_addr'] = sym.addr
+				values['version'] = sym.version
 
-			sql.append_record(binary_symbol_table, values)
-	update_binary_callgraph(sql, bin_id)
-	sql.commit()
+				sql.append_record(binary_symbol_table, values)
+		update_binary_callgraph(sql, bin_id)
+		sql.commit()
+	except Exception as err:
+		exception = err
+
 	if ref:
 		if not package.dereference_dir(dir, ref):
 			return
 	if unpacked:
 		shutil.rmtree(dir)
+	if exception:
+		raise exception
+
 
 def BinarySymbol_job_name(args):
 	return "Binary Symbol: " + args[1] + " in " + args[0]
@@ -148,35 +159,45 @@ def BinaryDependency_run(jmgr, sql, args):
 	sql.connect_table(binary_dependency_table)
 	pkgname = args[0]
 	bin = args[1]
-	bin_id = get_binary_id(sql, bin)
 	dir = args[2]
+
 	unpacked = False
 	if not dir:
 		(dir, pkgname, version) = package.unpack_package(args[0])
 		if not dir:
 			return
 		unpacked = True
+
 	if len(args) > 3:
 		ref = args[3]
 	else:
 		ref = None
-	path = dir + '/' + bin
-	sql.delete_record(binary_dependency_table, 'bin_id=\'' + str(bin_id) + '\'')
-	if os.path.exists(path):
-		dependencies = get_dependencies(path)
-		for dep in dependencies:
-			values = dict()
-			values['bin_id'] = bin_id
-			values['dependency'] = dep
 
-			sql.append_record(binary_dependency_table, values)
-	update_binary_dep(sql, bin_id)
-	sql.commit()
+	exception = None
+	try:
+		path = dir + '/' + bin
+		bin_id = get_binary_id(sql, bin)
+		sql.delete_record(binary_dependency_table, 'bin_id=\'' + str(bin_id) + '\'')
+		if os.path.exists(path):
+			dependencies = get_dependencies(path)
+			for dep in dependencies:
+				values = dict()
+				values['bin_id'] = bin_id
+				values['dependency'] = dep
+
+				sql.append_record(binary_dependency_table, values)
+		update_binary_dep(sql, bin_id)
+		sql.commit()
+	except Exception as err:
+		exception = err
+
 	if ref:
 		if not package.dereference_dir(dir, ref):
 			return
 	if unpacked:
 		shutil.rmtree(dir)
+	if exception:
+		raise err
 
 def BinaryDependency_job_name(args):
 	return "Binary Dependency: " + args[1] + " in " + args[0]
