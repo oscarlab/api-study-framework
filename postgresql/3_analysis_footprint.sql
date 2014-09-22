@@ -10,8 +10,14 @@ EXISTS (
 	bin_id = t.id AND type = 'exe'
 );
 
+CREATE TEMP TABLE ld_call (
+	call_name VARCHAR NOT NULL PRIMARY KEY);
 CREATE TEMP TABLE dep_id (
 	dep_id INT NOT NULL PRIMARY KEY);
+CREATE TEMP TABLE dep_sym (
+	dep_id INT NOT NULL,
+	symbol_name VARCHAR NOT NULL,
+	func_addr INT NOT NULL);
 CREATE TEMP TABLE dep_call (
 	dep_id INT NOT NULL,
 	symbol_name VARCHAR,
@@ -23,17 +29,33 @@ DECLARE
 	total INT := COUNT(*) FROM bin_id;
 	cnt INT := 0;
 	b INT;
+	s INT;
 	ld_id INT := id FROM binary_id WHERE binary_name = '/lib/x86_64-linux-gnu/ld-2.15.so';
 	ld_entry INT := 5808;
+	dep_on_ld BOOLEAN;
 
 BEGIN
+	INSERT INTO ld_call SELECT call_name FROM analysis_call
+	WHERE bin_id = ld_id AND func_addr = ld_entry;
+
 	FOR b IN (SELECT * FROM bin_id) LOOP
+		RAISE NOTICE 'analyze binary: %', b;
+
 		INSERT INTO dep_id
 		SELECT DISTINCT dep_id FROM analysis_dep
-		WHERE bin_id = b AND
-		EXISTS (
-			SELECT * FROM binary_symbol WHERE bin_id = dep_id
-		);
+		WHERE bin_id = b;
+
+		dep_on_ld := EXISTS (SELECT * FROM dep_id WHERE dep_id = ld_id);
+
+		FOR s IN (SELECT * FROM dep_id) LOOP
+			RAISE NOTICE 'import dependency: %', s;
+			INSERT INTO dep_sym
+			SELECT DISTINCT s, symbol_name, func_addr FROM binary_symbol
+			WHERE bin_id = s AND defined = 'True';
+		END LOOP;
+
+		TRUNCATE TABLE dep_id;
+		RAISE NOTICE 'dep_sym: %', (SELECT COUNT(*) FROM dep_sym);
 
 		INSERT INTO dep_call
 		SELECT DISTINCT
@@ -46,20 +68,13 @@ BEGIN
 		binary_symbol AS t3
 		ON t1.dep_id = t3.bin_id AND t2.func_addr = t3.func_addr
 		UNION
-		SELECT DISTINCT
-		bin_id, symbol_name, func_addr, NULL FROM binary_symbol
-		WHERE defined = 'True' AND
-		EXISTS (
-			SELECT * FROM dep_id WHERE dep_id = bin_id
-		)
+		SELECT dep_id, symbol_name, func_addr, NULL FROM dep_sym
 		UNION
-		SELECT DISTINCT
-		ld_id, NULL, ld_entry, call_name FROM analysis_call
-		WHERE bin_id = ld_id
-		AND func_addr = ld_entry
-		AND EXISTS (
-			SELECT * FROM dep_id WHERE dep_id = ld_id
-		);
+		SELECT ld_id, NULL, ld_entry, call_name FROM ld_call
+		WHERE dep_on_ld = 'True';
+
+		TRUNCATE TABLE dep_sym;
+		RAISE NOTICE 'dep_call: %', (SELECT COUNT(*) FROM dep_call);
 
 		DELETE FROM analysis_footprint WHERE bin_id = b;
 
@@ -89,7 +104,6 @@ BEGIN
 		SELECT DISTINCT b, syscall FROM binary_unknown_syscall
 		WHERE bin_id = b AND syscall IS NOT NULL;
 
-		TRUNCATE TABLE dep_id;
 		TRUNCATE TABLE dep_call;
 
 		cnt := cnt + 1;
