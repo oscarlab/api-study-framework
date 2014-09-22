@@ -67,6 +67,7 @@ def main():
 				return
 
 root_dir = os.getcwd()
+null_dev = open(os.devnull, 'w')
 
 if __name__ == "__main__":
 	startTime = datetime.now()

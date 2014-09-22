@@ -6,6 +6,7 @@ from sql import Table
 import syscall
 from symbol import get_symbols
 from binary import get_binary_id, update_binary_callgraph
+import main
 
 import os
 import sys
@@ -113,10 +114,8 @@ class Syscall_Inst(Inst):
 
 		return Inst.__str__(self) + ' syscall ' + self.target
 
-def get_callgraph(binaryname):
-	process = subprocess.Popen(["readelf", "--dyn-syms","-W", binaryname],
-			stdout=subprocess.PIPE
-			)
+def get_callgraph(binary_name):
+	process = subprocess.Popen(["readelf", "--dyn-syms","-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
 
 	dynsym_list = {}
 	for line in process.stdout:
@@ -133,9 +132,10 @@ def get_callgraph(binaryname):
 			continue
 		dynsym_list[addr] = match.group(1)
 
-	process = subprocess.Popen(["readelf", "--program-headers", "-W", binaryname],
-			stdout=subprocess.PIPE
-			)
+	if process.wait() != 0:
+		raise Exception('process failed: readelf --dyn-syms')
+
+	process = subprocess.Popen(["readelf", "--program-headers", "-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
 
 	load_list = []
 	for line in process.stdout:
@@ -156,9 +156,10 @@ def get_callgraph(binaryname):
 			int(parts[5][2:], 16)
 			))
 
-	process = subprocess.Popen(["readelf", "--section-headers", "-W", binaryname],
-			stdout=subprocess.PIPE
-			)
+	if process.wait() != 0:
+		raise Exception('process failed: readelf --program-headers')
+
+	process = subprocess.Popen(["readelf", "--section-headers", "-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
 
 	text_area = None
 	for line in process.stdout:
@@ -170,6 +171,9 @@ def get_callgraph(binaryname):
 		if not is_hex(parts[3]) or not is_hex(parts[5]):
 			break
 		text_area = (int(parts[3], 16), int(parts[3], 16) + int(parts[5], 16))
+
+	if process.wait() != 0:
+		raise Exception('process failed: readelf --section-headers')
 
 	registers = [	['%rax','%eax','%ax','%al'],
 			['%rbx','%ebx','%bx','%bl'],
@@ -198,11 +202,9 @@ def get_callgraph(binaryname):
 	syscall_list = []
 	ret_list = []
 
-	binary = open(binaryname, 'rb')
+	binary = open(binary_name, 'rb')
 
-	process = subprocess.Popen(["objdump", "-d", binaryname, "-j", ".text"],
-			stdout=subprocess.PIPE
-			)
+	process = subprocess.Popen(["objdump", "-d", binary_name, "-j", ".text"], stdout=subprocess.PIPE, stderr=main.null_dev)
 
 	linenbr = 0
 	for line in process.stdout:
@@ -437,6 +439,9 @@ def get_callgraph(binaryname):
 				syscall_list.append(Syscall_Inst(inst_addr, rax[1], target=rax[0]))
 			continue
 
+	if process.wait() != 0:
+		raise Exception('process failed: objdump -d -j .text')
+
 	def Caller_cmp(x, y):
 		return x.func_addr - y.func_addr
 
@@ -524,12 +529,12 @@ class SymbolCaller:
 				result += "\n\tsyscall: " + str(s)
 		return result
 
-def get_callgraph_recursive(binaryname):
-	calls = get_callgraph(binaryname)
+def get_callgraph_recursive(binary_name):
+	calls = get_callgraph(binary_name)
 	if not calls:
 		return None
 
-	symbols = get_symbols(binaryname)
+	symbols = get_symbols(binary_name)
 	func_list = []
 	for symbol in symbols:
 		if not symbol.defined:

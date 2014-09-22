@@ -5,7 +5,6 @@ from sql import SQL
 import os
 import fnmatch
 import sys
-import subprocess
 import re
 import shutil
 import signal
