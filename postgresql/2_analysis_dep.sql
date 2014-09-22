@@ -48,7 +48,7 @@ AS (
 	ON t1.dep_id = t2.bin_id
 ) INSERT INTO analysis_dep SELECT * FROM analysis;
 
-UPDATE binary_id SET dep_generated = 'True', analysis_generated = 'False'
+UPDATE binary_id SET dep_generated = 'True', footprint_generated = 'False'
 WHERE EXISTS (
 	SELECT * FROM bin_id WHERE bin_id = id
 );

@@ -11,7 +11,7 @@ binary_id_table = Table('binary_id', [
 			('binary_name', 'VARCHAR', 'UNIQUE'),
 			('callgraph_generated', 'BOOLEAN', ''),
 			('dep_generated', 'BOOLEAN', ''),
-			('analysis_generated', 'BOOLEAN', '')],
+			('footprint_generated', 'BOOLEAN', '')],
 			['id'])
 
 def get_binary_id(sql, binary_name):
@@ -35,7 +35,7 @@ def get_binary_id(sql, binary_name):
 		values['binary_name'] = binary_name
 		values['callgraph_generated'] = False
 		values['dep_generated'] = False
-		values['analysis_generated'] = False
+		values['footprint_generated'] = False
 		retry = False
 		try:
 			sql.append_record(binary_id_table, values)
