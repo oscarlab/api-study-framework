@@ -104,6 +104,10 @@ BEGIN
 		SELECT DISTINCT b, syscall FROM binary_unknown_syscall
 		WHERE bin_id = b AND syscall IS NOT NULL;
 
+		UPDATE binary_id SET
+		footprint_generated = True
+		WHERE id = b;
+
 		TRUNCATE TABLE dep_call;
 
 		cnt := cnt + 1;
