@@ -14,8 +14,21 @@ EXISTS (
 	WHERE id = bin_id AND callgraph_generated = False
 );
 
-CREATE FUNCTION analysis_callgraph ()
-RETURNS void AS $$
+CREATE TEMP TABLE lib_entry (func_addr INT NOT NULL PRIMARY KEY);
+CREATE TEMP TABLE lib_local_call (
+	func_addr INT NOT NULL, call_addr INT NOT NULL,
+	PRIMARY KEY (func_addr, call_addr));
+CREATE TEMP TABLE lib_exit (
+	func_addr INT NOT NULL, call_name VARCHAR NOT NULL,
+	PRIMARY KEY (func_addr, call_name));
+CREATE TEMP TABLE lib_syscall (
+	func_addr INT NOT NULL, syscall INT NOT NULL,
+	PRIMARY KEY (func_addr, syscall));
+CREATE TEMP TABLE lib_callgraph (
+	func_addr INT NOT NULL, call_addr INT NOT NULL,
+	PRIMARY KEY (func_addr, call_addr));
+
+DO $$
 DECLARE
 	total INT := COUNT(*) FROM lib_id;
 	cnt INT := 0;
@@ -23,33 +36,30 @@ DECLARE
 
 BEGIN
 	FOR b IN (SELECT * FROM lib_id) LOOP
-		CREATE TEMP TABLE lib_entry AS
+		INSERT INTO lib_entry
 		SELECT DISTINCT func_addr FROM binary_symbol
 		WHERE bin_id = b AND defined = True AND func_addr != 0;
 
-		CREATE TEMP TABLE lib_local_call AS
+		INSERT INTO lib_local_call
 		SELECT DISTINCT func_addr, call_addr FROM binary_call
 		WHERE bin_id = b AND call_addr IS NOT NULL
 		UNION
 		SELECT DISTINCT func_addr, call_addr FROM binary_unknown_call
 		WHERE bin_id = b AND call_addr IS NOT NULL;
 
-		CREATE TEMP TABLE lib_exit AS
+		INSERT INTO lib_exit
 		SELECT DISTINCT func_addr, call_name FROM binary_call
 		WHERE bin_id = b AND call_addr IS NULL
 		UNION
 		SELECT DISTINCT func_addr, call_name FROM binary_unknown_call
 		WHERE bin_id = b AND call_addr IS NULL and call_name IS NOT NULL;
 
-		CREATE TEMP TABLE lib_syscall AS
+		INSERT INTO lib_syscall
 		SELECT DISTINCT func_addr, syscall FROM binary_syscall
 		WHERE bin_id = b
 		UNION
 		SELECT DISTINCT func_addr, syscall FROM binary_unknown_syscall
 		WHERE bin_id = b AND syscall IS NOT NULL;
-
-		CREATE TEMP TABLE lib_callgraph
-		(func_addr INT NOT NULL, call_addr INT NOT NULL);
 
 		WITH RECURSIVE
 		analysis (func_addr, call_addr)
@@ -81,18 +91,14 @@ BEGIN
 		dep_generated = False
 		WHERE id = b;
 
-		DROP TABLE lib_entry;
-		DROP TABLE lib_local_call;
-		DROP TABLE lib_exit;
-		DROP TABLE lib_callgraph;
-		DROP TABLE lib_syscall;
+		TRUNCATE TABLE lib_entry;
+		TRUNCATE TABLE lib_local_call;
+		TRUNCATE TABLE lib_exit;
+		TRUNCATE TABLE lib_callgraph;
+		TRUNCATE TABLE lib_syscall;
 
 		cnt := cnt + 1;
 		RAISE NOTICE '% / %', cnt, total;
 	END LOOP;
-END;
-$$ LANGUAGE plpgsql;
+END $$;
 
-SELECT analysis_callgraph();
-
-DROP FUNCTION analysis_callgraph();
