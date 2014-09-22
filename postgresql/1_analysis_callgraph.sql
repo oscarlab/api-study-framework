@@ -33,12 +33,17 @@ DECLARE
 	total INT := COUNT(*) FROM lib_id;
 	cnt INT := 0;
 	b INT;
+	ld_name VARCHAR := '/lib/x86_64-linux-gnu/ld-2.15.so';
+	ld_entry INT := 5808;
 
 BEGIN
 	FOR b IN (SELECT * FROM lib_id) LOOP
 		INSERT INTO lib_entry
 		SELECT DISTINCT func_addr FROM binary_symbol
-		WHERE bin_id = b AND defined = True AND func_addr != 0;
+		WHERE bin_id = b AND defined = True AND func_addr != 0
+		UNION
+		SELECT ld_entry FROM binary_id
+		WHERE id = b AND binary_name = ld_name;
 
 		INSERT INTO lib_local_call
 		SELECT DISTINCT func_addr, call_addr FROM binary_call
