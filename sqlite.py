@@ -11,12 +11,20 @@ import sqlite3
 class SQLite(SQL):
 	def __init__(self):
 		SQL.__init__(self)
-		dbname = get_config('sqlite_db', 'syscall_popularity.db')
-		self.db = sqlite3.connect(dbname)
+		self.dbname = get_config('sqlite_db', 'syscall_popularity.db')
+		self.db = None
 		self.tables = []
 
 	def __del__(self):
-		self.db.close()
+		self.disconnect()
+
+	def connect(self):
+		self.db = sqlite3.connect(self.dbname)
+
+	def disconnect(self):
+		if self.db:
+			self.db.close()
+			self.db = None
 
 	def commit(self):
 		self.db.commit()

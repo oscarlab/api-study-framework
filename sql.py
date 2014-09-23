@@ -43,7 +43,7 @@ class Table:
 		query += ')'
 		return query
 
-	def select_record(self, condition, fields):
+	def select_record(self, condition, fields=None):
 		query = 'SELECT '
 		if fields:
 			delim = '('
@@ -59,13 +59,13 @@ class Table:
 			query += ' WHERE ' + condition
 		return query
 
-	def delete_record(self, condition):
+	def delete_record(self, condition=None):
 		query = 'DELETE FROM ' + self.name
 		if condition:
 			query += ' WHERE ' + condition
 		return query
 
-	def update_record(self, values, condition):
+	def update_record(self, values, condition=None):
 		query = 'UPDATE ' + self.name + ' SET '
 		delim = ''
 		has_values = False
@@ -87,6 +87,8 @@ class SQL:
 
 	# Have to implement following methods
 	# def __del__(self):
+	# def connect(self):
+	# def disconnect(self):
 	# def commit(self):
 	# def connect_table(self, table):
 	# def append_record(self, table, values):
@@ -119,6 +121,12 @@ class SQLPrintQuery(SQL):
 		self.tables = []
 
 	def __del__(self):
+		return
+
+	def connect(self):
+		return
+
+	def disconnect(self):
 		return
 
 	def commit(self):

@@ -9,8 +9,9 @@ import re
 binary_id_table = Table('binary_id', [
 			('id', 'INT', 'NOT NULL'),
 			('binary_name', 'VARCHAR', 'UNIQUE'),
+			('file_name', 'VARCHAR', ''),
 			('callgraph_generated', 'BOOLEAN', ''),
-			('dep_generated', 'BOOLEAN', ''),
+			('linking_generated', 'BOOLEAN', ''),
 			('footprint_generated', 'BOOLEAN', '')],
 			['id'])
 
@@ -33,8 +34,9 @@ def get_binary_id(sql, binary_name):
 		values = dict()
 		values['id'] = id
 		values['binary_name'] = binary_name
+		values['file_name'] = os.path.basename(binary_name)
 		values['callgraph_generated'] = False
-		values['dep_generated'] = False
+		values['linking_generated'] = False
 		values['footprint_generated'] = False
 		retry = False
 		try:
@@ -51,7 +53,7 @@ def update_binary_callgraph(sql, bin_id):
 	values['callgraph_generated'] = False
 	sql.update_record(binary_id_table, values, 'id=\'' + str(bin_id) + '\'')
 
-def update_binary_dep(sql, bin_id):
+def update_binary_linking(sql, bin_id):
 	values = dict()
-	values['dep_generated'] = False
+	values['linking_generated'] = False
 	sql.update_record(binary_id_table, values, 'id=\'' + str(bin_id) + '\'')

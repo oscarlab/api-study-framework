@@ -3,7 +3,7 @@
 from task import Task
 import package
 from sql import Table
-from binary import get_binary_id, update_binary_callgraph, update_binary_dep
+from binary import get_binary_id, update_binary_callgraph, update_binary_linking
 import main
 
 import os
@@ -199,7 +199,7 @@ def BinaryDependency_run(jmgr, sql, args):
 				values['dependency'] = dep
 
 				sql.append_record(binary_dependency_table, values)
-		update_binary_dep(sql, bin_id)
+		update_binary_linking(sql, bin_id)
 		sql.commit()
 	except Exception as err:
 		exception = err

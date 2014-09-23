@@ -3,7 +3,7 @@
 from task import Task
 from package_popularity import package_popularity_table
 from sql import Table
-from binary import get_binary_id, update_binary_dep
+from binary import get_binary_id, update_binary_linking
 import main
 
 import os
@@ -282,7 +282,7 @@ def BinaryList_run(jmgr, sql, args):
 				values['version'] = version
 
 				sql.append_record(binary_list_table, values)
-			update_binary_dep(sql, bin_id)
+			update_binary_linking(sql, bin_id)
 	sql.commit()
 	shutil.rmtree(dir)
 

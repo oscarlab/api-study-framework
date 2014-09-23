@@ -1,7 +1,5 @@
 #!/usr/bin/python
 
-from sql import SQL
-
 import os
 import fnmatch
 import sys
@@ -96,10 +94,10 @@ class JobManager:
 		self.done_jobs = [s for s in self.done_jobs if s not in done_jobs]
 
 class Worker(Process):
-	def __init__(self, job_manager, sql_engine):
+	def __init__(self, job_manager, sql):
 		Process.__init__(self)
 		self.job_manager = job_manager
-		self.sql_engine = sql_engine
+		self.sql = sql
 		self.current_job = Value('I', 0)
 
 	def run(self):
@@ -113,7 +111,7 @@ class Worker(Process):
 		os.dup2(log, 1)
 		os.dup2(log, 2)
 
-		sql = SQL.get_engine(self.sql_engine)
+		self.sql.connect()
 
 		while True:
 			j = self.job_manager.work_queue.get()
@@ -124,7 +122,7 @@ class Worker(Process):
 			s = JobStatus(j.id, j.name)
 			print "Start Job:", j.name, s.start_time
 			try:
-				j.run(self.job_manager, sql)
+				j.run(self.job_manager, self.sql)
 			except Exception as err:
 				print err.__class__.__name__, ':', err
 				print 'Traceback:'
@@ -136,18 +134,18 @@ class Worker(Process):
 			self.job_manager.work_queue.task_done()
 			self.job_manager.done_queue.put(s)
 
-		del sql
+		self.sql.disconnect()
 
 class WorkerManager:
-	def __init__(self, jmgr, sql_engine, nworkers=0):
+	def __init__(self, jmgr, sql, nworkers=0):
 		self.workers = []
 		self.job_manager = jmgr
-		self.sql_engine = sql_engine
+		self.sql = sql
 		for i in range(nworkers):
 			self.add_worker()
 
 	def add_worker(self):
-		w = Worker(self.job_manager, self.sql_engine)
+		w = Worker(self.job_manager, self.sql)
 		w.start()
 		self.workers.append(w)
 

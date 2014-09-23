@@ -9,6 +9,7 @@ import package_popularity
 import symbol
 import callgraph
 import syscall
+from sql import SQL
 
 import os
 import sys
@@ -53,10 +54,10 @@ def main():
 	Task.register(syscall.ListSyscall)
 
 	package.update_apt(get_config('package_source'))
-	sql_engine = get_config('sql_engine', 'sqlite.SQLite')
+	sql = SQL.get_engine(get_config('sql_engine', 'postgresql.PostgreSQL'))
 
 	jmgr = JobManager()
-	wmgr = WorkerManager(jmgr, sql_engine, multiprocessing.cpu_count())
+	wmgr = WorkerManager(jmgr, sql, multiprocessing.cpu_count())
 
 	while True:
 		try:
