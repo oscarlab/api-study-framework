@@ -36,7 +36,7 @@ class Table:
 		for (field, type, attr) in self.fields:
 			query += delim
 			delim = ', '
-			if field in values:
+			if field in values and values[field] is not None and values[field] != '':
 				query += '\'' + str(values[field]) + '\''
 			else:
 				query += 'NULL'

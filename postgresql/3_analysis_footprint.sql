@@ -40,7 +40,7 @@ BEGIN
 
 		INSERT INTO dep_sym
 		SELECT DISTINCT s, symbol_name, func_addr FROM binary_symbol
-		WHERE bin_id = s AND defined = 'True';
+		WHERE bin_id = s AND defined = True;
 	END LOOP;
 
 	RAISE NOTICE 'dep_sym: %', (SELECT COUNT(*) FROM dep_sym);
@@ -62,7 +62,7 @@ BEGIN
 		FROM dep_sym
 		UNION
 		SELECT ld_id, ld_entry, NULL, call_name FROM ld_call
-		WHERE dep_on_ld = 'True';
+		WHERE dep_on_ld = True;
 
 	RAISE NOTICE 'dep_call: %', (SELECT COUNT(*) FROM dep_call);
 
