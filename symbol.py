@@ -145,7 +145,7 @@ BinarySymbol = Task(
 
 # get_dependencies() will return list of dependencies that binary depends on.
 def get_dependencies(binary):
-	dependency_list = []
+	dependencies = set()
 
 	process = subprocess.Popen(["readelf", "-d", "-W", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
 
@@ -154,7 +154,7 @@ def get_dependencies(binary):
 		if len(parts) < 5:
 			continue
 		if parts[1] == '(NEEDED)' and parts[2] == 'Shared' and parts[3] == 'library:':
-			dependency_list.append(parts[4][1:-1])
+			dependencies.add(parts[4][1:-1])
 
 	if process.wait() != 0:
 		raise Exception('process failed: readelf -d')
@@ -165,12 +165,12 @@ def get_dependencies(binary):
 		line = line.strip()
 		if not line.startswith('[Requesting program interpreter: '):
 			continue
-		dependency_list.append(os.path.basename(line[33:-1]))
+		dependencies.add(os.path.basename(line[33:-1]))
 
 	if process.wait() != 0:
 		raise Exception('process failed: readelf --program-headers')
 
-	return dependency_list
+	return dependencies
 
 binary_dependency_table = Table('binary_dependency', [
 			('bin_id', 'INT', 'NOT NULL'),
