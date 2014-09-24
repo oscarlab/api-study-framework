@@ -67,8 +67,11 @@ def main():
 	package.update_apt(get_config('package_source'))
 	sql = SQL.get_engine(get_config('sql_engine', 'postgresql.PostgreSQL'))
 
+	ncpu = multiprocessing.cpu_count() - 1;
+	if ncpu == 0:
+		ncpu = 1
 	jmgr = JobManager()
-	wmgr = WorkerManager(jmgr, sql, multiprocessing.cpu_count())
+	wmgr = WorkerManager(jmgr, sql, ncpu)
 
 	while True:
 		try:
