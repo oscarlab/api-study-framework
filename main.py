@@ -76,6 +76,7 @@ def main():
 		except KeyboardInterrupt:
 			if make_screen(jmgr, wmgr, Task.registered_tasks):
 				wmgr.exit()
+				jmgr.exit()
 				return
 
 root_dir = os.getcwd()
