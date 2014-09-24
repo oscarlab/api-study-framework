@@ -17,7 +17,14 @@ BEGIN
 		bin_id INT NOT NULL PRIMARY KEY);
 	INSERT INTO bin_id
 		SELECT DISTINCT id AS bin_id FROM binary_id
-		WHERE linking_generated = False;
+		WHERE linking_generated = False AND (
+			EXISTS (
+				SELECT * FROM binary_list WHERE bin_id = id
+			) OR
+			EXISTS (
+				SELECT * FROM binary_link WHERE link_id = id
+			)
+		);
 	INSERT INTO bin_id
 		SELECT DISTINCT t1.bin_id FROM
 		analysis_linking AS t1 INNER JOIN bin_id AS t2
@@ -25,6 +32,10 @@ BEGIN
 		NOT EXISTS (
 			SELECT * FROM bin_id WHERE bin_id = t1.bin_id
 		);
+
+	FOR b in (SELECT * FROM bin_id) LOOP
+		RAISE NOTICE 'update linking: %', b;
+	END LOOP;
 
 	CREATE TEMP TABLE IF NOT EXISTS bin_dep (
 		bin_id INT NOT NULL,
