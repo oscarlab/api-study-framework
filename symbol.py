@@ -10,7 +10,6 @@ import os
 import sys
 import re
 import subprocess
-import shutil
 from multiprocessing import Value
 
 # When the scope is D (Defined) , the libpath is the path where symbols is defined
@@ -91,6 +90,14 @@ def BinarySymbol_run(jmgr, sql, args):
 	bin = args[1]
 	dir = args[2]
 
+	if len(args) > 3:
+		ref = args[3]
+		if not package.reference_exists(dir, ref):
+			dir = None
+			ref = None
+	else:
+		ref = None
+
 	unpacked = False
 	if not dir:
 		(dir, pkgname, version) = package.unpack_package(args[0])
@@ -98,11 +105,6 @@ def BinarySymbol_run(jmgr, sql, args):
 			return
 		unpacked = True
 
-	if len(args) > 3:
-		ref = args[3]
-	else:
-		ref = None
-	
 	exc = None
 	try:
 		path = dir + '/' + bin
@@ -128,7 +130,7 @@ def BinarySymbol_run(jmgr, sql, args):
 		exc = sys.exc_info()
 
 	if (ref and package.dereference_dir(dir, ref)) or unpacked:
-		shutil.rmtree(dir)
+		package.remove_dir(dir)
 	if exc:
 		raise exc[1], None, exc[2]
 
@@ -174,17 +176,20 @@ def BinaryDependency_run(jmgr, sql, args):
 	bin = args[1]
 	dir = args[2]
 
+	if len(args) > 3:
+		ref = args[3]
+		if not package.reference_exists(dir, ref):
+			dir = None
+			ref = None
+	else:
+		ref = None
+
 	unpacked = False
 	if not dir:
 		(dir, pkgname, version) = package.unpack_package(args[0])
 		if not dir:
 			return
 		unpacked = True
-
-	if len(args) > 3:
-		ref = args[3]
-	else:
-		ref = None
 
 	exc = None
 	try:
@@ -205,7 +210,7 @@ def BinaryDependency_run(jmgr, sql, args):
 		exc = sys.exc_info()
 
 	if (ref and package.dereference_dir(dir, ref)) or unpacked:
-		shutil.rmtree(dir)
+		package.remove_dir(dir)
 	if exc:
 		raise exc[1], None, exc[2]
 
@@ -224,7 +229,7 @@ def BinaryInfo_run(jmgr, sql, args):
 		return
 	binaries = package.walk_package(dir)
 	if not binaries:
-		shutil.rmtree(dir)
+		package.remove_dir(dir)
 		return
 	for (bin, type) in binaries:
 		if type == 'lnk':

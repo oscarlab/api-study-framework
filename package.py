@@ -163,8 +163,12 @@ def unpack_package(name):
 	package_source = main.get_config('package_source')
 	package_arch = main.get_config('package_arch')
 	package_options = main.get_config('package_options')
-	dir = tempfile.mkdtemp()
+
+	dir = tempfile.mkdtemp('', '', main.get_temp_dir())
+	os.mkdir(dir + '/refs')
+	print "create:", dir
 	os.chdir(dir)
+
 	try:
 		filename = download_from_apt(name, package_source,
 				package_arch, package_options)
@@ -179,9 +183,9 @@ def unpack_package(name):
 			raise Exception("Cannot unpack \'" + name + "\'")
 	except:
 		os.chdir(main.root_dir)
-		shutil.rmtree(dir)
+		remove_dir(dir)
 		raise
-	os.mkdir('refs')
+
 	os.chdir(main.root_dir)
 	return (dir, name, version)
 
@@ -193,13 +197,22 @@ def reference_dir(dir):
 
 def dereference_dir(dir, ref):
 	os.remove(dir + '/refs/' + ref)
-	return not os.walk(dir + '/refs')
+	return not os.listdir(dir + '/refs')
+
+def reference_exists(dir, ref):
+	return os.path.exists(dir + '/refs/' + ref)
+
+def remove_dir(dir):
+	try:
+		shutil.rmtree(dir)
+	except:
+		pass
 
 def PackageUnpack_run(jmgr, sql, args):
 	(dir, pkgname, version) = unpack_package(args[0])
 	if not dir:
 		return
-	print "Unpacked to", dir
+	print "Unpacked", pkgname, "(" + version + ")", "to", dir
 
 def PackageUnpack_job_name(args):
 	return "Package Unpack: " + args[0]

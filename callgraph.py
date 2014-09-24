@@ -12,7 +12,6 @@ import os
 import sys
 import re
 import subprocess
-import shutil
 import struct
 
 def is_hex(s):
@@ -688,17 +687,20 @@ def BinaryCallgraph_run(jmgr, sql, args):
 	bin = args[1]
 	dir = args[2]
 
+	if len(args) > 3:
+		ref = args[3]
+		if not package.reference_exists(dir, ref):
+			dir = None
+			ref = None
+	else:
+		ref = None
+
 	unpacked = False
 	if not dir:
 		(dir, pkgname, version) = package.unpack_package(args[0])
 		if not dir:
 			return
 		unpacked = True
-
-	if len(args) > 3:
-		ref = args[3]
-	else:
-		ref = None
 
 	exc = None
 	try:
@@ -751,7 +753,7 @@ def BinaryCallgraph_run(jmgr, sql, args):
 		exc = err
 
 	if (ref and package.dereference_dir(dir, ref)) or unpacked:
-		shutil.rmtree(dir)
+		package.remove_dir(dir)
 	if exc:
 		raise exc[1], None, exc[2]
 
@@ -770,7 +772,7 @@ def BinaryCallInfo_run(jmgr, sql, args):
 		return
 	binaries = package.walk_package(dir)
 	if not binaries:
-		shutil.rmtree(dir)
+		package.remove_dir(dir)
 		return
 	for (bin, type) in binaries:
 		if type == 'lnk':
