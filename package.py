@@ -15,7 +15,21 @@ import stat
 import tempfile
 
 def get_packages():
-	process = subprocess.Popen(["apt-cache", "pkgnames"], stdout=subprocess.PIPE, stderr=main.null_dev)
+	package_source = main.get_config('package_source')
+	package_arch = main.get_config('package_arch')
+	package_options = main.get_config('package_options')
+
+	cmd = ["apt-cache"]
+
+	if package_source:
+		cmd += apt_options_for_source(package_source)
+	if package_arch:
+		cmd += ["-o", "APT::Architectures=" + package_arch]
+	if package_options:
+		for (opt, val) in package_options.items():
+			cmd += ["-o", opt + "=" + val]
+
+	process = subprocess.Popen(cmd + ["pkgnames"], stdout=subprocess.PIPE, stderr=main.null_dev)
 	(stdout, stderr) = process.communicate()
 	return stdout.split()
 
@@ -47,7 +61,21 @@ def get_packages_by_ranks(sql, min, max):
 	return result
 
 def PackageInfo_run(jmgr, sql, args):
-	process = subprocess.Popen(["apt-cache", "showpkg", args[0]], stdout=subprocess.PIPE, stderr=main.null_dev)
+	package_source = main.get_config('package_source')
+	package_arch = main.get_config('package_arch')
+	package_options = main.get_config('package_options')
+
+	cmd = ["apt-cache"]
+
+	if package_source:
+		cmd += apt_options_for_source(package_source)
+	if package_arch:
+		cmd += ["-o", "APT::Architectures=" + package_arch]
+	if package_options:
+		for (opt, val) in package_options.items():
+			cmd += ["-o", opt + "=" + val]
+
+	process = subprocess.Popen(cmd + ["showpkg", args[0]], stdout=subprocess.PIPE, stderr=main.null_dev)
 	(stdout, stderr) = process.communicate()
 	print stdout
 
@@ -137,7 +165,6 @@ def download_from_apt(name, source=None, arch=None, options=None):
 
 	if source:
 		cmd += apt_options_for_source(source)
-
 	if arch:
 		cmd += ["-o", "APT::Architectures=" + arch]
 	if options:
