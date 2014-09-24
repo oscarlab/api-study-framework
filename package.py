@@ -144,20 +144,16 @@ def download_from_apt(name, source=None, arch=None, options=None):
 		for (opt, val) in options.items():
 			cmd += ["-o", opt + "=" + val]
 
-	process = subprocess.Popen(cmd + ["--print-uris", name], stdout=subprocess.PIPE, stderr=main.null_dev)
-	(stdout, stderr) = process.communicate()
-	if process.returncode != 0:
-		raise Exception("Cannot download \'" + name + "\'")
-	filename = stdout.split()[1]
-
 	process = subprocess.Popen(cmd + [name], stdout=subprocess.PIPE, stderr=main.null_dev)
 	(stdout, stderr) = process.communicate()
 	if process.returncode != 0:
 		raise Exception("Cannot download \'" + name + "\'")
 
-	if not os.path.exists(filename):
-		raise Exception("\'" + name + "\' is not properly downloaded")
-	return filename
+	for filename in os.listdir('.'):
+		if filename.endswith('.deb'):
+			return filename
+
+	raise Exception("\'" + name + "\' is not properly downloaded")
 
 def unpack_package(name):
 	package_source = main.get_config('package_source')
@@ -165,8 +161,6 @@ def unpack_package(name):
 	package_options = main.get_config('package_options')
 
 	dir = tempfile.mkdtemp('', '', main.get_temp_dir())
-	os.mkdir(dir + '/refs')
-	print "create:", dir
 	os.chdir(dir)
 
 	try:
@@ -186,6 +180,7 @@ def unpack_package(name):
 		remove_dir(dir)
 		raise
 
+	os.mkdir(dir + '/refs')
 	os.chdir(main.root_dir)
 	return (dir, name, version)
 
