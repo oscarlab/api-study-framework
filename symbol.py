@@ -61,11 +61,15 @@ def get_symbols(binary):
 
 	process = subprocess.Popen(["readelf", "--section-headers", "-W", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
 
+	init_addr = None
+	init_array = None
+	fini_addr = None
+	fini_array = None
 	for line in process.stdout:
 		parts = line[6:].strip().split()
 		if len(parts) < 2:
 			continue
-		if parts[0] in ['.init', '.fini']:
+		if parts[0] in ['.init', '.init_array', '.fini', '.fini_array']:
 			addr = int(parts[2], 16)
 			sym = Symbol(parts[0], True, addr, '')
 			symbol_list.append(sym)

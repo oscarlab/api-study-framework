@@ -16,10 +16,10 @@ BEGIN
 	CREATE TEMP TABLE IF NOT EXISTS bin_id (
 		bin_id INT NOT NULL PRIMARY KEY);
 	INSERT INTO bin_id
-		SELECT id AS bin_id FROM binary_id
+		SELECT DISTINCT id AS bin_id FROM binary_id
 		WHERE linking_generated = False;
 	INSERT INTO bin_id
-		SELECT t1.bin_id FROM
+		SELECT DISTINCT t1.bin_id FROM
 		analysis_linking AS t1 INNER JOIN bin_id AS t2
 		ON t1.dep_id = t2.bin_id AND
 		NOT EXISTS (

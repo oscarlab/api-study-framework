@@ -178,7 +178,9 @@ def get_callgraph(binary_name):
 
 	text_area = None
 	init_addr = None
+	init_array = None
 	fini_addr = None
+	fini_array = None
 	for line in process.stdout:
 		parts = line[6:].strip().split()
 		if len(parts) < 5:
@@ -191,6 +193,10 @@ def get_callgraph(binary_name):
 			init_addr = int(parts[2], 16)
 		if parts[0] == '.fini':
 			fini_addr = int(parts[2], 16)
+		if parts[0] == '.init_array':
+			init_array = (int(parts[2], 16), int(parts[2], 16) + int(parts[4], 16))
+		if parts[0] == '.fini_array':
+			fini_array = (int(parts[2], 16), int(parts[2], 16) + int(parts[4], 16))
 
 	if process.wait() != 0:
 		raise Exception('process failed: readelf --section-headers')
@@ -468,14 +474,45 @@ def get_callgraph(binary_name):
 	if process.wait() != 0:
 		raise Exception('process failed: objdump -d')
 
-	binary.close()
-
 	if entry_addr:
 		Caller.register_caller(func_list, entry_addr)
+
 	if init_addr:
 		Caller.register_caller(func_list, init_addr)
 	if fini_addr:
 		Caller.register_caller(func_list, fini_addr)
+
+	if init_array:
+		addr = init_array[0]
+		Caller.register_caller(func_list, addr)
+		while addr < init_array[1]:
+			func_addr = None
+			for (fo, va, fsz, msz) in load_list:
+				if addr >= va and addr < va + fsz:
+					binary.seek(fo + (addr - va))
+					func_addr = struct.unpack('L', binary.read(8))[0]
+					break;
+			if func_addr:
+				call_list.append(Call_Inst(addr, call_addr=func_addr))
+				Caller.register_caller(func_list, func_addr)
+			addr += 8
+
+	if fini_array:
+		addr = fini_array[0]
+		Caller.register_caller(func_list, addr)
+		while addr < fini_array[1]:
+			func_addr = None
+			for (fo, va, fsz, msz) in load_list:
+				if addr >= va and addr < va + fsz:
+					binary.seek(fo + (addr - va))
+					func_addr = struct.unpack('L', binary.read(8))[0]
+					break;
+			if func_addr:
+				call_list.append(Call_Inst(addr, call_addr=func_addr))
+				Caller.register_caller(func_list, func_addr)
+			addr += 8
+
+	binary.close()
 
 	def Caller_cmp(x, y):
 		return x.func_addr - y.func_addr

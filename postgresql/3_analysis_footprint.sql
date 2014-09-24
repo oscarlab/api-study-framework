@@ -73,7 +73,7 @@ BEGIN
 		SELECT 0, 0, symbol_name FROM binary_symbol
 		WHERE bin_id = b AND defined = 'False'
 		UNION
-		VALUES (0, 0, '.init'), (0, 0, '.fini')
+		VALUES (0, 0, '.init'), (0, 0, '.fini'), (0, 0, '.init_array'), (0, 0, '.fini_array')
 		UNION
 		SELECT DISTINCT
 		t2.dep_id, t2.func_addr, t2.call_name
