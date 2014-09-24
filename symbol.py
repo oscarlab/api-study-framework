@@ -145,24 +145,31 @@ BinarySymbol = Task(
 
 # get_dependencies() will return list of dependencies that binary depends on.
 def get_dependencies(binary):
-	process = subprocess.Popen(["ldd", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
-
 	dependency_list = []
-	for line in process.stdout:
-		result = re.search('(lib[0-9A-Za-z_]+.so(.[0-9]+)?) =>', line)
-		if result:
-			dep = result.group(1)
-			if dep not in dependency_list:
-				dependency_list.append(dep)
-			continue
-		result = re.search('(ld(-[0-9A-Za-z_\\-]+)?.so(.[0-9]+)?) ', line)
-		if result:
-			dep = result.group(1)
-			if dep not in dependency_list:
-				dependency_list.append(dep)
-			continue
 
-	process.wait()
+	process = subprocess.Popen(["readelf", "-d", "-W", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
+
+	for line in process.stdout:
+		parts = line.strip().split()
+		if len(parts) < 5:
+			continue
+		if parts[1] == '(NEEDED)' and parts[2] == 'Shared' and parts[3] == 'Library:':
+			dependency_list.append(parts[4][1:-1])
+
+	if process.wait() != 0:
+		raise Exception('process failed: readelf -d')
+
+	process = subprocess.Popen(["readelf", "--program-headers", "-W", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
+
+	for line in process.stdout:
+		line = line.strip()
+		if not line.startswith('[Requesting program interpreter: '):
+			continue
+		dependency_list.append(os.path.basename(line[33:-1]))
+
+	if process.wait() != 0:
+		raise Exception('process failed: readelf --program-headers')
+
 	return dependency_list
 
 binary_dependency_table = Table('binary_dependency', [
