@@ -153,7 +153,7 @@ def get_dependencies(binary):
 		parts = line.strip().split()
 		if len(parts) < 5:
 			continue
-		if parts[1] == '(NEEDED)' and parts[2] == 'Shared' and parts[3] == 'Library:':
+		if parts[1] == '(NEEDED)' and parts[2] == 'Shared' and parts[3] == 'library:':
 			dependency_list.append(parts[4][1:-1])
 
 	if process.wait() != 0:
