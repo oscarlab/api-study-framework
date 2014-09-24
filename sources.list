@@ -2,3 +2,5 @@
 deb [arch=amd64] file:///projects/ubuntu_mirror/mirror/archive.ubuntu.com/ubuntu precise main restricted multiverse universe
 deb [arch=amd64] file:///projects/ubuntu_mirror/mirror/archive.ubuntu.com/ubuntu precise-updates main restricted multiverse universe
 deb [arch=amd64] file:///projects/ubuntu_mirror/mirror/archive.ubuntu.com/ubuntu precise-security main restricted multiverse universe
+
+deb http://us.archive.ubuntu.com/ubuntu precise main restricted multiverse universe
