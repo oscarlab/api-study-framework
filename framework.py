@@ -84,7 +84,6 @@ class JobManager:
 		self.done_receiver.receive(False)
 
 	def get_jobs(self):
-		self.update_queue()
 		jobs = []
 		self.work_receiver.lock.acquire()
 		self.done_receiver.lock.acquire()
@@ -115,7 +114,6 @@ class JobManager:
 		self.add_job(job.name, job.func, job.args)
 
 	def clear_finished_jobs(self):
-		self.update_queue()
 		self.work_receiver.lock.acquire()
 		self.done_receiver.lock.acquire()
 		done_jobs = [s for s in self.done_receiver.list if s in self.work_receiver.list and s.success]
