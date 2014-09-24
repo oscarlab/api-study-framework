@@ -11,7 +11,7 @@ def get_syscalls():
 	with open('/usr/include/x86_64-linux-gnu/asm/unistd_64.h', 'r') as u:
 		syscalls = {}
 		for line in u:
-			match = re.match(r"^\#define __NR_([a-z0-9_]+)\t+([0-9]+)$", line)
+			match = re.match(r"^\#\s*define\s+__NR_([a-z0-9_]+)\s+([0-9]+)$", line)
 			if match:
 				syscalls[int(match.group(2))] = match.group(1)
 		return syscalls
