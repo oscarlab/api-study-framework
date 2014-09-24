@@ -13,44 +13,42 @@ class Table:
 		self.keys = keys
 
 	def create_table(self):
-		query = 'CREATE TABLE ' + self.name + ' '
-		delim = '('
+		query = 'CREATE TABLE ' + self.name + ' ('
+		delim = ''
 		for (name, type, attr) in self.fields:
-			query += delim
+			query += delim + name + ' ' + type + ' ' + attr
 			delim = ', '
-			query += name + ' ' + type + ' ' + attr
 		if self.keys:
-			query += ', PRIMARY KEY '
-			delim = '('
+			query += ', PRIMARY KEY ('
+			delim = ''
 			for key in self.keys:
-				query += delim
+				query += delim + key
 				delim = ', '
-				query += key
 			query += ')'
 		query += ')'
 		return query
 
 	def insert_record(self, values):
-		query = 'INSERT INTO ' + self.name + ' VALUES '
-		delim = '('
+		query = 'INSERT INTO ' + self.name + ' ('
+		value_str = ''
+		delim = ''
 		for (field, type, attr) in self.fields:
-			query += delim
+			if field not in values or values[field] is None:
+				continue
+			query += delim + field
+			value_str += delim + '\'' + str(values[field]) + '\''
 			delim = ', '
-			if field in values and values[field] is not None and values[field] != '':
-				query += '\'' + str(values[field]) + '\''
-			else:
-				query += 'NULL'
-		query += ')'
+		query += ') VALUES (' + value_str + ')'
 		return query
 
 	def select_record(self, condition, fields=None):
 		query = 'SELECT '
 		if fields:
-			delim = '('
+			query += '('
+			delim = ''
 			for field in fields:
-				query += delim
+				query += delim + field
 				delim = ', '
-				query += field
 			query += ')'
 		else:
 			query += '*'
@@ -72,9 +70,8 @@ class Table:
 		for (field, type, attr) in self.fields:
 			if field in values:
 				has_values = True
-				query += delim
+				query += delim + field + '=\'' + str(values[field]) + '\''
 				delim = ', '
-				query += field + '=\'' + str(values[field]) + '\''
 		if not has_values:
 			raise Exception('syntax error: update ' + self.name)
 		if condition:

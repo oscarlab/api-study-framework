@@ -663,7 +663,7 @@ def BinaryCallgraph_run(jmgr, sql, args):
 	else:
 		ref = None
 
-	exception = None
+	exc = None
 	try:
 		path = dir + '/' + bin
 		bin_id = get_binary_id(sql, bin)
@@ -711,15 +711,12 @@ def BinaryCallgraph_run(jmgr, sql, args):
 		update_binary_callgraph(sql, bin_id)
 		sql.commit()
 	except Exception as err:
-		exception = err
+		exc = err
 
-	if ref:
-		if not package.dereference_dir(dir, ref):
-			return
-	if unpacked:
+	if (ref and package.dereference_dir(dir, ref)) or unpacked:
 		shutil.rmtree(dir)
-	if exception:
-		raise exception
+	if exc:
+		raise exc[1], None, exc[2]
 
 def BinaryCallgraph_job_name(args):
 	return "Binary Callgraph: " + args[1] + " in " + args[0]

@@ -159,9 +159,13 @@ class PostgreSQL(SQL):
 	def connect_table(self, table):
 		if table not in self.tables:
 			query = 'SELECT relname FROM pg_class WHERE relname=\'' + table.name + '\''
-			if not self.postgresql_query(query):
-				self.postgresql_execute(table.create_table())
-				self.db.commit()
+			while not self.postgresql_query(query):
+				try:
+					self.postgresql_execute(table.create_table())
+					self.db.commit()
+				except:
+					continue
+				break
 
 			self.tables.append(table)
 

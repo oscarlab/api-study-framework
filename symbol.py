@@ -67,7 +67,7 @@ def get_symbols(binary):
 			continue
 		if parts[0] in ['.init', '.fini']:
 			addr = int(parts[2], 16)
-			sym = Symbol(parts[0], True, addr, None)
+			sym = Symbol(parts[0], True, addr, '')
 			symbol_list.append(sym)
 	process.wait()
 
@@ -99,7 +99,7 @@ def BinarySymbol_run(jmgr, sql, args):
 	else:
 		ref = None
 	
-	exception = None
+	exc = None
 	try:
 		path = dir + '/' + bin
 		bin_id = get_binary_id(sql, bin)
@@ -121,16 +121,12 @@ def BinarySymbol_run(jmgr, sql, args):
 		update_binary_callgraph(sql, bin_id)
 		sql.commit()
 	except Exception as err:
-		exception = err
+		exc = sys.exc_info()
 
-	if ref:
-		if not package.dereference_dir(dir, ref):
-			return
-	if unpacked:
+	if (ref and package.dereference_dir(dir, ref)) or unpacked:
 		shutil.rmtree(dir)
-	if exception:
-		raise exception
-
+	if exc:
+		raise exc[1], None, exc[2]
 
 def BinarySymbol_job_name(args):
 	return "Binary Symbol: " + args[1] + " in " + args[0]
@@ -186,7 +182,7 @@ def BinaryDependency_run(jmgr, sql, args):
 	else:
 		ref = None
 
-	exception = None
+	exc = None
 	try:
 		path = dir + '/' + bin
 		bin_id = get_binary_id(sql, bin)
@@ -202,15 +198,12 @@ def BinaryDependency_run(jmgr, sql, args):
 		update_binary_linking(sql, bin_id)
 		sql.commit()
 	except Exception as err:
-		exception = err
+		exc = sys.exc_info()
 
-	if ref:
-		if not package.dereference_dir(dir, ref):
-			return
-	if unpacked:
+	if (ref and package.dereference_dir(dir, ref)) or unpacked:
 		shutil.rmtree(dir)
-	if exception:
-		raise err
+	if exc:
+		raise exc[1], None, exc[2]
 
 def BinaryDependency_job_name(args):
 	return "Binary Dependency: " + args[1] + " in " + args[0]
