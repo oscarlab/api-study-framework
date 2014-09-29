@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS analysis_linking (
 	bin_id INT NOT NULL,
 	dep_id INT NOT NULL,
 	dep_name VARCHAR NOT NULL,
+	by_link BOOLEAN NOT NULL,
 	PRIMARY KEY (bin_id, dep_id));
 
 CREATE OR REPLACE FUNCTION analysis_linking()
@@ -51,31 +52,32 @@ BEGIN
 		bin_id INT NOT NULL,
 		dep_id INT NOT NULL,
 		dep_name VARCHAR NOT NULL,
+		by_link BOOLEAN NOT NULL,
 		PRIMARY KEY (bin_id, dep_id));
 	INSERT INTO bin_dep_id
-		SELECT DISTINCT t1.bin_id, t2.id, t2.file_name FROM
+		SELECT DISTINCT t1.bin_id, t2.id, t2.file_name, False FROM
 		bin_dep AS t1 INNER JOIN binary_id AS t2
 		ON t1.dependency = t2.file_name
 		UNION
-		SELECT DISTINCT t3.link_id, t3.target_id, t4.file_name FROM
+		SELECT DISTINCT t3.link_id, t3.target_id, t5.file_name, True FROM
 		binary_link AS t3
 		INNER JOIN
-		binary_id AS t4
-		ON t3.target_id = t4.id AND
-		EXISTS (
-			SELECT * FROM bin_id WHERE bin_id = t3.link_id
-		);
+		bin_id AS t4
+		ON t3.link_id = t4.bin_id
+		INNER JOIN
+		binary_id AS t5
+		ON t3.target_id = t5.id;
 
 	DELETE FROM analysis_linking AS t WHERE EXISTS (
 		SELECT * FROM bin_id WHERE bin_id = t.bin_id
 	);
 
 	WITH RECURSIVE
-	analysis(bin_id, dep_id, dep_name)
+	analysis(bin_id, dep_id, dep_name, by_link)
 	AS (
 		SELECT * FROM bin_dep_id
 		UNION
-		SELECT t1.bin_id, t2.dep_id, t2.dep_name FROM
+		SELECT t1.bin_id, t2.dep_id, t2.dep_name, t1.by_link AND t2.by_link FROM
 		analysis AS t1 INNER JOIN (
 			SELECT * FROM bin_dep_id
 			UNION

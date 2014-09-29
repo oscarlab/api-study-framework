@@ -9,19 +9,12 @@ CREATE TABLE IF NOT EXISTS analysis_syscall (
 CREATE OR REPLACE FUNCTION analysis_callgraph(b INT)
 RETURNS void AS $$
 
-DECLARE
-	ld_name VARCHAR := '/lib/x86_64-linux-gnu/ld-2.15.so';
-	ld_entry INT := 5808;
-
 BEGIN
 	CREATE TEMP TABLE IF NOT EXISTS lib_entry (
 		func_addr INT NOT NULL PRIMARY KEY);
 	INSERT INTO lib_entry
 		SELECT DISTINCT func_addr FROM binary_symbol
-		WHERE bin_id = b AND defined = True AND func_addr != 0
-		UNION
-		SELECT ld_entry FROM binary_id
-		WHERE id = b AND binary_name = ld_name;
+		WHERE bin_id = b AND defined = True AND func_addr != 0;
 
 	CREATE TEMP TABLE IF NOT EXISTS lib_local_call (
 		func_addr INT NOT NULL,

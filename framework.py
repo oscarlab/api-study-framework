@@ -42,40 +42,47 @@ class JobStatus(object):
 		return self.id == obj.id
 
 class QueueReceiver(Thread):
-	def __init__(self):
+	def __init__(self, exit_event):
 		Thread.__init__(self)
 		self.queue = Queue()
-		self.lock = Lock()
 		self.list = []
-		self.event = Event()
+		self.exit_event = exit_event
 
 	def receive(self, block=True):
 		while True:
-			try:
-				o = self.queue.get(block, 1)
-				self.lock.acquire()
-				self.list.append(o)
-				self.lock.release()
-			except Empty:
-				return
+			local_list = []
+			if block:
+				try:
+					o = self.queue.get(True, 1)
+					local_list.append(o)
+				except Empty:
+					return
+			while True:
+				try:
+					o = self.queue.get(False)
+					local_list.append(o)
+				except Empty:
+					break
+			if local_list:
+				self.list += local_list
 
 	def run(self):
-		while not self.event.is_set():
+		while not self.exit_event.is_set():
 			self.receive()
 
 class JobManager:
 	def __init__(self):
 		self.work_queue = JoinableQueue()
 		self.master_process = current_process()
-		self.work_receiver = QueueReceiver()
-		self.done_receiver = QueueReceiver()
+		self.exit_event = Event()
+		self.work_receiver = QueueReceiver(self.exit_event)
+		self.done_receiver = QueueReceiver(self.exit_event)
 		self.work_receiver.start()
 		self.done_receiver.start()
 
 	def exit(self):
 		print "joining threads..."
-		self.work_receiver.event.set()
-		self.done_receiver.event.set()
+		self.exit_event.set()
 		self.work_receiver.join()
 		self.done_receiver.join()
 
@@ -85,24 +92,18 @@ class JobManager:
 
 	def get_jobs(self):
 		jobs = []
-		self.work_receiver.lock.acquire()
-		self.done_receiver.lock.acquire()
 		for j in self.work_receiver.list:
 			s = None
 			if j in self.done_receiver.list:
 				s = next(s for s in self.done_receiver.list if s == j)
 			jobs.append((j.id, j.name, s))
-		self.done_receiver.lock.release()
-		self.work_receiver.lock.release()
 		return jobs
 
 	def add_job(self, name, func, args):
 		j = Job(get_job_id(), name, func, args)
 		self.work_queue.put(j)
 		if current_process() == self.master_process:
-			self.work_receiver.lock.acquire()
 			self.work_receiver.list.append(j)
-			self.work_receiver.lock.release()
 		else:
 			self.work_receiver.queue.put(Job(j.id, name, func, args))
 
@@ -114,13 +115,9 @@ class JobManager:
 		self.add_job(job.name, job.func, job.args)
 
 	def clear_finished_jobs(self):
-		self.work_receiver.lock.acquire()
-		self.done_receiver.lock.acquire()
 		done_jobs = [s for s in self.done_receiver.list if s in self.work_receiver.list and s.success]
-		self.work_receiver.list = [j for j in self.work_receiver.list if j not in self.done_receiver.list]
+		self.work_receiver.list = [j for j in self.work_receiver.list if j not in done_jobs]
 		self.done_receiver.list = [s for s in self.done_receiver.list if s not in done_jobs]
-		self.done_receiver.lock.release()
-		self.work_receiver.lock.release()
 
 class Worker(Process):
 	def __init__(self, job_manager, sql):
