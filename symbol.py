@@ -58,12 +58,24 @@ def get_symbols(binary):
 
 	process.wait()
 
+	process = subprocess.Popen(["readelf", "--file-header","-W", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
+
+	entry_addr = None
+	for line in process.stdout:
+		results = re.match(r"([^\:]+)\: +(.+)", line.strip())
+		if results:
+			key = results.group(1)
+			val = results.group(2)
+			if key == 'Entry point address':
+				addr = int(val[2:], 16)
+				sym = Symbol('.entry', True, addr, '')
+				symbol_list.append(sym)
+				break
+
+	process.wait()
+
 	process = subprocess.Popen(["readelf", "--section-headers", "-W", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
 
-	init_addr = None
-	init_array = None
-	fini_addr = None
-	fini_array = None
 	for line in process.stdout:
 		parts = line[6:].strip().split()
 		if len(parts) < 2:
@@ -159,26 +171,37 @@ def get_dependencies(binary):
 	if process.wait() != 0:
 		raise Exception('process failed: readelf -d')
 
+	return dependencies
+
+# get_interpreter() will return the name of interpreter.
+def get_interpreter(binary):
 	process = subprocess.Popen(["readelf", "--program-headers", "-W", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
 
 	for line in process.stdout:
 		line = line.strip()
 		if not line.startswith('[Requesting program interpreter: '):
 			continue
-		dependencies.add(os.path.basename(line[33:-1]))
+
+		return line[33:-1]
 
 	if process.wait() != 0:
 		raise Exception('process failed: readelf --program-headers')
 
-	return dependencies
+	return None
 
 binary_dependency_table = Table('binary_dependency', [
 			('bin_id', 'INT', 'NOT NULL'),
 			('dependency', 'VARCHAR', 'NOT NULL')],
 			['bin_id', 'dependency'])
 
+binary_interp_table = Table('binary_interp', [
+			('bin_id', 'INT', 'NOT NULL'),
+			('interp', 'INT', 'NOT NULL')],
+			['bin_id'])
+
 def BinaryDependency_run(jmgr, sql, args):
 	sql.connect_table(binary_dependency_table)
+	sql.connect_table(binary_interp_table)
 	pkgname = args[0]
 	bin = args[1]
 	dir = args[2]
@@ -203,6 +226,7 @@ def BinaryDependency_run(jmgr, sql, args):
 		path = dir + '/' + bin
 		bin_id = get_binary_id(sql, bin)
 		sql.delete_record(binary_dependency_table, 'bin_id=\'' + str(bin_id) + '\'')
+		sql.delete_record(binary_interp_table, 'bin_id=\'' + str(bin_id) + '\'')
 		if os.path.exists(path):
 			dependencies = get_dependencies(path)
 			for dep in dependencies:
@@ -211,6 +235,16 @@ def BinaryDependency_run(jmgr, sql, args):
 				values['dependency'] = dep
 
 				sql.append_record(binary_dependency_table, values)
+
+			interp = get_interpreter(path)
+			if interp:
+				interp_id = get_binary_id(sql, interp)
+				values = dict()
+				values['bin_id'] = bin_id
+				values['interp'] = interp_id
+
+				sql.append_record(binary_interp_table, values)
+
 		update_binary_linking(sql, bin_id)
 		sql.commit()
 	except Exception as err:

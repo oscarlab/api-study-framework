@@ -124,7 +124,7 @@ def get_callgraph(binary_name):
 			val = results.group(2)
 			if key == 'Entry point address':
 				entry_addr = int(val[2:], 16)
-				continue
+				break
 
 	if process.wait() != 0:
 		raise Exception('process failed: readelf --file-header')

@@ -6,78 +6,83 @@ CREATE OR REPLACE FUNCTION analysis_footprint(b INT)
 RETURNS void AS $$
 
 DECLARE
-	ld_id INT := id FROM binary_id WHERE binary_name = '/lib/x86_64-linux-gnu/ld-2.15.so';
-	ld_entry INT := 5808;
 	d INT;
 
 BEGIN
 	RAISE NOTICE 'analyze binary: %', b;
 
-	IF NOT EXISTS (
-		SELECT * FROM binary_id
-		WHERE id = b AND linking_generated = True
-	) THEN
-		RAISE EXCEPTION 'linking not resolved: %', b;
-	END IF;
-
-	CREATE TEMP TABLE IF NOT EXISTS dep_id (
-		dep_id INT NOT NULL PRIMARY KEY);
+	CREATE TEMP TABLE IF NOT EXISTS dep_id (bin_id INT NOT NULL PRIMARY KEY);
 
 	INSERT INTO dep_id
 		SELECT DISTINCT dep_id FROM analysis_linking
 		WHERE bin_id = b;
 
+	IF EXISTS (
+		SELECT t1.bin_id FROM (
+			SELECT * FROM dep_id
+			UNION
+			VALUES(b)
+		) AS t1 INNER JOIN
+		binary_id AS t2
+		ON t1.bin_id = t2.id AND t2.linking_generated = False
+	) THEN
+		RAISE EXCEPTION 'linking not resolved: %', b;
+	END IF;
+
 	CREATE TEMP TABLE IF NOT EXISTS dep_sym (
-		dep_id INT NOT NULL,
+		bin_id INT NOT NULL,
 		symbol_name VARCHAR NOT NULL,
 		func_addr INT NOT NULL);
 
-	FOR d IN (SELECT * FROM dep_id) LOOP
-		RAISE NOTICE 'import dependency: %', d;
+	INSERT INTO dep_sym
+		SELECT DISTINCT t1.bin_id, t1.symbol_name, t1.func_addr
+		FROM binary_symbol AS t1
+		INNER JOIN
+		dep_id AS t2
+		ON t1.bin_id = t2.bin_id AND t1.defined = True;
 
-		IF NOT EXISTS (
-			SELECT * FROM binary_id
-			WHERE id = d AND linking_generated = True
-		) THEN
-			RAISE EXCEPTION 'linking not resolved: %', d;
-		END IF;
+	CREATE TEMP TABLE IF NOT EXISTS interp_call (
+		bin_id INT NOT NULL,
+		func_addr INT NOT NULL,
+		call_name VARCHAR NOT NULL);
 
-		INSERT INTO dep_sym
-			SELECT DISTINCT d, symbol_name, func_addr
-			FROM binary_symbol
-			WHERE bin_id = d AND defined = True;
+	INSERT INTO interp_call
+		SELECT t1.interp, t2.func_addr, t3.call_name
+		FROM (
+			SELECT interp FROM binary_interp
+			UNION
+			SELECT t2.dep_id AS interp
+			FROM binary_interp AS t1
+			INNER JOIN
+			analysis_linking AS t2
+			ON t1.interp = t2.bin_id AND t2.by_link = True
+		) AS t1
+		INNER JOIN
+		binary_symbol AS t2
+		ON t1.interp = t2.bin_id AND t2.symbol_name = '.entry'
+		INNER JOIN
+		analysis_call AS t3
+		on t1.interp = t3.bin_id AND t2.func_addr = t3.func_addr;
+
+	FOR d in (SELECT DISTINCT func_addr FROM interp_call) LOOP
+		RAISE NOTICE 'interp entry: %', d;
 	END LOOP;
 
-	RAISE NOTICE 'dep_sym: %', (SELECT COUNT(*) FROM dep_sym);
-
-	CREATE TEMP TABLE IF NOT EXISTS ld_call (
-		call_name VARCHAR NOT NULL PRIMARY KEY);
-
-	IF EXISTS (SELECT * FROM dep_id WHERE dep_id = ld_id) THEN
-		INSERT INTO ld_call
-			SELECT call_name FROM analysis_call
-			WHERE bin_id = ld_id AND func_addr = ld_entry;
-	END IF;
-
 	CREATE TEMP TABLE IF NOT EXISTS dep_call (
-		dep_id INT NOT NULL,
+		bin_id INT NOT NULL,
 		func_addr INT NOT NULL,
 		symbol_name VARCHAR,
 		call_name VARCHAR);
 
 	INSERT INTO dep_call
-		SELECT DISTINCT dep_id, t2.func_addr, symbol_name, call_name
+		SELECT DISTINCT t1.bin_id, t2.func_addr, symbol_name, call_name
 		FROM dep_id AS t1 INNER JOIN analysis_call AS t2
-		ON t1.dep_id = t2.bin_id
+		ON t1.bin_id = t2.bin_id
 		INNER JOIN binary_symbol AS t3
-		ON t1.dep_id = t3.bin_id AND t2.func_addr = t3.func_addr
+		ON t1.bin_id = t3.bin_id AND t2.func_addr = t3.func_addr
 		UNION
-		SELECT dep_id, func_addr, symbol_name, NULL
-		FROM dep_sym
-		UNION
-		SELECT ld_id, ld_entry, NULL, call_name FROM ld_call;
-
-	RAISE NOTICE 'dep_call: %', (SELECT COUNT(*) FROM dep_call);
+		SELECT bin_id, func_addr, symbol_name, NULL
+		FROM dep_sym;
 
 	DELETE FROM analysis_footprint WHERE bin_id = b;
 
@@ -86,10 +91,15 @@ BEGIN
 		SELECT 0, 0, symbol_name FROM binary_symbol
 		WHERE bin_id = b AND defined = 'False'
 		UNION
-		VALUES (0, 0, '.init'), (0, 0, '.fini'), (0, 0, '.init_array'), (0, 0, '.fini_array')
+		SELECT * FROM interp_call
+		UNION
+		VALUES	(0, 0, '.init'),
+			(0, 0, '.fini'),
+			(0, 0, '.init_array'),
+			(0, 0, '.fini_array')
 		UNION
 		SELECT DISTINCT
-		t2.dep_id, t2.func_addr, t2.call_name
+		t2.bin_id, t2.func_addr, t2.call_name
 		FROM analysis AS t1
 		INNER JOIN
 		dep_call AS t2
@@ -115,7 +125,7 @@ BEGIN
 
 	TRUNCATE TABLE dep_id;
 	TRUNCATE TABLE dep_sym;
-	TRUNCATE TABLE ld_call;
+	TRUNCATE TABLE interp_call;
 	TRUNCATE TABLE dep_call;
 
 	RAISE NOTICE 'binary %: footprint generated', b;
