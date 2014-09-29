@@ -750,7 +750,7 @@ def BinaryCallgraph_run(jmgr, sql, args):
 		update_binary_callgraph(sql, bin_id)
 		sql.commit()
 	except Exception as err:
-		exc = err
+		exc = sys.exc_info()
 
 	if (ref and package.dereference_dir(dir, ref)) or unpacked:
 		package.remove_dir(dir)
