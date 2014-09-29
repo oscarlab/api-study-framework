@@ -283,7 +283,7 @@ binary_link_table = Table('binary_link', [
 			('link_id', 'INT', 'NOT NULL'),
 			('target_id', 'INT', 'NOT NULL'),
 			('version', 'VARCHAR', 'NOT NULL')],
-			['link_id', 'target_id'])
+			['package_name', 'link_id'])
 
 def BinaryList_run(jmgr, sql, args):
 	sql.connect_table(binary_list_table)
@@ -317,6 +317,7 @@ def BinaryList_run(jmgr, sql, args):
 				values['version'] = version
 
 				sql.append_record(binary_list_table, values)
+
 			update_binary_linking(sql, bin_id)
 	sql.commit()
 	shutil.rmtree(dir)

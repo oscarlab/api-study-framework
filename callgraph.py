@@ -116,18 +116,23 @@ class Syscall_Inst(Inst):
 def get_callgraph(binary_name):
 	process = subprocess.Popen(["readelf", "--file-header","-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
 
+	class_name = 'ELF64'
 	entry_addr = None
 	for line in process.stdout:
 		results = re.match(r"([^\:]+)\: +(.+)", line.strip())
 		if results:
 			key = results.group(1)
 			val = results.group(2)
+			if key == 'Class':
+				class_name = val
 			if key == 'Entry point address':
 				entry_addr = int(val[2:], 16)
-				break
 
 	if process.wait() != 0:
 		raise Exception('process failed: readelf --file-header')
+
+	if class_name != 'ELF64':
+		raise Exception('Unsupported class: ' + class_name);
 
 	process = subprocess.Popen(["readelf", "--dyn-syms","-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
 
@@ -514,7 +519,7 @@ def get_callgraph(binary_name):
 	binary.close()
 
 	def Caller_cmp(x, y):
-		return x.func_addr - y.func_addr
+		return cmp(x.func_addr, y.func_addr)
 
 	func_list = sorted(func_list, Caller_cmp)
 
