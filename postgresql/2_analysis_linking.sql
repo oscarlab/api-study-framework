@@ -59,6 +59,12 @@ BEGIN
 		bin_dep AS t1 INNER JOIN binary_id AS t2
 		ON t1.dependency = t2.file_name
 		UNION
+		SELECT DISTINCT t1.bin_id, t1.interp, t3.file_name, False FROM
+		binary_interp AS t1 INNER JOIN bin_id AS t2
+		ON t1.bin_id = t2.bin_id
+		INNER JOIN binary_id AS t3
+		ON t1.interp = t3.id
+		UNION
 		SELECT DISTINCT t3.link_id, t3.target_id, t5.file_name, True FROM
 		binary_link AS t3
 		INNER JOIN
