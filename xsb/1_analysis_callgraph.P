@@ -32,7 +32,7 @@ setof(CallName, (lib_recursive_call(Id, Addr, CallAddr), lib_exit(Id, CallAddr, 
 member(CallName, Listed).
 
 lib_all_syscall(Id, Addr, Syscall) :-
-serof(Syscall, (lib_recursive_call(Id, Addr, CallAddr), lib_syscall(Id, CallAddr, Syscall)), Listed),
+setof(Syscall, (lib_recursive_call(Id, Addr, CallAddr), lib_syscall(Id, CallAddr, Syscall)), Listed),
 member(Syscall, Listed).
 
 ?- odbc_import('analysis_call'('bin_id', 'func_addr', 'call_name'), analysis_call).
