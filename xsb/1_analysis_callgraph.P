@@ -1,0 +1,53 @@
+:- import odbc_data_sources/2, odbc_open/3, findall_odbc_sql/3, odbc_close/0, set_odbc_flag/2, odbc_import/2, odbc_insert/2, odbc_delete/2, odbc_transaction/1 from odbc_call.
+
+:- import member/2 from basics.
+
+?- odbc_open('syscall_popularity', 'postgres', 'postgres').
+
+?- set_odbc_flag(show_query, on).
+
+target(392).
+
+lib_entry(Id, Addr) :-
+findall_odbc_sql([Id], 'SELECT DISTINCT func_addr FROM binary_symbol WHERE bin_id = ?', [Addr]).
+
+lib_local_call(Id, Addr, CallAddr) :-
+findall_odbc_sql([Id], 'SELECT DISTINCT func_addr, call_addr FROM binary_call WHERE bin_id = ? AND call_addr IS NOT NULL', [Addr, CallAddr]);
+findall_odbc_sql([Id], 'SELECT DISTINCT func_addr, call_addr FROM binary_unknown_call WHERE bin_id = ? AND call_addr IS NOT NULL', [Addr, CallAddr]).
+
+lib_exit(Id, Addr, CallName) :-
+findall_odbc_sql([Id], 'SELECT DISTINCT func_addr, call_name From binary_call WHERE bin_id = ? AND call_addr IS NULL', [Addr, CallName]);
+findall_odbc_sql([Id], 'SELECT DISTINCT func_addr, call_name FROM binary_unknown_call WHERE bin_id = ? AND call_addr IS NULL and call_name IS NOT NULL', [Addr, CallName]).
+
+lib_syscall(Id, Addr, Syscall) :-
+findall_odbc_sql([Id], 'SELECT DISTINCT func_addr, syscall FROM binary_syscall WHERE bin_id = ?', [Addr, Syscall]);
+findall_odbc_sql([Id], 'SELECT DISTINCT func_addr, syscall FROM binary_unknown_syscall WHERE bin_id = ? AND syscall IS NOT NULL', [Addr, Syscall]).
+
+lib_recursive_call(Id, Addr, CallAddr) :-
+lib_entry(Id, Addr), Addr = CallAddr;
+lib_recursive_call(Id, Addr, AnoCallAddr), lib_local_call(Id, AnoCallAddr, CallAddr).
+
+lib_all_call(Id, Addr, CallName) :-
+setof(CallName, (lib_recursive_call(Id, Addr, CallAddr), lib_exit(Id, CallAddr, CallName)), Listed),
+member(CallName, Listed).
+
+lib_all_syscall(Id, Addr, Syscall) :-
+serof(Syscall, (lib_recursive_call(Id, Addr, CallAddr), lib_syscall(Id, CallAddr, Syscall)), Listed),
+member(Syscall, Listed).
+
+?- odbc_import('analysis_call'('bin_id', 'func_addr', 'call_name'), analysis_call).
+?- odbc_import('analysis_syscall'('bin_id', 'func_addr', 'syscall'), analysis_syscall).
+
+?- odbc_delete(analysis_call_delete(X), (analysis_call(X,Y,Z))).
+?- odbc_delete(analysis_syscall_delete(X), (analysis_syscall(X,Y,Z))).
+
+?- odbc_insert(analysis_call_insert(X,Y,Z), (analysis_call(X,Y,Z))).
+?- odbc_insert(analysis_syscall_insert(X,Y,Z), (analysis_syscall(X,Y,Z))).
+
+?- (target(Bin), analysis_call_delete(Bin), fail; true).
+?- (target(Bin), analysis_syscall_delete(Bin), fail; true).
+
+?- (target(Bin), (lib_all_call(Bin, Addr, CallName), analysis_call_insert(Bin, Addr, CallName), fail; true), fail; true).
+?- (target(Bin), (lib_all_syscall(Bin, Addr, Syscall), analysis_syscall_insert(Bin, Addr, Syscall), fail; true), fail; true).
+
+?- odbc_close().
