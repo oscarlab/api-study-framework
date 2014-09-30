@@ -467,6 +467,8 @@ def get_callgraph(binary_name):
 					Caller.register_caller(func_list, func_addr)
 					func_name = func_addr
 				call_list.append(Call_Inst(inst_addr, call_addr=func_addr, call_name=func_name))
+
+			call_list.append(Call_Inst(inst_addr, target=args[0]))
 			continue
 
 		if inst == 'syscall':
