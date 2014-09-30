@@ -454,6 +454,8 @@ def get_callgraph(binary_name):
 					if addr >= va and addr < va + fsz:
 						binary.seek(fo + (addr - va))
 						func_addr = struct.unpack('L', binary.read(8))[0]
+						if func_addr < text_area[0] or func_addr >= text_area[1]:
+							func_addr = None
 						break
 				if not func_addr:
 					call_list.append(Call_Inst(inst_addr, target=args[0]))
