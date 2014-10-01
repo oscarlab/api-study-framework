@@ -746,16 +746,20 @@ def BinaryCallgraph_run(jmgr, sql, args):
 					values['bin_id'] = bin_id
 					values['func_addr'] = caller.func_addr
 
-					if isinstance(syscall, str):
-						values['target'] = syscall[1:-1]
-						try:
-							sql.append_record(binary_unknown_syscall_table, values)
-						except:
-							pass
+					if isinstance(syscall, int) and syscall >= 0 and syscall < 400:
+						values['syscall'] = syscall
+						sql.append_record(binary_syscall_table, values)
 						continue
 
-					values['syscall'] = syscall
-					sql.append_record(binary_syscall_table, values)
+					if isinstance(syscall, str):
+						values['target'] = syscall[1:-1]
+					else:
+						values['target'] = ''
+					try:
+						sql.append_record(binary_unknown_syscall_table, values)
+					except:
+						pass
+
 		update_binary_callgraph(sql, bin_id)
 		sql.commit()
 	except Exception as err:
