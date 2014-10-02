@@ -256,7 +256,7 @@ def walk_package(dir):
 			path = root + '/' + f
 			rel_path = '/' + rel_root + '/' + f
 			s = os.lstat(path)
-			if re.match('[0-9A-Za-z\_\-\.]+\.so[0-9\.]*', f):
+			if re.match('[0-9A-Za-z\_\-\+\.]+\.so[0-9\.]*', f):
 				if stat.S_ISLNK(s.st_mode):
 					binaries.append((rel_path, 'lnk'))
 					continue

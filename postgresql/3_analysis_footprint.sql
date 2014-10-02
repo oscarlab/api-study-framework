@@ -12,7 +12,6 @@ BEGIN
 	RAISE NOTICE 'analyze binary: %', b;
 
 	CREATE TEMP TABLE IF NOT EXISTS dep_id (bin_id INT NOT NULL PRIMARY KEY);
-
 	INSERT INTO dep_id
 		SELECT DISTINCT dep_id FROM analysis_linking
 		WHERE bin_id = b;
@@ -33,39 +32,34 @@ BEGIN
 		bin_id INT NOT NULL,
 		symbol_name VARCHAR NOT NULL,
 		func_addr INT NOT NULL);
-
-	INSERT INTO dep_sym
-		SELECT DISTINCT t1.bin_id, t1.symbol_name, t1.func_addr
-		FROM binary_symbol AS t1
-		INNER JOIN
-		dep_id AS t2
-		ON t1.bin_id = t2.bin_id AND t1.defined = True;
+	FOR d IN (SELECT * FROM dep_id) LOOP
+		INSERT INTO dep_sym
+			SELECT DISTINCT d, symbol_name, func_addr
+			FROM binary_symbol
+			WHERE bin_id = d AND defined = True;
+	END LOOP;
 
 	CREATE TEMP TABLE IF NOT EXISTS interp_call (
 		bin_id INT NOT NULL,
 		func_addr INT NOT NULL,
 		call_name VARCHAR NOT NULL);
-
-	INSERT INTO interp_call
-		SELECT t1.interp, t2.func_addr, t3.call_name
-		FROM (
-			SELECT interp FROM binary_interp
-			UNION
-			SELECT t2.dep_id AS interp
-			FROM binary_interp AS t1
+	FOR d IN (
+		SELECT interp FROM binary_interp
+		UNION
+		SELECT t2.dep_id AS interp
+		FROM binary_interp AS t1
+		INNER JOIN
+		analysis_linking AS t2
+		ON t1.interp = t2.bin_id AND t2.by_link = True
+	) LOOP
+		INSERT INTO interp_call
+			SELECT d, t1.func_addr, t2.call_name FROM
+			binary_symbol AS t1
 			INNER JOIN
-			analysis_linking AS t2
-			ON t1.interp = t2.bin_id AND t2.by_link = True
-		) AS t1
-		INNER JOIN
-		binary_symbol AS t2
-		ON t1.interp = t2.bin_id AND t2.symbol_name = '.entry'
-		INNER JOIN
-		analysis_call AS t3
-		on t1.interp = t3.bin_id AND t2.func_addr = t3.func_addr;
-
-	FOR d in (SELECT DISTINCT func_addr FROM interp_call) LOOP
-		RAISE NOTICE 'interp entry: %', d;
+			analysis_call AS t2
+			ON t1.bin_id = d AND t2.bin_id = d AND
+			t1.symbol_name = '.entry' AND
+			t1.func_addr = t2.func_addr;
 	END LOOP;
 
 	CREATE TEMP TABLE IF NOT EXISTS dep_call (
@@ -73,16 +67,18 @@ BEGIN
 		func_addr INT NOT NULL,
 		symbol_name VARCHAR,
 		call_name VARCHAR);
-
-	INSERT INTO dep_call
-		SELECT DISTINCT t1.bin_id, t2.func_addr, symbol_name, call_name
-		FROM dep_id AS t1 INNER JOIN analysis_call AS t2
-		ON t1.bin_id = t2.bin_id
-		INNER JOIN binary_symbol AS t3
-		ON t1.bin_id = t3.bin_id AND t2.func_addr = t3.func_addr
-		UNION
-		SELECT bin_id, func_addr, symbol_name, NULL
-		FROM dep_sym;
+	FOR d IN (SELECT * FROM dep_id) LOOP
+		INSERT INTO dep_call
+			SELECT d, t1.func_addr, symbol_name, call_name FROM
+			binary_symbol AS t1
+			INNER JOIN
+			analysis_call AS t2
+			ON t1.bin_id = d AND t2.bin_id = d AND t1.func_addr = t2.func_addr
+			UNION
+			SELECT d, func_addr, symbol_name, NULL
+			FROM dep_sym
+			WHERE bin_id = d;
+	END LOOP;
 
 	DELETE FROM analysis_footprint WHERE bin_id = b;
 
