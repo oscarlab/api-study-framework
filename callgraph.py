@@ -877,6 +877,11 @@ binary_unknown_vecsyscall_table = Table('binary_unknown_vecsyscall', [
 			('request', 'BIGINT', '')],
 			['bin_id', 'func_addr', 'syscall', 'target'])
 
+binary_fileaccess_table = Table('binary_fileaccess', [
+			('bin_id', 'INT', 'NOT NULL'),
+			('func_addr', 'INT', 'NOT NULL'),
+			('file', 'VARCHAR', 'NOT NULL')])
+
 def BinaryCallgraph_run(jmgr, sql, args):
 	sql.connect_table(binary_call_table)
 	sql.connect_table(binary_unknown_call_table)
@@ -884,6 +889,7 @@ def BinaryCallgraph_run(jmgr, sql, args):
 	sql.connect_table(binary_unknown_syscall_table)
 	sql.connect_table(binary_vecsyscall_table)
 	sql.connect_table(binary_unknown_vecsyscall_table)
+	sql.connect_table(binary_fileaccess_table)
 
 	pkgname = args[0]
 	bin = args[1]
@@ -912,6 +918,7 @@ def BinaryCallgraph_run(jmgr, sql, args):
 		sql.delete_record(binary_call_table, condition)
 		sql.delete_record(binary_syscall_table, condition)
 		sql.delete_record(binary_vecsyscall_table, condition)
+		sql.delete_record(binary_fileaccess_table, condition)
 		if os.path.exists(path):
 			callers = get_callgraph(path)
 			for caller in callers:
@@ -974,6 +981,14 @@ def BinaryCallgraph_run(jmgr, sql, args):
 							sql.append_record(binary_unknown_vecsyscall_table, values)
 						except:
 							pass
+
+				for file in caller.files:
+					values = dict()
+					values['bin_id'] = bin_id
+					values['func_addr'] = caller.func_addr
+					values['file'] = file
+					sql.append_record(binary_fileaccess_table, values)
+					continue
 
 		update_binary_callgraph(sql, bin_id)
 		sql.commit()
