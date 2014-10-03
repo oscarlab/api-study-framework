@@ -31,7 +31,7 @@ class Symbol:
 def get_symbols(binary):
 	process = subprocess.Popen(["readelf", "--dyn-syms", "-W", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
 
-	symbol_list = set()
+	symbol_list = []
 	for line in process.stdout:
 		parts = line.split()
 		if len(parts) <= 7:
@@ -54,10 +54,12 @@ def get_symbols(binary):
 
 		if parts[6] == 'UND':
 			sym = Symbol(name, False, 0, version)
-			symbol_list |= set([sym])
+			if sym not in symbol_list:
+				symbol_list.append(sym)
 		elif parts[6].isdigit():
 			sym = Symbol(name, True, addr, version)
-			symbol_list |= set([sym])
+			if sym not in symbol_list
+				symbol_list.append(sym)
 
 	process.wait()
 
@@ -72,7 +74,8 @@ def get_symbols(binary):
 			if key == 'Entry point address':
 				addr = int(val[2:], 16)
 				sym = Symbol('.entry', True, addr, '')
-				symbol_list |= set([sym])
+				if sym not in symbol_list:
+					symbol_list.append(sym)
 				break
 
 	process.wait()
@@ -86,7 +89,8 @@ def get_symbols(binary):
 		if parts[0] in ['.init', '.init_array', '.fini', '.fini_array']:
 			addr = int(parts[2], 16)
 			sym = Symbol(parts[0], True, addr, '')
-			symbol_list |= set([sym])
+			if sym not in symbol_list:
+				symbol_list.append(sym)
 	process.wait()
 
 	return symbol_list
