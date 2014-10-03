@@ -28,7 +28,7 @@ class Symbol:
 def get_symbols(binary):
 	process = subprocess.Popen(["readelf", "--dyn-syms", "-W", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
 
-	symbol_list = []
+	symbol_list = set()
 	for line in process.stdout:
 		parts = line.split()
 		if len(parts) <= 7:
