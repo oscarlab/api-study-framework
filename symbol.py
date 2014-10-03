@@ -51,10 +51,10 @@ def get_symbols(binary):
 
 		if parts[6] == 'UND':
 			sym = Symbol(name, False, 0, version)
-			symbol_list.append(sym)
+			symbol_list |= set([sym])
 		elif parts[6].isdigit():
 			sym = Symbol(name, True, addr, version)
-			symbol_list.append(sym)
+			symbol_list |= set([sym])
 
 	process.wait()
 
@@ -69,7 +69,7 @@ def get_symbols(binary):
 			if key == 'Entry point address':
 				addr = int(val[2:], 16)
 				sym = Symbol('.entry', True, addr, '')
-				symbol_list.append(sym)
+				symbol_list |= set([sym])
 				break
 
 	process.wait()
@@ -83,7 +83,7 @@ def get_symbols(binary):
 		if parts[0] in ['.init', '.init_array', '.fini', '.fini_array']:
 			addr = int(parts[2], 16)
 			sym = Symbol(parts[0], True, addr, '')
-			symbol_list.append(sym)
+			symbol_list |= set([sym])
 	process.wait()
 
 	return symbol_list
