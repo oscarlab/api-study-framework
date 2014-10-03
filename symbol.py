@@ -58,7 +58,7 @@ def get_symbols(binary):
 				symbol_list.append(sym)
 		elif parts[6].isdigit():
 			sym = Symbol(name, True, addr, version)
-			if sym not in symbol_list
+			if sym not in symbol_list:
 				symbol_list.append(sym)
 
 	process.wait()
