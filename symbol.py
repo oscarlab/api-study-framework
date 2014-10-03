@@ -25,6 +25,9 @@ class Symbol:
 	def __str__(self):
 		return "Addr: %08x\tName: %50s\tScope: %2s\tVersion: %10s" % (self.addr, self.name, self.scope, self.version)
 
+	def __eq__(self, obj):
+		return self.name == obj.name and self.version = obj.version
+
 def get_symbols(binary):
 	process = subprocess.Popen(["readelf", "--dyn-syms", "-W", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
 
