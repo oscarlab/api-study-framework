@@ -13,28 +13,61 @@ package_popularity_table = Table('package_popularity', [
 			('rank', 'INT', 'NOT NULL'),
 			('inst', 'INT', 'NOT NULL'),
 			('vote', 'INT', 'NOT NULL')],
-			['package_name'])
+			['rank'])
+
+popcon_urls = [
+	"http://popcon.ubuntu.com/by_inst",
+	"http://popcon.debian.org/by_inst",
+]
 
 def package_popularity_run(jmgr, sql, args):
 	sql.connect_table(package_popularity_table)
 
-	data = urllib2.urlopen("http://popcon.debian.org/by_inst");
+	popularity = dict()
 
-	sql.delete_record(package_popularity_table)
-	for line in data:
-		# Ignore comments
-		if not line.startswith('#'):
+	for url in popcon_urls:
+		data = urllib2.urlopen(url);
+		for line in data:
+			# Ignore comments
+			if line.startswith('#'):
+				continue
 			# End of the file/webpage confined for this webpage
 			if line.startswith('-'):
 				break
 
-			result = line.strip().split()
-			values = dict()
-			values['package_name'] = result[1]
-			values['rank'] = int(result[0])
-			values['inst'] = int(result[2])
-			values['vote'] = int(result[3])
+			results = line.strip().split()
+			if len(results) < 4:
+				continue
+			package_name = results[1]
 
+			if re.search(r'[^A-Za-z0-_\+\-\.]', package_name):
+				continue
+
+			if package_name in popularity:
+				values = popularity[package_name]
+				values['inst'] += int(results[2])
+				values['vote'] += int(results[3])
+			else:
+				values = dict()
+				values['inst'] = int(results[2])
+				values['vote'] = int(results[3])
+				popularity[package_name] = values
+
+	packages = []
+	for (package_name, values) in popularity.items():
+		values['package_name'] = package_name
+		packages.append(values)
+
+	def inst_cmp(x, y):
+		return cmp(x['inst'], y['inst'])
+
+	packages = sorted(packages, inst_cmp, reverse=True)
+
+	sql.delete_record(package_popularity_table)
+	rank = 1
+	for values in packages:
+			values['rank'] = rank
+			rank += 1
 			sql.append_record(package_popularity_table, values)
 	sql.commit()
 

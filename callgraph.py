@@ -528,7 +528,7 @@ def get_callgraph(binary_name):
 	func_list = sorted(func_list, Caller_cmp)
 
 	def Inst_cmp(x, y):
-		return x.inst_addr - y.inst_addr
+		return cmp(x.inst_addr, y.inst_addr)
 
 	call_list = sorted(call_list, Inst_cmp)
 	syscall_list = sorted(syscall_list, Inst_cmp)
