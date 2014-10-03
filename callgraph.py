@@ -465,10 +465,12 @@ def get_callgraph(binary_name):
 					if addr >= va and addr < va + fsz:
 						binary.seek(fo + (addr - va))
 						ch = struct.unpack('s', binary.read(1))[0]
+						addr += 1
 						if ch == '/':
 							path = ch
-							while True:
+							while addr < va + fsz:
 								ch = struct.unpack('s', binary.read(1))[0]
+								addr += 1
 								if ch == '\0':
 									break
 								if ch not in string.printable:
