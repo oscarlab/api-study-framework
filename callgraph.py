@@ -160,6 +160,29 @@ class Vec_Syscall_Inst(Syscall_Inst):
 
 		return 'compound ' + Syscall_Inst.__str__(self) + ' by ' + self.req_target
 
+def get_proc_files(binary_name):
+        process = subprocess.Popen(["objdump", "-s","-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
+
+        for line in process.stdout:
+                results = line.split()
+		if len(results) != 6:
+			continue
+		if "/proc" in results[5]:
+			print results
+	binary = open(binary_name, 'rb')
+
+#                if results:
+#                        key = results.group(1)
+#                        val = results.group(2)
+#                        if key == 'Class':
+#                                class_name = val
+#                        if key == 'Entry point address':
+#                                entry_addr = int(val[2:], 16)
+#
+        if process.wait() != 0:
+                raise Exception('process failed: readelf --file-header')
+
+
 def get_callgraph(binary_name):
 	process = subprocess.Popen(["readelf", "--file-header","-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
 
@@ -1013,6 +1036,9 @@ if __name__ == "__main__":
 	if sys.argv[1] == '-r':
 		for caller in get_callgraph_recursive(sys.argv[2]):
 			print caller
+		get_proc_files(sys.argv[2])
 	else:
 		for caller in get_callgraph(sys.argv[1]):
 			print caller
+		get_proc_files(sys.argv[1])
+
