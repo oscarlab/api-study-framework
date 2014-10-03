@@ -13,6 +13,7 @@ import sys
 import re
 import subprocess
 import struct
+import string
 
 def is_hex(s):
 	try:
@@ -28,6 +29,7 @@ class Caller:
 		self.callees = set()
 		self.syscalls = set()
 		self.vecsyscalls = {cs['syscall']: set() for cs in Vec_Syscall_Inst.syscalls}
+		self.files = set()
 		self.closed = False
 
 	def add_callees(self, callees):
@@ -42,6 +44,10 @@ class Caller:
 		if syscalls:
 			for (s, req) in syscalls:
 				self.vecsyscalls[s] |= set([req])
+
+	def add_files(self, files):
+		if files:
+			self.files |= set(files)
 
 	@classmethod
 	def register_caller(cls, caller_list, func_addr, func_name = None,
@@ -79,6 +85,8 @@ class Caller:
 		for s in self.vecsyscalls:
 			for req in self.vecsyscalls[s]:
 				result += "\n\t" + syscall.syscalls[s] + ": " + str(req)
+		for f in self.files:
+			result += "\n\tfile: " + f
 		if self.closed:
 			result += "\n\tfunction closed"
 		return result
@@ -159,6 +167,16 @@ class Vec_Syscall_Inst(Syscall_Inst):
 			return 'compound ' + Syscall_Inst.__str__(self) + ' by ' + str(self.req)
 
 		return 'compound ' + Syscall_Inst.__str__(self) + ' by ' + self.req_target
+
+class File_Inst(Inst):
+	prefixes = ['/proc', '/dev', '/sys', '/etc']
+
+	def __init__(self, inst_addr, file):
+		Inst.__init__(self, inst_addr)
+		self.file = re.sub(r'\%[0-9\.\+\-]*[A-Za-z]', '*', file)
+
+	def __str__(self):
+		return Inst.__str__(self) + ' access ' + self.file
 
 def get_callgraph(binary_name):
 	process = subprocess.Popen(["readelf", "--file-header","-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
@@ -283,6 +301,7 @@ def get_callgraph(binary_name):
 	call_list = []
 	syscall_list = []
 	ret_list = []
+	file_list = []
 
 	binary = open(binary_name, 'rb')
 
@@ -439,6 +458,29 @@ def get_callgraph(binary_name):
 				if addr >= text_area[0] and addr < text_area[1]:
 					Caller.register_caller(func_list, addr)
 					call_list.append(Call_Inst(inst_addr, call_addr=addr))
+					continue
+
+				path = None
+				for (fo, va, fsz, msz) in load_list:
+					if addr >= va and addr < va + fsz:
+						binary.seek(fo + (addr - va))
+						ch = struct.unpack('s', binary.read(1))[0]
+						if ch == '/':
+							path = ch
+							while True:
+								ch = struct.unpack('s', binary.read(1))[0]
+								if ch == '\0':
+									break
+								if ch not in string.printable:
+									path = None
+									break
+								path += ch
+						break;
+				if path:
+					for prefix in File_Inst.prefixes:
+						if path.startswith(prefix):
+							file_list.append(File_Inst(inst_addr, path))
+
 			continue
 
 		if inst == 'callq':
@@ -649,10 +691,12 @@ def get_callgraph(binary_name):
 
 	call_list = sorted(call_list, Inst_cmp)
 	syscall_list = sorted(syscall_list, Inst_cmp)
+	file_list = sorted(file_list, Inst_cmp)
 
 	func_iter = iter(func_list)
 	call_iter = iter(call_list)
 	syscall_iter = iter(syscall_list)
+	file_iter = iter(file_list)
 	ret_iter = iter(ret_list)
 
 	def iter_next(iter):
@@ -664,6 +708,7 @@ def get_callgraph(binary_name):
 	next_func = iter_next(func_iter)
 	next_call = iter_next(call_iter)
 	next_syscall = iter_next(syscall_iter)
+	next_file = iter_next(file_iter)
 	next_ret = iter_next(ret_iter)
 	while next_func:
 		func = next_func
@@ -698,6 +743,12 @@ def get_callgraph(binary_name):
 			else:
 				func.add_syscalls(['<' + next_syscall.target + '>'])
 			next_syscall = iter_next(syscall_iter)
+
+		while next_file:
+			if next_func and next_file.inst_addr >= next_func.func_addr:
+				break
+			func.add_files([next_file.file])
+			next_file = iter_next(file_iter)
 
 		if next_func:
 			while next_ret:
