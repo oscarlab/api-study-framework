@@ -27,15 +27,21 @@ class Caller:
 		self.func_name = func_name
 		self.callees = set()
 		self.syscalls = set()
+		self.compound_syscalls = {cs['syscall']: set() for cs in Compound_Syscall_Inst.syscalls}
 		self.closed = False
 
 	def add_callees(self, callees):
 		if callees:
-			self.callees = self.callees|set(callees)
+			self.callees |= set(callees)
 
 	def add_syscalls(self, syscalls):
 		if syscalls:
-			self.syscalls = self.syscalls|set(syscalls)
+			self.syscalls |= set(syscalls)
+
+	def add_compound_syscalls(self, syscalls):
+		if syscalls:
+			for (s, req) in syscalls:
+				self.compound_syscalls[s] |= set([req])
 
 	@classmethod
 	def register_caller(cls, caller_list, func_addr, func_name = None,
@@ -70,6 +76,9 @@ class Caller:
 				result += "\n\tsyscall: " + syscall.syscalls[s]
 			else:
 				result += "\n\tsyscall: " + str(s)
+		for s in self.compound_syscalls:
+			for req in self.compound_syscalls[s]:
+				result += "\n\t" + syscall.syscalls[s] + ": " + str(req)
 		if self.closed:
 			result += "\n\tfunction closed"
 		return result
@@ -101,7 +110,7 @@ class Call_Inst(Inst):
 		return Inst.__str__(self) + ' call ' + self.target
 
 class Syscall_Inst(Inst):
-	def __init__(self, inst_addr, assign, syscall=-1, target=''):
+	def __init__(self, inst_addr, assign=None, syscall=-1, target=''):
 		Inst.__init__(self, inst_addr)
 		self.assign = assign
 		self.syscall = syscall
@@ -109,9 +118,47 @@ class Syscall_Inst(Inst):
 
 	def __str__(self):
 		if self.syscall != -1:
-			return Inst.__str__(self) + ' syscall ' + self.syscall
+			return Inst.__str__(self) + ' syscall ' + str(self.syscall)
 
 		return Inst.__str__(self) + ' syscall ' + self.target
+
+class Compound_Syscall_Inst(Syscall_Inst):
+	syscalls = [
+		{'syscall':  16, 'func_addr': 0, 'func_name':  'ioctl', 'reg': ('%rsi', '%rdx')},
+		{'syscall':  72, 'func_addr': 0, 'func_name':  'fcntl', 'reg': ('%rsi', '%rdx')},
+		{'syscall': 157, 'func_addr': 0, 'func_name':  'prctl', 'reg': ('%rdi', '%rsi')},
+	]
+
+	@classmethod
+	def get_compound(cls, syscall=None, func_addr=None, func_name=None):
+		if syscall is not None and isinstance(syscall, int):
+			for s in Compound_Syscall_Inst.syscalls:
+				if syscall == s['syscall']:
+					return s
+
+		if func_addr is not None:
+			for s in Compound_Syscall_Inst.syscalls:
+				if func_addr == s['func_addr']:
+					return s
+
+		if func_name is not None:
+			for s in Compound_Syscall_Inst.syscalls:
+				if func_name == s['func_name']:
+					return s
+
+		return None
+
+	def __init__(self, inst_addr, assign=None, syscall=-1, target='', req_assign=None, req=-1, req_target=''):
+		Syscall_Inst.__init__(self, inst_addr, assign, syscall, target)
+		self.req_assign = req_assign
+		self.req = req
+		self.req_target = req_target
+
+	def __str__(self):
+		if self.req != -1:
+			return 'compound ' + Syscall_Inst.__str__(self) + ' by ' + str(self.req)
+
+		return 'compound ' + Syscall_Inst.__str__(self) + ' by ' + self.req_target
 
 def get_callgraph(binary_name):
 	process = subprocess.Popen(["readelf", "--file-header","-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
@@ -149,7 +196,12 @@ def get_callgraph(binary_name):
 		addr = int(parts[1], 16)
 		if not addr:
 			continue
-		dynsym_list[addr] = match.group(1)
+		symbol_name = match.group(1)
+		dynsym_list[addr] = symbol_name
+
+		for cs in Compound_Syscall_Inst.syscalls:
+			if cs['func_name'] == symbol_name:
+				cs['func_addr'] = addr
 
 	if process.wait() != 0:
 		raise Exception('process failed: readelf --dyn-syms')
@@ -402,6 +454,16 @@ def get_callgraph(binary_name):
 
 					if func_name == 'syscall':
 						rdi = register_values['%rdi']
+
+						compound = Compound_Syscall_Inst.get_compound(syscall=rdi[0])
+						if compound:
+							req = register_values[compound['reg'][1]]
+							if isinstance(req[0], int) or isinstance(reg[0], long):
+								syscall_list.append(Compound_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=req[1], req=req[0]))
+							else:
+								syscall_list.append(Compound_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=req[1], req_target=req[0]))
+							continue
+
 						if isinstance(rdi[0], int):
 							syscall_list.append(Syscall_Inst(inst_addr, rdi[1], rdi[0]))
 						else:
@@ -410,9 +472,20 @@ def get_callgraph(binary_name):
 
 					if func_addr >= text_area[0] and func_addr < text_area[1]:
 						Caller.register_caller(func_list, func_addr, func_name)
+					else:
+						func_addr = None
+
+					compound = Compound_Syscall_Inst.get_compound(func_addr=func_addr, func_name=func_name)
+					if compound:
+						req = register_values[compound['reg'][0]]
+						if isinstance(req[0], int) or isinstance(req[0], long):
+							syscall_list.append(Compound_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=req[1], req=req[0]))
+						else:
+							syscall_list.append(Compound_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=req[1], req_target=req[0]))
+						continue
+
+					if func_addr or func_name:
 						call_list.append(Call_Inst(inst_addr, call_addr=func_addr, call_name=func_name))
-					elif func_name:
-						call_list.append(Call_Inst(inst_addr, call_name=func_name))
 					else:
 						call_list.append(Call_Inst(inst_addr, target=args[0]))
 					continue
@@ -429,6 +502,16 @@ def get_callgraph(binary_name):
 
 					if func_name == 'syscall':
 						rdi = register_values['%rdi']
+
+						compound = Compound_Syscall_Inst.get_compound(syscall=rdi[0])
+						if compound:
+							req = register_values[compound['reg'][1]]
+							if isinstance(req[0], int) or isinstance(req[0], long):
+								syscall_list.append(Compound_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=req[1], req=req[0]))
+							else:
+								syscall_list.append(Compound_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=req[1], req_target=req[0]))
+							continue
+
 						if isinstance(rdi[0], int):
 							syscall_list.append(Syscall_Inst(inst_addr, rdi[1], rdi[0]))
 						else:
@@ -437,6 +520,19 @@ def get_callgraph(binary_name):
 
 				if func_addr >= text_area[0] and func_addr < text_area[1]:
 					Caller.register_caller(func_list, func_addr)
+				else:
+					func_addr = None
+
+				compound = Compound_Syscall_Inst.get_compound(func_addr=func_addr, func_name=func_name)
+				if compound:
+					req = register_values[compound['reg'][0]]
+					if isinstance(req[0], int) or isinstance(req[0], long):
+						syscall_list.append(Compound_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=req[1], req=req[0]))
+					else:
+						syscall_list.append(Compound_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=req[1], req_target=req[0]))
+					continue
+
+				if func_addr or func_name:
 					call_list.append(Call_Inst(inst_addr, call_addr=func_addr, call_name=func_name))
 				else:
 					call_list.append(Call_Inst(inst_addr, target=args[0]))
@@ -460,12 +556,23 @@ def get_callgraph(binary_name):
 				if not func_addr:
 					call_list.append(Call_Inst(inst_addr, target=args[0]))
 					continue
+
 				func_name = None
 				if func_addr in dynsym_list.keys():
 					func_name = dynsym_list[func_addr]
 				else:
 					Caller.register_caller(func_list, func_addr)
 					func_name = func_addr
+
+				compound = Compound_Syscall_Inst.get_compound(func_addr=func_addr, func_name=func_name)
+				if compound:
+					req = register_values[compound['reg'][0]]
+					if isinstance(req[0], int) or isinstance(req[0], long):
+						syscall_list.append(Compound_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=req[1], req=req[0]))
+					else:
+						syscall_list.append(Compound_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=req[1], req_target=req[0]))
+					continue
+
 				call_list.append(Call_Inst(inst_addr, call_addr=func_addr, call_name=func_name))
 
 			call_list.append(Call_Inst(inst_addr, target=args[0]))
@@ -473,7 +580,17 @@ def get_callgraph(binary_name):
 
 		if inst == 'syscall':
 			rax = register_values['%rax']
+
 			if isinstance(rax[0], int):
+				compound = Compound_Syscall_Inst.get_compound(syscall=rax[0])
+				if compound:
+					req = register_values[compound['reg'][0]]
+					if isinstance(req[0], int) or isinstance(req[0], long):
+						syscall_list.append(Compound_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=req[1], req=req[0]))
+					else:
+						syscall_list.append(Compound_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=req[1], req_target=req[0]))
+					continue
+
 				syscall_list.append(Syscall_Inst(inst_addr, rax[1], rax[0]))
 			else:
 				syscall_list.append(Syscall_Inst(inst_addr, rax[1], target=rax[0]))
@@ -571,6 +688,13 @@ def get_callgraph(binary_name):
 				next_syscall.target = '@%x' % next_syscall.inst_addr
 			if next_syscall.syscall != -1:
 				func.add_syscalls([next_syscall.syscall])
+
+				if isinstance(next_syscall, Compound_Syscall_Inst):
+					if next_syscall.req != -1:
+						func.add_compound_syscalls([(next_syscall.syscall, next_syscall.req)])
+					else:
+						func.add_compound_syscalls([(next_syscall.syscall, '<' + next_syscall.req_target + '>')])
+
 			else:
 				func.add_syscalls(['<' + next_syscall.target + '>'])
 			next_syscall = iter_next(syscall_iter)
@@ -686,11 +810,27 @@ binary_unknown_syscall_table = Table('binary_unknown_syscall', [
 			('syscall', 'SMALLINT', '')],
 			['bin_id', 'func_addr', 'target'])
 
+binary_compound_syscall_table = Table('binary_compound_syscall', [
+			('bin_id', 'INT', 'NOT NULL'),
+			('func_addr', 'INT', 'NOT NULL'),
+			('syscall', 'SMALLINT', 'NOT NULL'),
+			('request', 'BIGINT', 'NOT NULL')])
+
+binary_unknown_compound_syscall_table = Table('binary_unknown_compound_syscall', [
+			('bin_id', 'INT', 'NOT NULL'),
+			('func_addr', 'INT', 'NOT NULL'),
+			('syscall', 'SMALLINT', 'NOT NULL'),
+			('target', 'VARCHAR', 'NOT NULL'),
+			('request', 'BIGINT', '')],
+			['bin_id', 'func_addr', 'syscall', 'target'])
+
 def BinaryCallgraph_run(jmgr, sql, args):
 	sql.connect_table(binary_call_table)
 	sql.connect_table(binary_unknown_call_table)
 	sql.connect_table(binary_syscall_table)
 	sql.connect_table(binary_unknown_syscall_table)
+	sql.connect_table(binary_compound_syscall_table)
+	sql.connect_table(binary_unknown_compound_syscall_table)
 
 	pkgname = args[0]
 	bin = args[1]
@@ -718,6 +858,7 @@ def BinaryCallgraph_run(jmgr, sql, args):
 		condition = 'bin_id=\'' + str(bin_id) + '\''
 		sql.delete_record(binary_call_table, condition)
 		sql.delete_record(binary_syscall_table, condition)
+		sql.delete_record(binary_compound_syscall_table, condition)
 		if os.path.exists(path):
 			callers = get_callgraph(path)
 			for caller in callers:
@@ -759,6 +900,27 @@ def BinaryCallgraph_run(jmgr, sql, args):
 						sql.append_record(binary_unknown_syscall_table, values)
 					except:
 						pass
+
+				for syscall in caller.compound_syscalls:
+					for request in caller.compound_syscalls[syscall]:
+						values = dict()
+						values['bin_id'] = bin_id
+						values['func_addr'] = caller.func_addr
+						values['syscall'] = syscall
+
+						if isinstance(request, int) or isinstance(request, long):
+							values['request'] = request
+							sql.append_record(binary_compound_syscall_table, values)
+							continue
+
+						if isinstance(request, str):
+							values['target'] = request[1:-1]
+						else:
+							values['target'] = ''
+						try:
+							sql.append_record(binary_unknown_compound_syscall_table, values)
+						except:
+							pass
 
 		update_binary_callgraph(sql, bin_id)
 		sql.commit()
