@@ -9,11 +9,9 @@ import re
 binary_id_table = Table('binary_id', [
 			('id', 'INT', 'NOT NULL'),
 			('binary_name', 'VARCHAR', 'UNIQUE'),
-			('file_name', 'VARCHAR', ''),
-			('callgraph_generated', 'BOOLEAN', ''),
-			('linking_generated', 'BOOLEAN', ''),
-			('footprint_generated', 'BOOLEAN', '')],
-			['id'])
+			('file_name', 'VARCHAR', '')],
+			['id'],
+			[['file_name']])
 
 def get_binary_id(sql, binary_name):
 	sql.connect_table(binary_id_table)
@@ -35,9 +33,6 @@ def get_binary_id(sql, binary_name):
 		values['id'] = id
 		values['binary_name'] = binary_name
 		values['file_name'] = os.path.basename(binary_name)
-		values['callgraph_generated'] = False
-		values['linking_generated'] = False
-		values['footprint_generated'] = False
 		retry = False
 		try:
 			sql.append_record(binary_id_table, values)
@@ -48,12 +43,51 @@ def get_binary_id(sql, binary_name):
 
 	return id
 
-def update_binary_callgraph(sql, bin_id):
-	values = dict()
-	values['callgraph_generated'] = False
-	sql.update_record(binary_id_table, values, 'id=\'' + str(bin_id) + '\'')
+def get_binary_name(sql, id):
+	sql.connect_table(binary_id_table)
+	results = sql.search_record(binary_id_table, 'id=\'' + str(id) + '\'', ['binary_name'])
+	if results:
+		return results[0][0]
+	return None
 
-def update_binary_linking(sql, bin_id):
-	values = dict()
-	values['linking_generated'] = False
-	sql.update_record(binary_id_table, values, 'id=\'' + str(bin_id) + '\'')
+package_id_table = Table('package_id', [
+			('id', 'INT', 'NOT NULL'),
+			('package_name', 'VARCHAR', 'UNIQUE')],
+			['id'],
+			[['package_name']])
+
+def get_package_id(sql, package_name):
+	sql.connect_table(package_id_table)
+
+	retry = True
+	while retry:
+		results = sql.search_record(package_id_table, 'package_name=\'' + package_name + '\'', ['id'])
+		if results:
+			id = results[0][0]
+			break
+
+		results = sql.search_record(package_id_table, None, ['MAX(id)'])
+		if results[0][0] is None:
+			id = 1
+		else:
+			id = int(results[0][0]) + 1
+
+		values = dict()
+		values['id'] = id
+		values['package_name'] = package_name
+		retry = False
+		try:
+			sql.append_record(package_id_table, values)
+			sql.commit()
+		except:
+			retry = True
+			pass
+
+	return id
+
+def get_package_name(sql, id):
+	sql.connect_table(package_id_table)
+	results = sql.search_record(package_id_table, 'id=\'' + str(id) + '\'', ['package_name'])
+	if results:
+		return results[0][0]
+	return None

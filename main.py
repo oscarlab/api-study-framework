@@ -61,6 +61,9 @@ def main():
 	Task.register(callgraph.BinaryCallInfoByNames)
 	Task.register(callgraph.BinaryCallInfoByPrefixes)
 	Task.register(callgraph.BinaryCallInfoByRanks)
+	Task.register(package.PackageAnalysisByNames)
+	Task.register(package.PackageAnalysisByPrefixes)
+	Task.register(package.PackageAnalysisByRanks)
 	Task.register(package_popularity.PackagePopularity)
 	Task.register(syscall.ListSyscall)
 

@@ -7,10 +7,11 @@ import importlib
 import inspect
 
 class Table:
-	def __init__(self, name, fields, keys=None):
+	def __init__(self, name, fields, keys=None, indexes=None):
 		self.name = name
 		self.fields = fields
 		self.keys = keys
+		self.indexes = indexes
 
 	def create_table(self):
 		query = 'CREATE TABLE ' + self.name + ' ('
@@ -27,6 +28,22 @@ class Table:
 			query += ')'
 		query += ')'
 		return query
+
+	def create_indexes(self):
+		queries = []
+		for idx in self.indexes:
+			idx_name = self.name
+			for idx_field in idx:
+				idx_name += '_' + idx_field
+			idx_name += '_idx'
+			query = 'CREATE INDEX ' + idx_name + ' ON ' + self.name + '('
+			delim = ''
+			for idx_field in idx:
+				query += delim + idx_field
+				delim = ', '
+			query += ')'
+			queries.append(query)
+		return queries
 
 	def insert_record(self, values):
 		query = 'INSERT INTO ' + self.name + ' ('
@@ -132,8 +149,10 @@ class SQLPrintQuery(SQL):
 	def connect_table(self, table):
 		if table in self.tables:
 			return
-		self.tables.append(table)
 		print table.create_table()
+		for query in table.create_indexes():
+			print query
+		self.tables.append(table)
 
 	def append_record(self, table, values):
 		print table.insert_record(values)

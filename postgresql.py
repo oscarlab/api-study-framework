@@ -2,8 +2,8 @@
 
 from task import Task
 from sql import SQL
-from binary import get_binary_id, binary_id_table
 from package import binary_list_table
+from binary import get_binary_id, get_binary_name, get_package_id, get_package_name
 from main import get_config
 
 import os
@@ -11,45 +11,54 @@ import sys
 import re
 import psycopg2
 
-def AnalysisCallgraph_run(jmgr, sql, args):
-	binary_name = args[0]
-	if args[1]:
-		bin_id = int(args[1])
-	else:
-		bin_id = get_binary_id(sql, binary_name)
+def AnalysisLibrary_run(jmgr, sql, args):
+	pkg_name = args[0]
+	bin = args[1]
 
-	sql.postgresql_execute('SELECT analysis_callgraph(%d)' % bin_id)
+	if args[2]:
+		pkg_id = args[2]
+	else:
+		pkg_id = get_package_id(sql, pkg_name)
+
+	if args[3]:
+		bin_id = args[3]
+	else:
+		bin_id = get_binary_id(sql, bin)
+
+	sql.postgresql_execute('SELECT analysis_library(%d, %d)' % (pkg_id, bin_id))
 	sql.commit()
 
-def AnalysisCallgraph_job_name(args):
-	return "Analyze Callgraph: " + args[0]
+def AnalysisLibrary_job_name(args):
+	return "Analyze Library: " + args[0]
 
-AnalysisCallgraph = Task(
-		name="Analyze Callgraph by PostgreSQL",
-		func=AnalysisCallgraph_run,
-		arg_defs=["Binary Name", "Binary ID"],
-		job_name=AnalysisCallgraph_job_name)
+AnalysisLibrary = Task(
+		name="Analyze Library by PostgreSQL",
+		func=AnalysisLibrary_run,
+		arg_defs=["Package Name", "Binary Name"],
+		job_name=AnalysisLibrary_job_name)
 
-def AnalysisAllCallgraph_run(jmgr, sql, args):
-	sql.connect_table(binary_id_table)
+def AnalysisAllLibraries_run(jmgr, sql, args):
+	sql.connect_table(binary_list_table)
 
-	select = binary_list_table.select_record('bin_id=id AND type=\'lib\'')
-	results = sql.search_record(binary_id_table,
-			'callgraph_generated=\'False\' AND EXISTS (' + select + ')',
-			['id', 'binary_name'])
+	results = sql.search_record(binary_list_table, 'callgraph=False AND type=\'lib\'', ['pkg_id', 'bin_id'])
 
 	for r in results:
 		values = r[0][1:-1].split(',')
-		AnalysisCallgraph.create_job(jmgr, [values[1], values[0]]);
+		pkg_id = int(values[0])
+		bin_id = int(values[1])
+		pkg_name = get_package_name(sql, pkg_id)
+		bin = get_binary_name(sql, bin_id)
+		if pkg_name and bin:
+			AnalysisLibrary.create_job(jmgr, [pkg_name, bin, pkg_id, bin_id]);
 
-def AnalysisAllCallgraph_job_name(args):
-	return "Analyze All Callgraph"
+def AnalysisAllLibraries_job_name(args):
+	return "Analyze All Libraries"
 
-AnalysisAllCallgraph = Task(
-		name="Analyze All Callgraph by PostgreSQL",
-		func=AnalysisAllCallgraph_run,
+AnalysisAllLibraries = Task(
+		name="Analyze All Libaries by PostgreSQL",
+		func=AnalysisAllLibraries_run,
 		arg_defs=[],
-		job_name=AnalysisAllCallgraph_job_name)
+		job_name=AnalysisAllLibraries_job_name)
 
 def AnalysisLinking_run(jmgr, sql, args):
 	sql.postgresql_execute('SELECT analysis_linking()')
@@ -64,45 +73,52 @@ AnalysisLinking = Task(
 		arg_defs=[],
 		job_name=AnalysisLinking_job_name)
 
-def AnalysisFootprint_run(jmgr, sql, args):
-	binary_name = args[0]
-	if args[1]:
-		bin_id = int(args[1])
+def AnalysisExecutable_run(jmgr, sql, args):
+	pkg_name = args[0]
+	bin = args[1]
+	if len(args) > 2:
+		pkg_id = args[2]
 	else:
-		bin_id = get_binary_id(sql, binary_name)
+		pkg_id = get_package_id(sql, pkg_name)
+	if len(args) > 3:
+		bin_id = args[3]
+	else:
+		bin_id = get_binary_id(sql, bin)
 
-	sql.postgresql_execute('SELECT analysis_footprint(%d)' % bin_id)
+	sql.postgresql_execute('SELECT analysis_executable(%d, %d)' % (pkg_id, bin_id))
 	sql.commit()
 
-def AnalysisFootprint_job_name(args):
-	return "Analyze Footprint: " + args[0]
+def AnalysisExecutable_job_name(args):
+	return "Analyze Executable: " + args[0]
 
-AnalysisFootprint = Task(
-		name="Analyze Footprint by PostgreSQL",
-		func=AnalysisFootprint_run,
-		arg_defs=["Binary Name", "Binary ID"],
-		job_name=AnalysisFootprint_job_name)
+AnalysisExecutable = Task(
+		name="Analyze Executable by PostgreSQL",
+		func=AnalysisExecutable_run,
+		arg_defs=["Package Name", "Binary Name"],
+		job_name=AnalysisExecutable_job_name)
 
-def AnalysisAllFootprint_run(jmgr, sql, args):
-	sql.connect_table(binary_id_table)
+def AnalysisAllExecutables_run(jmgr, sql, args):
+	sql.connect_table(binary_list_table)
 
-	select = binary_list_table.select_record('bin_id=id AND type=\'exe\'')
-	results = sql.search_record(binary_id_table,
-			'footprint_generated=\'False\' AND EXISTS (' + select + ')',
-			['id', 'binary_name'])
+	results = sql.search_record(binary_list_table, 'callgraph=False AND type=\'exe\'', ['pkg_id', 'bin_id'])
 
 	for r in results:
 		values = r[0][1:-1].split(',')
-		AnalysisFootprint.create_job(jmgr, [values[1], values[0]]);
+		pkg_id = int(values[0])
+		bin_id = int(values[1])
+		pkg_name = get_package_name(sql, pkg_id)
+		bin = get_binary_name(sql, bin_id)
+		if pkg_name and bin:
+			AnalysisExecutable.create_job(jmgr, [pkg_name, bin, pkg_id, bin_id]);
 
-def AnalysisAllFootprint_job_name(args):
-	return "Analyze All Footprint"
+def AnalysisAllExecutables_job_name(args):
+	return "Analyze All Executables"
 
-AnalysisAllFootprint = Task(
-		name="Analyze All Footprint by PostgreSQL",
-		func=AnalysisAllFootprint_run,
+AnalysisAllExecutables = Task(
+		name="Analyze All Executables by PostgreSQL",
+		func=AnalysisAllExecutables_run,
 		arg_defs=[],
-		job_name=AnalysisAllFootprint_job_name)
+		job_name=AnalysisAllExecutables_job_name)
 
 class PostgreSQL(SQL):
 	def __init__(self):
@@ -114,11 +130,11 @@ class PostgreSQL(SQL):
 		self.db = None
 		self.tables = []
 
-		Task.register(AnalysisCallgraph)
-		Task.register(AnalysisAllCallgraph)
+		Task.register(AnalysisLibrary)
+		Task.register(AnalysisAllLibraries)
 		Task.register(AnalysisLinking)
-		Task.register(AnalysisFootprint)
-		Task.register(AnalysisAllFootprint)
+		Task.register(AnalysisExecutable)
+		Task.register(AnalysisAllExecutables)
 
 	def __del__(self):
 		self.disconnect()
@@ -162,6 +178,8 @@ class PostgreSQL(SQL):
 			while not self.postgresql_query(query):
 				try:
 					self.postgresql_execute(table.create_table())
+					for query in table.create_indexes():
+						self.postgresql_execute(query)
 					self.db.commit()
 				except:
 					continue

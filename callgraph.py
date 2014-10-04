@@ -5,7 +5,7 @@ import package
 from sql import Table
 import syscall
 from symbol import get_symbols
-from binary import get_binary_id, update_binary_callgraph
+from binary import get_binary_id, get_package_id
 import main
 
 import os
@@ -874,49 +874,70 @@ def get_callgraph_recursive(binary_name):
 	return func_list
 
 binary_call_table = Table('binary_call', [
+			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
 			('func_addr', 'INT', 'NOT NULL'),
-			('call_addr', 'INT', ''),
-			('call_name', 'VARCHAR', '')])
-
-binary_unknown_call_table = Table('binary_unknown_call', [
-			('bin_id', 'INT', 'NOT NULL'),
-			('func_addr', 'INT', 'NOT NULL'),
-			('target', 'VARCHAR', 'NOT NULL'),
 			('call_addr', 'INT', ''),
 			('call_name', 'VARCHAR', '')],
-			['bin_id', 'func_addr', 'target'])
+			[],
+			[['pkg_id', 'bin_id']])
+
+binary_unknown_call_table = Table('binary_unknown_call', [
+			('pkg_id', 'INT', 'NOT NULL'),
+			('bin_id', 'INT', 'NOT NULL'),
+			('func_addr', 'INT', 'NOT NULL'),
+			('target', 'VARCHAR', 'NOT NULL'),
+			('known', 'BOOLEAN', ''),
+			('call_addr', 'INT', ''),
+			('call_name', 'VARCHAR', '')],
+			['pkg_id', 'bin_id', 'func_addr', 'target', 'known'],
+			[['pkg_id', 'bin_id', 'known']])
 
 binary_syscall_table = Table('binary_syscall', [
+			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
 			('func_addr', 'INT', 'NOT NULL'),
-			('syscall', 'SMALLINT', 'NOT NULL')])
+			('syscall', 'SMALLINT', 'NOT NULL')],
+			[],
+			[['pkg_id', 'bin_id']])
 
 binary_unknown_syscall_table = Table('binary_unknown_syscall', [
+			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
 			('func_addr', 'INT', 'NOT NULL'),
 			('target', 'VARCHAR', 'NOT NULL'),
+			('known', 'BOOLEAN', ''),
 			('syscall', 'SMALLINT', '')],
-			['bin_id', 'func_addr', 'target'])
+			['pkg_id', 'bin_id', 'func_addr', 'target', 'known'],
+			[['pkg_id', 'bin_id', 'known']])
 
 binary_vecsyscall_table = Table('binary_vecsyscall', [
+			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
 			('func_addr', 'INT', 'NOT NULL'),
 			('syscall', 'SMALLINT', 'NOT NULL'),
-			('request', 'BIGINT', 'NOT NULL')])
+			('request', 'BIGINT', 'NOT NULL')],
+			[],
+			[['pkg_id', 'bin_id']])
 
 binary_unknown_vecsyscall_table = Table('binary_unknown_vecsyscall', [
+			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
 			('func_addr', 'INT', 'NOT NULL'),
 			('syscall', 'SMALLINT', 'NOT NULL'),
 			('target', 'VARCHAR', 'NOT NULL'),
+			('known', 'BOOLEAN', ''),
 			('request', 'BIGINT', '')],
-			['bin_id', 'func_addr', 'syscall', 'target'])
+			['pkg_id', 'bin_id', 'func_addr', 'syscall', 'target', 'known'],
+			[['pkg_id', 'bin_id', 'known']])
 
 binary_fileaccess_table = Table('binary_fileaccess', [
+			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
 			('func_addr', 'INT', 'NOT NULL'),
-			('file', 'VARCHAR', 'NOT NULL')])
+			('file', 'VARCHAR', 'NOT NULL')],
+			[],
+			[['pkg_id', 'bin_id']])
 
 def BinaryCallgraph_run(jmgr, sql, args):
 	sql.connect_table(binary_call_table)
@@ -941,7 +962,7 @@ def BinaryCallgraph_run(jmgr, sql, args):
 
 	unpacked = False
 	if not dir:
-		(dir, pkgname, version) = package.unpack_package(args[0])
+		(dir, pkgname, _) = package.unpack_package(args[0])
 		if not dir:
 			return
 		unpacked = True
@@ -949,84 +970,129 @@ def BinaryCallgraph_run(jmgr, sql, args):
 	exc = None
 	try:
 		path = dir + '/' + bin
+		if not os.path.exists(path):
+			raise Exception('path ' + path + ' does not exist')
+
+		callers = get_callgraph(path)
+		pkg_id = get_package_id(sql, pkgname)
 		bin_id = get_binary_id(sql, bin)
-		condition = 'bin_id=\'' + str(bin_id) + '\''
-		sql.delete_record(binary_call_table, condition)
-		sql.delete_record(binary_syscall_table, condition)
-		sql.delete_record(binary_vecsyscall_table, condition)
-		sql.delete_record(binary_fileaccess_table, condition)
-		if os.path.exists(path):
-			callers = get_callgraph(path)
-			for caller in callers:
-				for callee in caller.callees:
-					values = dict()
-					values['bin_id'] = bin_id
-					values['func_addr'] = caller.func_addr
+		calls = []
+		unknown_calls = []
+		syscalls = []
+		unknown_syscalls = []
+		vecsyscalls = []
+		unknown_vecsyscalls = []
+		fileaccess = []
 
-					if isinstance(callee, str) and callee.startswith('<'):
-						values['target'] = callee[1:-1]
-						try:
-							sql.append_record(binary_unknown_call_table, values)
-						except:
-							pass
-						continue
+		for caller in callers:
+			for callee in caller.callees:
+				values = dict()
+				values['func_addr'] = caller.func_addr
 
-					if isinstance(callee, str):
-						values['call_name'] = callee
-					else:
-						values['call_addr'] = callee
-
-					sql.append_record(binary_call_table, values)
-
-				for syscall in caller.syscalls:
-					values = dict()
-					values['bin_id'] = bin_id
-					values['func_addr'] = caller.func_addr
-
-					if isinstance(syscall, int) and syscall >= 0 and syscall < 400:
-						values['syscall'] = syscall
-						sql.append_record(binary_syscall_table, values)
-						continue
-
-					if isinstance(syscall, str):
-						values['target'] = syscall[1:-1]
-					else:
-						values['target'] = ''
-					try:
-						sql.append_record(binary_unknown_syscall_table, values)
-					except:
-						pass
-
-				for syscall in caller.vecsyscalls:
-					for request in caller.vecsyscalls[syscall]:
-						values = dict()
-						values['bin_id'] = bin_id
-						values['func_addr'] = caller.func_addr
-						values['syscall'] = syscall
-
-						if isinstance(request, int) or isinstance(request, long):
-							values['request'] = request
-							sql.append_record(binary_vecsyscall_table, values)
-							continue
-
-						if isinstance(request, str):
-							values['target'] = request[1:-1]
-						else:
-							values['target'] = ''
-						try:
-							sql.append_record(binary_unknown_vecsyscall_table, values)
-						except:
-							pass
-
-				for file in caller.files:
-					values = dict()
-					values['bin_id'] = bin_id
-					values['func_addr'] = caller.func_addr
-					values['file'] = file
-					sql.append_record(binary_fileaccess_table, values)
+				if isinstance(callee, str) and callee.startswith('<'):
+					values['target'] = callee[1:-1]
+					unknown_calls.append(values)
 					continue
 
-		update_binary_callgraph(sql, bin_id)
+				if isinstance(callee, str):
+					values['call_name'] = callee
+				else:
+					values['call_addr'] = callee
+				calls.append(values)
+
+			for syscall in caller.syscalls:
+				values = dict()
+				values['func_addr'] = caller.func_addr
+
+				if isinstance(syscall, int) and syscall >= 0 and syscall < 400:
+					values['syscall'] = syscall
+					syscalls.append(values)
+					continue
+
+				if isinstance(syscall, str):
+					values['target'] = syscall[1:-1]
+				else:
+					values['target'] = ''
+				unknown_syscalls.append(values)
+
+			for syscall in caller.vecsyscalls:
+				for request in caller.vecsyscalls[syscall]:
+					values = dict()
+					values['func_addr'] = caller.func_addr
+					values['syscall'] = syscall
+
+					if isinstance(request, int) or isinstance(request, long):
+						values['request'] = request
+						vecsyscalls.append(values)
+						continue
+
+					if isinstance(request, str):
+						values['target'] = request[1:-1]
+					else:
+						values['target'] = ''
+					unknown_vecsyscalls.append(values)
+
+			for file in caller.files:
+				values = dict()
+				values['func_addr'] = caller.func_addr
+				values['file'] = file
+				fileaccess.append(values)
+
+		if not fileaccess:
+			for file in get_fileaccess(path):
+				values = dict()
+				values['func_addr'] = 0
+				values['file'] = file
+				fileaccess.append(values)
+
+		condition = 'pkg_id=\'' + str(pkg_id) + '\' and bin_id=\'' + str(bin_id) + '\''
+		condition_unknown = condition + ' and known=False'
+		sql.delete_record(binary_call_table, condition)
+		sql.delete_record(binary_unknown_call_table, condition_unknown)
+		sql.delete_record(binary_syscall_table, condition)
+		sql.delete_record(binary_unknown_syscall_table, condition_unknown)
+		sql.delete_record(binary_vecsyscall_table, condition)
+		sql.delete_record(binary_unknown_vecsyscall_table, condition_unknown)
+		sql.delete_record(binary_fileaccess_table, condition)
+
+		for values in calls:
+			values['pkg_id'] = pkg_id
+			values['bin_id'] = bin_id
+			sql.append_record(binary_call_table, values)
+
+		for values in unknown_calls:
+			values['pkg_id'] = pkg_id
+			values['bin_id'] = bin_id
+			values['known'] = False
+			sql.append_record(binary_unknown_call_table, values)
+
+		for values in syscalls:
+			values['pkg_id'] = pkg_id
+			values['bin_id'] = bin_id
+			sql.append_record(binary_syscall_table, values)
+
+		for values in unknown_syscalls:
+			values['pkg_id'] = pkg_id
+			values['bin_id'] = bin_id
+			values['known'] = False
+			sql.append_record(binary_unknown_syscall_table, values)
+
+		for values in vecsyscalls:
+			values['pkg_id'] = pkg_id
+			values['bin_id'] = bin_id
+			sql.append_record(binary_vecsyscall_table, values)
+
+		for values in unknown_vecsyscalls:
+			values['pkg_id'] = pkg_id
+			values['bin_id'] = bin_id
+			values['known'] = False
+			sql.append_record(binary_unknown_vecsyscall_table, values)
+
+		for values in fileaccess:
+			values['pkg_id'] = pkg_id
+			values['bin_id'] = bin_id
+			sql.append_record(binary_fileaccess_table, values)
+
 		sql.commit()
 	except Exception as err:
 		exc = sys.exc_info()
@@ -1046,14 +1112,14 @@ BinaryCallgraph = Task(
 	job_name=BinaryCallgraph_job_name)
 
 def BinaryCallInfo_run(jmgr, sql, args):
-	(dir, pkgname, version) = package.unpack_package(args[0])
+	(dir, pkgname, _) = package.unpack_package(args[0])
 	if not dir:
 		return
 	binaries = package.walk_package(dir)
 	if not binaries:
 		package.remove_dir(dir)
 		return
-	for (bin, type) in binaries:
+	for (bin, type, _) in binaries:
 		if type == 'lnk':
 			continue
 		ref = package.reference_dir(dir)

@@ -3,7 +3,7 @@
 from task import Task
 import package
 from sql import Table
-from binary import get_binary_id, update_binary_callgraph, update_binary_linking
+from binary import get_binary_id, get_package_id
 import main
 
 import os
@@ -96,12 +96,14 @@ def get_symbols(binary):
 	return symbol_list
 
 binary_symbol_table = Table('binary_symbol', [
+			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
 			('symbol_name', 'VARCHAR', 'NOT NULL'),
 			('defined', 'BOOLEAN', 'NOT NULL'),
 			('func_addr','INT', ''),
 			('version', 'VARCHAR', '')],
-			['bin_id', 'symbol_name', 'version'])
+			['pkg_id', 'bin_id', 'symbol_name', 'version'],
+			[['symbol_name'], ['pkg_id', 'bin_id', 'func_addr']])
 
 def BinarySymbol_run(jmgr, sql, args):
 	sql.connect_table(binary_symbol_table)
@@ -119,7 +121,7 @@ def BinarySymbol_run(jmgr, sql, args):
 
 	unpacked = False
 	if not dir:
-		(dir, pkgname, version) = package.unpack_package(args[0])
+		(dir, pkgname, _) = package.unpack_package(args[0])
 		if not dir:
 			return
 		unpacked = True
@@ -127,24 +129,31 @@ def BinarySymbol_run(jmgr, sql, args):
 	exc = None
 	try:
 		path = dir + '/' + bin
-		bin_id = get_binary_id(sql, bin)
-		sql.delete_record(binary_symbol_table, 'bin_id=\'' + str(bin_id) + '\'')
-		if os.path.exists(path):
-			symbols = get_symbols(path)
-			for sym in symbols:
-				values = dict()
-				values['bin_id'] = bin_id
-				values['symbol_name'] = sym.name
-				if sym.defined:
-					values['defined'] = 'True'
-				else:
-					values['defined'] = 'False'
-				values['func_addr'] = sym.addr
-				values['version'] = sym.version
+		if not os.path.exists(path):
+			raise Exception('path ' + path + ' does not exist')
 
-				sql.append_record(binary_symbol_table, values)
-		update_binary_callgraph(sql, bin_id)
+		symbols = get_symbols(path)
+		pkg_id = get_package_id(sql, pkgname)
+		bin_id = get_binary_id(sql, bin)
+
+		sql.delete_record(binary_symbol_table, 'pkg_id=\'' + str(pkg_id) + '\' and bin_id=\'' + str(bin_id) + '\'')
+
+		for sym in symbols:
+			values = dict()
+			values['pkg_id'] = pkg_id
+			values['bin_id'] = bin_id
+			values['symbol_name'] = sym.name
+			if sym.defined:
+				values['defined'] = 'True'
+			else:
+				values['defined'] = 'False'
+			values['func_addr'] = sym.addr
+			values['version'] = sym.version
+
+			sql.append_record(binary_symbol_table, values)
+
 		sql.commit()
+
 	except Exception as err:
 		exc = sys.exc_info()
 
@@ -197,14 +206,16 @@ def get_interpreter(binary):
 	return None
 
 binary_dependency_table = Table('binary_dependency', [
+			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
 			('dependency', 'VARCHAR', 'NOT NULL')],
-			['bin_id', 'dependency'])
+			['pkg_id', 'bin_id', 'dependency'])
 
 binary_interp_table = Table('binary_interp', [
+			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
 			('interp', 'INT', 'NOT NULL')],
-			['bin_id'])
+			['pkg_id', 'bin_id'])
 
 def BinaryDependency_run(jmgr, sql, args):
 	sql.connect_table(binary_dependency_table)
@@ -223,7 +234,7 @@ def BinaryDependency_run(jmgr, sql, args):
 
 	unpacked = False
 	if not dir:
-		(dir, pkgname, version) = package.unpack_package(args[0])
+		(dir, pkgname, _) = package.unpack_package(args[0])
 		if not dir:
 			return
 		unpacked = True
@@ -231,28 +242,36 @@ def BinaryDependency_run(jmgr, sql, args):
 	exc = None
 	try:
 		path = dir + '/' + bin
+		if not os.path.exists(path):
+			raise Exception('path ' + path + ' does not exist')
+
+		dependencies = get_dependencies(path)
+		interp = get_interpreter(path)
+		pkg_id = get_package_id(sql, pkgname)
 		bin_id = get_binary_id(sql, bin)
-		sql.delete_record(binary_dependency_table, 'bin_id=\'' + str(bin_id) + '\'')
-		sql.delete_record(binary_interp_table, 'bin_id=\'' + str(bin_id) + '\'')
-		if os.path.exists(path):
-			dependencies = get_dependencies(path)
-			for dep in dependencies:
-				values = dict()
-				values['bin_id'] = bin_id
-				values['dependency'] = dep
+		if interp:
+			interp = get_binary_id(sql, interp)
 
-				sql.append_record(binary_dependency_table, values)
+		dependencies = get_dependencies(path)
 
-			interp = get_interpreter(path)
-			if interp:
-				interp_id = get_binary_id(sql, interp)
-				values = dict()
-				values['bin_id'] = bin_id
-				values['interp'] = interp_id
+		condition = 'pkg_id=\'' + str(pkg_id) + '\' and bin_id=\'' + str(bin_id) + '\''
+		sql.delete_record(binary_dependency_table, condition)
+		sql.delete_record(binary_interp_table, condition)
 
-				sql.append_record(binary_interp_table, values)
+		for dep in dependencies:
+			values = dict()
+			values['pkg_id'] = pkg_id
+			values['bin_id'] = bin_id
+			values['dependency'] = dep
+			sql.append_record(binary_dependency_table, values)
 
-		update_binary_linking(sql, bin_id)
+		if interp:
+			values = dict()
+			values['pkg_id'] = pkg_id
+			values['bin_id'] = bin_id
+			values['interp'] = interp
+			sql.append_record(binary_interp_table, values)
+
 		sql.commit()
 	except Exception as err:
 		exc = sys.exc_info()
@@ -272,14 +291,14 @@ BinaryDependency = Task(
 	job_name=BinaryDependency_job_name)
 
 def BinaryInfo_run(jmgr, sql, args):
-	(dir, pkgname, version) = package.unpack_package(args[0])
+	(dir, pkgname, _) = package.unpack_package(args[0])
 	if not dir:
 		return
 	binaries = package.walk_package(dir)
 	if not binaries:
 		package.remove_dir(dir)
 		return
-	for (bin, type) in binaries:
+	for (bin, type, _) in binaries:
 		if type == 'lnk':
 			continue
 		ref = package.reference_dir(dir)

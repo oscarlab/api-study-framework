@@ -3,8 +3,10 @@
 from task import Task
 from package_popularity import package_popularity_table
 from sql import Table
-from binary import get_binary_id, update_binary_linking
+from binary import get_binary_id, get_package_id
 import main
+import symbol
+import callgraph
 
 import os
 import sys
@@ -13,6 +15,10 @@ import subprocess
 import shutil
 import stat
 import tempfile
+import struct
+import string
+
+package_exclude_rules = [r'^linux-image', r'^linux-headers', r'.+-dev$', r'.+-doc(s)?(-.+)?$']
 
 def get_packages():
 	package_source = main.get_config('package_source')
@@ -31,7 +37,17 @@ def get_packages():
 
 	process = subprocess.Popen(cmd + ["pkgnames"], stdout=subprocess.PIPE, stderr=main.null_dev)
 	(stdout, stderr) = process.communicate()
-	return stdout.split()
+	packages = []
+	for name in stdout.split():
+		excluded = False
+		for rule in package_exclude_rules:
+			if re.match(rule, name):
+				excluded = True
+				break
+		if not excluded:
+			packages.append(name)
+	process.wait()
+	return packages
 
 def get_packages_by_names(names):
 	packages = get_packages()
@@ -246,9 +262,60 @@ PackageUnpack = Task(
 	job_name=PackageUnpack_job_name)
 
 def check_elf(path):
-	return subprocess.call(["readelf", "-h", path], stdout=main.null_dev, stderr=main.null_dev) == 0
+	process = subprocess.Popen(["readelf", "--section-headers", "-W", path], stdout=subprocess.PIPE, stderr=main.null_dev)
 
-def walk_package(dir):
+	is_elf = False
+	for line in process.stdout:
+		parts = line[6:].strip().split()
+
+		# a valid elf needs to have a .text section (or it could be debug object)
+		if parts and parts[0] == '.text':
+			is_elf = True
+
+	if process.wait() != 0:
+		return False
+
+	return is_elf
+
+def which(file):
+	for prefix in os.environ["PATH"].split(":"):
+		path = os.path.join(prefix, file)
+		if os.path.exists(path):
+			return path
+	return None
+
+def check_script(path):
+	binary = open(path, 'rb')
+	interpreter = ''
+	try:
+		ch1 = struct.unpack('s', binary.read(1))[0]
+		ch2 = struct.unpack('s', binary.read(1))[0]
+
+		if ch1 != '#' or ch2 != '!':
+			binary.close()
+			return None
+
+		while True:
+			ch = struct.unpack('s', binary.read(1))[0]
+			if ch == '\r' or ch == '\n':
+				break
+			if ch not in string.printable:
+				binary.close()
+				return None
+			interpreter += ch
+
+		parts = interpreter.strip().split()
+		if parts[0] == '/usr/bin/env':
+			interpreter = which(parts[1])
+		else:
+			interpreter = parts[0]
+	except:
+		interpreter = None
+
+	binary.close()
+	return interpreter
+
+def walk_package(dir, find_script=False):
 	binaries = []
 	for (root, subdirs, files) in os.walk(dir):
 		rel_root = root[len(dir) + 1:]
@@ -258,69 +325,107 @@ def walk_package(dir):
 			s = os.lstat(path)
 			if re.match('[0-9A-Za-z\_\-\+\.]+\.so[0-9\.]*', f):
 				if stat.S_ISLNK(s.st_mode):
-					binaries.append((rel_path, 'lnk'))
+					binaries.append((rel_path, 'lnk', None))
 					continue
 				if check_elf(path):
-					binaries.append((rel_path, 'lib'))
+					binaries.append((rel_path, 'lib', None))
 				continue
 			if stat.S_ISLNK(s.st_mode):
 				continue
 			if s.st_mode & (stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH):
 				if check_elf(path):
-					binaries.append((rel_path, 'exe'))
+					binaries.append((rel_path, 'exe', None))
+					continue
+				if find_script:
+					interpreter = check_script(path)
+					if interpreter:
+						binaries.append((rel_path, 'scr', interpreter))
 				continue
+			if find_script:
+				ext = os.path.splitext(rel_path)
+				if ext in ['.py', '.sh', 'pl', '.PL']:
+					interpreter = check_script(path)
+					if interpreter:
+						binaries.append((rel_path, 'scr', interpreter))
+
 	return binaries
 
 binary_list_table = Table('binary_list', [
-			('package_name', 'VARCHAR', 'NOT NULL'),
+			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
-			('version', 'VARCHAR', 'NOT NULL'),
-			('type', 'CHAR(3)', 'NOT NULL')],
-			['package_name', 'bin_id'])
+			('type', 'CHAR(3)', 'NOT NULL'),
+			('callgraph', 'BOOLEAN', ''),
+			('linking', 'BOOLEAN', '')],
+			['pkg_id', 'bin_id'],
+			[['pkg_id', 'bin_id', 'type']])
 
 binary_link_table = Table('binary_link', [
-			('package_name', 'VARCHAR', 'NOT NULL'),
-			('link_id', 'INT', 'NOT NULL'),
-			('target_id', 'INT', 'NOT NULL'),
-			('version', 'VARCHAR', 'NOT NULL')],
-			['package_name', 'link_id'])
+			('pkg_id', 'INT', 'NOT NULL'),
+			('lnk_id', 'INT', 'NOT NULL'),
+			('target', 'INT', 'NOT NULL'),
+			('linking', 'BOOLEAN', '')],
+			['pkg_id', 'lnk_id'])
+
+def run_binary_list(sql, pkgname, dir, binaries):
+	pkg_id = get_package_id(sql, pkgname)
+	insert_values = []
+	for (bin, type, interpreter) in binaries:
+		bin_id = get_binary_id(sql, bin)
+		values = dict()
+		values['type'] = type
+
+		if type == 'lnk':
+			link = os.readlink(dir + bin)
+			target = os.path.join(os.path.dirname(bin), link)
+			target_id = get_binary_id(sql, target)
+			values['pkg_id'] = pkg_id
+			values['lnk_id'] = bin_id
+			values['target'] = target_id
+			values['linking'] = False
+		else:
+			values['pkg_id'] = pkg_id
+			values['bin_id'] = bin_id
+			if type == 'scr':
+				interp_id = get_binary_id(sql, interpreter)
+				values['interp'] = interp_id
+				values['callgraph'] = True
+			else:
+				values['callgraph'] = False
+			values['linking'] = False
+
+		insert_values.append(values)
+
+	condition = 'pkg_id=\'' + str(pkg_id) + '\''
+	sql.delete_record(binary_list_table, condition)
+	sql.delete_record(binary_link_table, condition)
+	sql.delete_record(symbol.binary_interp_table, condition)
+
+	for values in insert_values:
+		if values['type'] == 'lnk':
+			sql.append_record(binary_link_table, values)
+		else:
+			sql.append_record(binary_list_table, values)
+			if type == 'scr':
+				sql.append_record(symbol.binary_interp_table, values)
+
+	sql.commit()
 
 def BinaryList_run(jmgr, sql, args):
 	sql.connect_table(binary_list_table)
 	sql.connect_table(binary_link_table)
-	(dir, pkgname, version) = unpack_package(args[0])
+	sql.connect_table(symbol.binary_interp_table)
+
+	(dir, pkgname, _) = unpack_package(args[0])
 	if not dir:
 		return
-	binaries = walk_package(dir)
-	condition = 'package_name=\'' + pkgname + '\''
-	sql.delete_record(binary_list_table, condition)
-	sql.delete_record(binary_link_table, condition)
-	if binaries:
-		for (bin, type) in binaries:
-			bin_id = get_binary_id(sql, bin)
-			if type == 'lnk':
-				link = os.readlink(dir + bin)
-				target = os.path.join(os.path.dirname(bin), link)
-				target_id = get_binary_id(sql, target)
-				values = dict()
-				values['package_name'] = pkgname
-				values['link_id'] = bin_id
-				values['target_id'] = target_id
-				values['version'] = version
 
-				sql.append_record(binary_link_table, values)
-			else:
-				values = dict()
-				values['package_name'] = pkgname
-				values['bin_id'] = bin_id
-				values['type'] = type
-				values['version'] = version
+	binaries = walk_package(dir, find_script=True)
+	if not binaries:
+		package.remove_dir(dir)
+		return
 
-				sql.append_record(binary_list_table, values)
-
-			update_binary_linking(sql, bin_id)
-	sql.commit()
-	shutil.rmtree(dir)
+	run_binary_list(sql, pkgname, dir, binaries)
+	package.remove_dir(dir)
 
 def BinaryList_job_name(args):
 	return "Binary List: " + args[0]
@@ -375,3 +480,83 @@ BinaryListByRanks = Task(
 	func=BinaryListByRanks_run,
 	arg_defs=["Minimum Rank", "Maximum Rank"],
 	job_name=BinaryListByRanks_job_name)
+
+def PackageAnalysis_run(jmgr, sql, args):
+	sql.connect_table(binary_list_table)
+	sql.connect_table(binary_link_table)
+	sql.connect_table(symbol.binary_interp_table)
+
+	(dir, pkgname, _) = unpack_package(args[0])
+	if not dir:
+		return
+
+	binaries = walk_package(dir)
+	if not binaries:
+		remove_dir(dir)
+		return
+
+	run_binary_list(sql, pkgname, dir, binaries)
+
+	for (bin, type, _) in binaries:
+		if type == 'lnk' or type == 'scr':
+			continue
+		ref = reference_dir(dir)
+		symbol.BinaryDependency.create_job(jmgr, [pkgname, bin, dir, ref])
+		ref = reference_dir(dir)
+		symbol.BinarySymbol.create_job(jmgr, [pkgname, bin, dir, ref])
+		ref = reference_dir(dir)
+		callgraph.BinaryCallgraph.create_job(jmgr, [pkgname, bin, dir, ref])
+
+def PackageAnalysis_job_name(args):
+	return "Full Package Analysis: " + args[0]
+
+PackageAnalysis = Task(
+	name="Full Package Analysis",
+	func=PackageAnalysis_run,
+	arg_defs=["Package Name"],
+	job_name=PackageAnalysis_job_name)
+
+def PackageAnalysisByNames_run(jmgr, sql, args):
+	packages = get_packages_by_names(args[0].split())
+	if packages:
+		for i in packages:
+			PackageAnalysis.create_job(jmgr, [i])
+
+def PackageAnalysisByNames_job_name(args):
+	return "Full Package Analysis By Names: " + args[0]
+
+PackageAnalysisByNames = Task(
+	name="Full Package Analysis By Names",
+	func=PackageAnalysisByNames_run,
+	arg_defs=["Package Names"],
+	job_name=PackageAnalysisByNames_job_name)
+
+def PackageAnalysisByPrefixes_run(jmgr, sql, args):
+	packages = get_packages_by_prefixes(args[0].split())
+	if packages:
+		for i in packages:
+			PackageAnalysis.create_job(jmgr, [i])
+
+def PackageAnalysisByPrefixes_job_name(args):
+	return "Full Package Analysis By Prefixes: " + args[0]
+
+PackageAnalysisByPrefixes = Task(
+	name="Full Package Analysis By Prefixes",
+	func=PackageAnalysisByPrefixes_run,
+	arg_defs=["Package Prefixes"],
+	job_name=PackageAnalysisByPrefixes_job_name)
+
+def PackageAnalysisByRanks_run(jmgr, sql, args):
+	packages = get_packages_by_ranks(sql, int(args[0]), int(args[1]))
+	if packages:
+		for i in packages:
+			PackageAnalysis.create_job(jmgr, [i])
+
+def PackageAnalysisByRanks_job_name(args):
+	return "Full Package Analysis By Ranks: " + args[0] + " to " + args[1]
+
+PackageAnalysisByRanks = Task(
+	name="Full Package Analysis By Ranks",
+	func=PackageAnalysisByRanks_run,
+	arg_defs=["Minimum Rank", "Maximum Rank"],
+	job_name=PackageAnalysisByRanks_job_name)

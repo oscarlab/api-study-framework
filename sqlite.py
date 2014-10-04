@@ -61,6 +61,8 @@ class SQLite(SQL):
 			query = 'SELECT name FROM sqlite_master WHERE type=\'table\' AND name=\'' + table.name + '\''
 			if not self.sqlite_query(query):
 				self.sqlite_execute(table.create_table())
+				for query in table.create_indexes():
+					self.sqlite_execute(query)
 				self.db.commit()
 
 			self.tables.append(table)
