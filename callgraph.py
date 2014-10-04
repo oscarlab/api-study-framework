@@ -122,7 +122,16 @@ class Syscall_Inst(Inst):
 		Inst.__init__(self, inst_addr)
 		self.assign = assign
 		self.syscall = syscall
-		self.target = target
+		if isinstance(target, str):
+			self.target = target
+		else:
+			self.target = '@%x' % (inst_addr)
+
+	@classmethod
+	def is_valid(cls, num):
+		if isinstance(num, int) and num >= 0 and num < len(syscall.syscalls):
+			return True
+		return False
 
 	def __str__(self):
 		if self.syscall != -1:
@@ -220,25 +229,21 @@ class File_Inst(Inst):
 		return Inst.__str__(self) + ' access ' + self.file
 
 def get_callgraph(binary_name):
-	process = subprocess.Popen(["readelf", "--file-header","-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
+	process = subprocess.Popen(["readelf", "--file-header", "-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
 
-	class_name = 'ELF64'
 	entry_addr = None
 	for line in process.stdout:
 		results = re.match(r"([^\:]+)\: +(.+)", line.strip())
 		if results:
 			key = results.group(1)
 			val = results.group(2)
-			if key == 'Class':
-				class_name = val
+			if key == 'Class' and val != 'ELF64':
+				raise Exception('Unsupported class: ' + val)
 			if key == 'Entry point address':
 				entry_addr = int(val[2:], 16)
 
 	if process.wait() != 0:
 		raise Exception('process failed: readelf --file-header')
-
-	if class_name != 'ELF64':
-		raise Exception('Unsupported class: ' + class_name);
 
 	process = subprocess.Popen(["readelf", "--dyn-syms","-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
 
@@ -527,9 +532,25 @@ def get_callgraph(binary_name):
 			continue
 
 		if inst == 'callq':
-			if re.match(r'[a-f0-9]+$', args[0]):
-				func_addr = int(args[0], 16)
+			match = re.match(r'(0x)?([a-f0-9]+)$', args[0])
+			if match:
+				func_addr = int(match.group(2), 16)
 				func_name = None
+
+				if len(args) == 1:
+					compound = Vec_Syscall_Inst.get_compound(func_addr=func_addr)
+					if compound:
+						reg = register_values[compound['reg'][0]]
+						if Vec_Syscall_Inst.is_valid(reg[0]):
+							syscall_list.append(Vec_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=reg[1], req=reg[0]))
+						else:
+							syscall_list.append(Vec_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=reg[1], req_target=reg[0]))
+						continue
+
+					Caller.register_caller(func_list, func_addr)
+					call_list.append(Call_Inst(inst_addr, call_addr=func_addr))
+					continue
+
 
 				# Direct call
 				match = re.match(r"\<([a-zA-Z0-9_]+)(@plt)?(\+0x[a-f0-9]+)?\>$", args[1])
@@ -549,7 +570,7 @@ def get_callgraph(binary_name):
 								syscall_list.append(Vec_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=reg[1], req_target=reg[0]))
 							continue
 
-						if isinstance(rdi[0], int):
+						if Syscall_Inst.is_valid(rdi[0]):
 							syscall_list.append(Syscall_Inst(inst_addr, rdi[1], rdi[0]))
 						else:
 							syscall_list.append(Syscall_Inst(inst_addr, rdi[1], target=rdi[0]))
@@ -666,7 +687,7 @@ def get_callgraph(binary_name):
 		if inst == 'syscall':
 			rax = register_values['%rax']
 
-			if isinstance(rax[0], int):
+			if Syscall_Inst.is_valid(rax[0]):
 				compound = Vec_Syscall_Inst.get_compound(syscall=rax[0])
 				if compound:
 					reg = register_values[compound['reg'][0]]
@@ -723,8 +744,6 @@ def get_callgraph(binary_name):
 			addr += 8
 
 	binary.close()
-
-#	file_list = get_proc_files(binary_name)
 
 	def Caller_cmp(x, y):
 		return cmp(x.func_addr, y.func_addr)
@@ -1011,7 +1030,7 @@ def BinaryCallgraph_run(jmgr, sql, args):
 				values = dict()
 				values['func_addr'] = caller.func_addr
 
-				if isinstance(syscall, int) and syscall >= 0 and syscall < 400:
+				if isinstance(syscall, int):
 					values['syscall'] = syscall
 					syscalls.append(values)
 					continue

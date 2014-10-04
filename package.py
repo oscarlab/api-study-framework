@@ -262,20 +262,36 @@ PackageUnpack = Task(
 	job_name=PackageUnpack_job_name)
 
 def check_elf(path):
+	process = subprocess.Popen(["readelf", "--file-header", "-W", path], stdout=subprocess.PIPE, stderr=main.null_dev)
+
+	for line in process.stdout:
+		results = re.match(r"([^\:]+)\: +(.+)", line.strip())
+		if results:
+			key = results.group(1)
+			val = results.group(2)
+			if key == 'Class':
+				if val != 'ELF64':
+					return False
+				else:
+					break
+
+	if process.wait() != 0:
+		return False
+
 	process = subprocess.Popen(["readelf", "--section-headers", "-W", path], stdout=subprocess.PIPE, stderr=main.null_dev)
 
-	is_elf = False
+	has_text = False
 	for line in process.stdout:
 		parts = line[6:].strip().split()
 
 		# a valid elf needs to have a .text section (or it could be debug object)
 		if parts and parts[0] == '.text':
-			is_elf = True
+			has_text = True
 
 	if process.wait() != 0:
 		return False
 
-	return is_elf
+	return has_text
 
 def which(file):
 	for prefix in os.environ["PATH"].split(":"):
