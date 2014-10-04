@@ -9,6 +9,7 @@ import subprocess
 import re
 import curses
 import signal
+import socket
 
 def center(win, h, w):
 	(maxh, maxw) = win.getmaxyx()
@@ -151,15 +152,16 @@ def make_screen(jmgr, wmgr, tasks):
 	screen = curses.initscr()
 	screen.border(0)
 	curses.noecho()
-	screen.addstr(1, 1, "Commands:")
-	screen.addstr(2, 3, "l - List all jobs")
-	screen.addstr(3, 3, "a - Add new job")
-	screen.addstr(4, 3, "r - requeue a job")
-	screen.addstr(5, 3, "c - Clear finished jobs")
-	screen.addstr(6, 3, "w - List all workers")
-	screen.addstr(7, 3, "n - Create new worker")
-	screen.addstr(8, 3, "e - End execution")
-	screen.addstr(9, 3, "q - Leave")
+	screen.addstr(0, 1, socket.gethostname())
+	screen.addstr(2, 1, "Commands:")
+	screen.addstr(3, 3, "l - List all jobs")
+	screen.addstr(4, 3, "a - Add new job")
+	screen.addstr(5, 3, "r - requeue a job")
+	screen.addstr(6, 3, "c - Clear finished jobs")
+	screen.addstr(7, 3, "w - List all workers")
+	screen.addstr(8, 3, "n - Create new worker")
+	screen.addstr(9, 3, "e - End execution")
+	screen.addstr(10, 3, "q - Leave")
 	while True:
 		c = screen.getch()
 		if c == ord('l'):
