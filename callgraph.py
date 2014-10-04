@@ -168,7 +168,7 @@ class Vec_Syscall_Inst(Syscall_Inst):
 
 		return 'compound ' + Syscall_Inst.__str__(self) + ' by ' + self.req_target
 
-def get_proc_files(binary_name):
+def get_fileaccess(binary_name):
 	file_list = []
         binary = open(binary_name, 'rb')
 	path = None
@@ -194,37 +194,13 @@ def get_proc_files(binary_name):
 			if path:
 				for prefix in File_Inst.prefixes:
 					if path.startswith(prefix):
-#						file_list.append((0, path))
 						file_list.append((re.sub(r'\%[0-9\.\+\-]*[A-Za-z]', '*', path)))
 		elif ch is None:
 			break
 		else:
 			continue
 	binary.close()
-	print file_list
 	return file_list
-
-#        process = subprocess.Popen(["objdump", "-s","-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
-#
-#        for line in process.stdout:
-#                results = line.split()
-#		if len(results) != 6:
-#			continue
-#		if "/proc" in results[5]:
-#			print results
-#	binary = open(binary_name, 'rb')
-	
-
-#                if results:
-#                        key = results.group(1)
-#                        val = results.group(2)
-#                        if key == 'Class':
-#                                class_name = val
-#                        if key == 'Entry point address':
-#                                entry_addr = int(val[2:], 16)
-#
-#        if process.wait() != 0:
-#                raise Exception('process failed: readelf --file-header')
 
 class File_Inst(Inst):
 	prefixes = ['/proc', '/dev', '/sys', '/etc']
@@ -1141,9 +1117,14 @@ if __name__ == "__main__":
 	if sys.argv[1] == '-r':
 		for caller in get_callgraph_recursive(sys.argv[2]):
 			print caller
-		get_proc_files(sys.argv[2])
+
+		print "File Access:"
+		for file in get_fileaccess(sys.argv[2]):
+			print '\t' + file
 	else:
 		for caller in get_callgraph(sys.argv[1]):
 			print caller
-		get_proc_files(sys.argv[1])
 
+		print "File Access:"
+		for file in get_fileaccess(sys.argv[1]):
+			print '\t' + file
