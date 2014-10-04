@@ -4,5 +4,10 @@ config = {
 	'package_source':	'sources.list',
 	'package_arch':		'amd64',
 	'package_options':	{},
+	'sql_engine':		'postgresql.PostgreSQL',
+	'postgresql_host':	'localhost',
+	'postgresql_user':	'postgres',
+	'postgresql_pass':	'postgres',
+	'postgresql_db':	'syscall_popularity',
 	'sqlite_db':		'syscall_popularity.db',
 }
