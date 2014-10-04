@@ -153,7 +153,6 @@ class PostgreSQL(SQL):
 	def postgresql_execute(self, query):
 		cur = self.db.cursor()
 		try:
-			print query
 			cur.execute(query)
 		except psycopg2.Error as err:
 			cur.close()
