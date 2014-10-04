@@ -185,13 +185,14 @@ def get_fileaccess(binary_name):
 				ch = struct.unpack('s', binary.read(1))[0]
 				if ch == '\0':
 					break
-				if ch == ' ':
+				if ch in string.whitespace or ch == '\'' or ch == '\"':
 					break
 				if ch not in string.printable:
 					path = None
 					break
 				path += ch
 			if path:
+				path = path.rstrip(string.punctuation)
 				for prefix in File_Inst.prefixes:
 					if path.startswith(prefix):
 						file_list.append((re.sub(r'\%[0-9\.\+\-]*[A-Za-z]', '*', path)))
