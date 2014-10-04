@@ -8,7 +8,20 @@ import sys
 import re
 
 def get_syscalls():
-	with open('/usr/include/x86_64-linux-gnu/asm/unistd_64.h', 'r') as u:
+	files = [
+		'/usr/include/x86_64-linux-gnu/asm/unistd_64.h',
+		'/usr/include/asm/unistd_64.h',
+	]
+
+	unistd_file = None
+	for f in files:
+		if os.path.exists(f):
+			unistd_file = f
+			break
+	if not unistd_file:
+		raise Exception("Cannot find unistd file")
+
+	with open(unistd_file, 'r') as u:
 		syscalls = {}
 		for line in u:
 			match = re.match(r"^\#\s*define\s+__NR_([a-z0-9_]+)\s+([0-9]+)$", line)
