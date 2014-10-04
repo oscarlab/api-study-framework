@@ -191,9 +191,7 @@ def get_fileaccess(binary_name):
 			path = ch
 			while True:
 				ch = struct.unpack('s', binary.read(1))[0]
-				if ch == '\0':
-					break
-				if ch in string.whitespace or ch == '\'' or ch == '\"':
+				if ch == '\0' or ch in string.whitespace or ch == '\'' or ch == '\"':
 					break
 				if ch not in string.printable:
 					path = None
@@ -203,7 +201,7 @@ def get_fileaccess(binary_name):
 				path = path.rstrip(string.punctuation)
 				for prefix in File_Inst.prefixes:
 					if path.startswith(prefix):
-						file_list.append((re.sub(r'\%[0-9\.\+\-]*[A-Za-z]', '*', path)))
+						file_list.append(re.sub(r'\%[0-9\.\+\-]*[A-Za-z]', '*', path))
 		elif ch is None:
 			break
 		else:
@@ -514,7 +512,7 @@ def get_callgraph(binary_name):
 							while addr < va + fsz:
 								ch = struct.unpack('s', binary.read(1))[0]
 								addr += 1
-								if ch == '\0':
+								if ch == '\0' or ch in string.whitespace or ch == '\'' or ch == '\"':
 									break
 								if ch not in string.printable:
 									path = None
@@ -544,7 +542,7 @@ def get_callgraph(binary_name):
 
 						compound = Vec_Syscall_Inst.get_compound(syscall=rdi[0])
 						if compound:
-							req = register_values[compound['reg'][1]]
+							reg = register_values[compound['reg'][1]]
 							if Vec_Syscall_Inst.is_valid(reg[0]):
 								syscall_list.append(Vec_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=reg[1], req=reg[0]))
 							else:
@@ -564,7 +562,7 @@ def get_callgraph(binary_name):
 
 					compound = Vec_Syscall_Inst.get_compound(func_addr=func_addr, func_name=func_name)
 					if compound:
-						req = register_values[compound['reg'][0]]
+						reg = register_values[compound['reg'][0]]
 						if Vec_Syscall_Inst.is_valid(reg[0]):
 							syscall_list.append(Vec_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=reg[1], req=reg[0]))
 						else:
@@ -592,7 +590,7 @@ def get_callgraph(binary_name):
 
 						compound = Vec_Syscall_Inst.get_compound(syscall=rdi[0])
 						if compound:
-							req = register_values[compound['reg'][1]]
+							reg = register_values[compound['reg'][1]]
 							if Vec_Syscall_Inst.is_valid(reg[0]):
 								syscall_list.append(Vec_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=reg[1], req=reg[0]))
 							else:
@@ -612,7 +610,7 @@ def get_callgraph(binary_name):
 
 				compound = Vec_Syscall_Inst.get_compound(func_addr=func_addr, func_name=func_name)
 				if compound:
-					req = register_values[compound['reg'][0]]
+					reg = register_values[compound['reg'][0]]
 					if Vec_Syscall_Inst.is_valid(reg[0]):
 						syscall_list.append(Vec_Syscall_Inst(inst_addr, inst_addr, compound['syscall'], req_assign=reg[1], req=reg[0]))
 					else:
