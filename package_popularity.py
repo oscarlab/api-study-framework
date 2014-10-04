@@ -24,15 +24,20 @@ def package_popularity_run(jmgr, sql, args):
 	sql.connect_table(package_popularity_table)
 
 	popularity = dict()
+	sum = {'package_name': 'Total', 'rank': 999999, 'inst': 0, 'vote': 0}
 
 	for url in popcon_urls:
-		data = urllib2.urlopen(url);
+		data = urllib2.urlopen(url)
 		for line in data:
 			# Ignore comments
 			if line.startswith('#'):
 				continue
 			# End of the file/webpage confined for this webpage
 			if line.startswith('-'):
+				line = next(data)
+				results = line.strip().split()
+				sum['inst'] += int(results[2])
+				sum['vote'] += int(results[3])
 				break
 
 			results = line.strip().split()
@@ -69,6 +74,7 @@ def package_popularity_run(jmgr, sql, args):
 			values['rank'] = rank
 			rank += 1
 			sql.append_record(package_popularity_table, values)
+	sql.append_record(package_popularity_table, sum)
 	sql.commit()
 
 def package_popularity_job_name(args):
