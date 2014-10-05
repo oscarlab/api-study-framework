@@ -3,7 +3,7 @@
 from task import Task
 from sql import SQL
 from package import binary_list_table
-from binary import get_binary_id, get_binary_name, get_package_id, get_package_name
+from binary import get_binary_id, get_binary_name, get_package_id, get_package_name, package_id_table
 from main import get_config
 
 import os
@@ -120,6 +120,45 @@ AnalysisAllExecutables = Task(
 		arg_defs=[],
 		job_name=AnalysisAllExecutables_job_name)
 
+def AnalysisPackage_run(jmgr, sql, args):
+	pkg_name = args[0]
+	if len(args) > 1:
+		pkg_id = args[1]
+	else:
+		pkg_id = get_package_id(sql, pkg_name)
+
+	sql.postgresql_execute('SELECT analysis_package(%d)' % (pkg_id))
+	sql.commit()
+
+def AnalysisPackage_job_name(args):
+	return "Analyze Executable: " + args[0]
+
+AnalysisPackage = Task(
+		name="Analyze Package by PostgreSQL",
+		func=AnalysisPackage_run,
+		arg_defs=["Package Name"],
+		job_name=AnalysisPackage_job_name)
+
+def AnalysisAllPackages_run(jmgr, sql, args):
+	sql.connect_table(package_id_table)
+
+	results = sql.search_record(package_id_table, 'footprint=False', ['id'])
+
+	for r in results:
+		pkg_id = r[0]
+		pkg_name = get_package_name(sql, pkg_id)
+		if pkg_name:
+			AnalysisPackage.create_job(jmgr, [pkg_name, pkg_id]);
+
+def AnalysisAllPackages_job_name(args):
+	return "Analyze All Packages"
+
+AnalysisAllPackages = Task(
+		name="Analyze All Packages by PostgreSQL",
+		func=AnalysisAllPackages_run,
+		arg_defs=[],
+		job_name=AnalysisAllPackages_job_name)
+
 class PostgreSQL(SQL):
 	def __init__(self):
 		SQL.__init__(self)
@@ -135,6 +174,8 @@ class PostgreSQL(SQL):
 		Task.register(AnalysisLinking)
 		Task.register(AnalysisExecutable)
 		Task.register(AnalysisAllExecutables)
+		Task.register(AnalysisPackage)
+		Task.register(AnalysisAllPackages)
 
 	def __del__(self):
 		self.disconnect()

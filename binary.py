@@ -52,7 +52,8 @@ def get_binary_name(sql, id):
 
 package_id_table = Table('package_id', [
 			('id', 'INT', 'NOT NULL'),
-			('package_name', 'VARCHAR', 'UNIQUE')],
+			('package_name', 'VARCHAR', 'UNIQUE'),
+			('footprint', 'BOOLEAN')],
 			['id'],
 			[['package_name']])
 
@@ -75,6 +76,7 @@ def get_package_id(sql, package_name):
 		values = dict()
 		values['id'] = id
 		values['package_name'] = package_name
+		values['footprint'] = False
 		retry = False
 		try:
 			sql.append_record(package_id_table, values)

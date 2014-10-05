@@ -217,8 +217,8 @@ BEGIN
 		ON  t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id
 		AND t1.func_addr = t2.func_addr;
 
-	UPDATE binary_list SET callgraph = True
-	WHERE pkg_id = p AND bin_id = b;
+	UPDATE binary_list SET callgraph = True WHERE pkg_id = p AND bin_id = b;
+	UPDATE package_id SET footprint = False WHERE id = p;
 
 	TRUNCATE TABLE dep_lib;
 	TRUNCATE TABLE dep_sym;
