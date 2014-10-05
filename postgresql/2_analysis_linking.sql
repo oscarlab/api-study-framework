@@ -67,7 +67,7 @@ BEGIN
 		dep_id INT NOT NULL,
 		dep_name VARCHAR NOT NULL,
 		by_link BOOLEAN NOT NULL,
-		PRIMARY KEY (bin_id, dep_id));
+		PRIMARY KEY (pkg_id, bin_id, dep_id));
 	INSERT INTO bin_dep
 		SELECT DISTINCT
 		t1.pkg_id, t1.bin_id, t2.id, t2.file_name, False
