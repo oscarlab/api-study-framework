@@ -219,8 +219,8 @@ class PostgreSQL(SQL):
 			while not self.postgresql_query(query):
 				try:
 					self.postgresql_execute(table.create_table())
-					for query in table.create_indexes():
-						self.postgresql_execute(query)
+					for q in table.create_indexes():
+						self.postgresql_execute(q)
 					self.db.commit()
 				except:
 					continue

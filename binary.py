@@ -53,7 +53,7 @@ def get_binary_name(sql, id):
 package_id_table = Table('package_id', [
 			('id', 'INT', 'NOT NULL'),
 			('package_name', 'VARCHAR', 'UNIQUE'),
-			('footprint', 'BOOLEAN')],
+			('footprint', 'BOOLEAN', '')],
 			['id'],
 			[['package_name']])
 

@@ -30,6 +30,8 @@ class Table:
 		return query
 
 	def create_indexes(self):
+		if not self.indexes:
+			return []
 		queries = []
 		for idx in self.indexes:
 			idx_name = self.name
