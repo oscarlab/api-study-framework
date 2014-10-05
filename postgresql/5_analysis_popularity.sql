@@ -35,20 +35,27 @@ IF NOT table_exists('fileaccess_popularity') THEN
 END IF;
 END $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION add_pop(pop FLOAT, inst INT, total INT)
+RETURNS FLOAT AS $$
+BEGIN
+	RETURN pop + ln(total) - ln(total - inst);
+END
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION analysis_call_popularity(p INT, b INT)
 RETURNS void AS $$
 
 DECLARE
 	total INT := inst FROM package_popularity WHERE package_name = 'Total';
 	c INT;
-	inst FLOAT;
+	inst INT;
 
 BEGIN
 	CREATE TEMP TABLE IF NOT EXISTS call_tmp (
 		func_addr INT NOT NULL PRIMARY KEY,
 		popularity FLOAT);
 	INSERT INTO call_tmp
-		SELECT DISTINCT call, 1.0 FROM package_call
+		SELECT DISTINCT call, 0.0 FROM package_call
 		WHERE dep_pkg_id = p AND dep_bin_id = b;
 
 	FOR c, inst IN (
@@ -58,17 +65,18 @@ BEGIN
 		AND t1.pkg_id = t2.id
 		INNER JOIN package_popularity AS t3
 		ON  t2.package_name = t3.package_name
+		AND t3.inst != 0
 	) LOOP
 		UPDATE call_tmp
-		SET popularity = popularity * inst / total
+		SET popularity = add_pop(popularity, inst, total)
 		WHERE func_addr = c;
 	END LOOP;
 
 	DELETE FROM call_popularity WHERE pkg_id = p AND bin_id = b;
 	INSERT INTO call_popularity
-		SELECT p, b, func_addr, 1.0 - popularity
+		SELECT p, b, func_addr, popularity
 		FROM call_tmp
-		ORDER BY popularity, func_addr;
+		ORDER BY popularity DESC, func_addr;
 
 	TRUNCATE TABLE call_tmp;
 END
@@ -80,14 +88,14 @@ RETURNS void AS $$
 DECLARE
 	total INT := inst FROM package_popularity WHERE package_name = 'Total';
 	s SMALLINT;
-	inst FLOAT;
+	inst INT;
 
 BEGIN
 	CREATE TEMP TABLE IF NOT EXISTS syscall_tmp (
 		syscall SMALLINT NOT NULL PRIMARY KEY,
 		popularity FLOAT);
 	INSERT INTO syscall_tmp
-		SELECT DISTINCT syscall, 1.0 FROM package_syscall;
+		SELECT DISTINCT syscall, 0.0 FROM package_syscall;
 
 	FOR s, inst IN (
 		SELECT t1.syscall, t3.inst FROM
@@ -95,17 +103,18 @@ BEGIN
 		ON  t1.pkg_id = t2.id
 		INNER JOIN package_popularity AS t3
 		ON  t2.package_name = t3.package_name
+		AND t3.inst != 0
 	) LOOP
 		UPDATE syscall_tmp
-		SET popularity = popularity * inst / total
+		SET popularity = add_pop(popularity, inst, total)
 		WHERE syscall = s;
 	END LOOP;
 
 	TRUNCATE TABLE syscall_popularity;
 	INSERT INTO syscall_popularity
-		SELECT syscall, 1.0 - popularity
+		SELECT syscall, popularity
 		FROM syscall_tmp
-		ORDER BY popularity, syscall;
+		ORDER BY popularity DESC, syscall;
 
 	TRUNCATE TABLE syscall_tmp;
 END
@@ -118,7 +127,7 @@ DECLARE
 	total INT := inst FROM package_popularity WHERE package_name = 'Total';
 	s SMALLINT;
 	r BIGINT;
-	inst FLOAT;
+	inst INT;
 
 BEGIN
 	CREATE TEMP TABLE IF NOT EXISTS vecsyscall_tmp (
@@ -127,7 +136,7 @@ BEGIN
 		popularity FLOAT,
 		PRIMARY KEY (syscall, request));
 	INSERT INTO vecsyscall_tmp
-		SELECT DISTINCT syscall, request, 1.0 FROM package_vecsyscall;
+		SELECT DISTINCT syscall, request, 0.0 FROM package_vecsyscall;
 
 	FOR s, r, inst IN (
 		SELECT t1.syscall, t1.request, t3.inst FROM
@@ -135,17 +144,18 @@ BEGIN
 		ON  t1.pkg_id = t2.id
 		INNER JOIN package_popularity AS t3
 		ON  t2.package_name = t3.package_name
+		AND t3.inst != 0
 	) LOOP
 		UPDATE vecsyscall_tmp
-		SET popularity = popularity * inst / total
+		SET popularity = add_pop(popularity, inst, total)
 		WHERE syscall = s AND request = r;
 	END LOOP;
 
 	TRUNCATE TABLE vecsyscall_popularity;
 	INSERT INTO vecsyscall_popularity
-		SELECT syscall, request, 1.0 - popularity
+		SELECT syscall, request, popularity
 		FROM vecsyscall_tmp
-		ORDER BY syscall, popularity, request;
+		ORDER BY syscall, popularity DESC, request;
 
 	TRUNCATE TABLE vecsyscall_tmp;
 END
@@ -157,14 +167,14 @@ RETURNS void AS $$
 DECLARE
 	total INT := inst FROM package_popularity WHERE package_name = 'Total';
 	f VARCHAR;
-	inst FLOAT;
+	inst INT;
 
 BEGIN
 	CREATE TEMP TABLE IF NOT EXISTS fileaccess_tmp (
 		file VARCHAR NOT NULL PRIMARY KEY,
 		popularity FLOAT);
 	INSERT INTO fileaccess_tmp
-		SELECT DISTINCT file, 1.0 FROM package_fileaccess;
+		SELECT DISTINCT file, 0.0 FROM package_fileaccess;
 
 	FOR f, inst IN (
 		SELECT t1.file, t3.inst FROM
@@ -172,17 +182,18 @@ BEGIN
 		ON  t1.pkg_id = t2.id
 		INNER JOIN package_popularity AS t3
 		ON  t2.package_name = t3.package_name
+		AND t3.inst != 0
 	) LOOP
 		UPDATE fileaccess_tmp
-		SET popularity = popularity * inst / total
+		SET popularity = add_pop(popularity, inst, total)
 		WHERE file = f;
 	END LOOP;
 
 	TRUNCATE TABLE fileaccess_popularity;
 	INSERT INTO fileaccess_popularity
-		SELECT file, 1.0 - popularity
+		SELECT file, popularity
 		FROM fileaccess_tmp
-		ORDER BY popularity, file;
+		ORDER BY popularity DESC, file;
 
 	TRUNCATE TABLE fileaccess_tmp;
 END
