@@ -29,7 +29,7 @@ def AnalysisLibrary_run(jmgr, sql, args):
 	sql.commit()
 
 def AnalysisLibrary_job_name(args):
-	return "Analyze Library: " + args[0]
+	return "Analyze Library: " + args[1] + " in " + args[0]
 
 AnalysisLibrary = Task(
 		name="Analyze Library by PostgreSQL",
@@ -89,7 +89,7 @@ def AnalysisExecutable_run(jmgr, sql, args):
 	sql.commit()
 
 def AnalysisExecutable_job_name(args):
-	return "Analyze Executable: " + args[0]
+	return "Analyze Executable: " + args[1] + " in " + args[0]
 
 AnalysisExecutable = Task(
 		name="Analyze Executable by PostgreSQL",

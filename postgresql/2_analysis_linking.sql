@@ -1,109 +1,143 @@
-CREATE TABLE IF NOT EXISTS analysis_linking (
-	bin_id INT NOT NULL,
-	dep_id INT NOT NULL,
-	dep_name VARCHAR NOT NULL,
-	by_link BOOLEAN NOT NULL,
-	PRIMARY KEY (bin_id, dep_id));
+DO $$
+BEGIN
+IF NOT table_exists('binary_linking') THEN
+	CREATE TABLE binary_linking (
+		pkg_id INT NOT NULL, bin_id INT NOT NULL,
+		dep_id INT NOT NULL,
+		dep_name VARCHAR NOT NULL,
+		by_link BOOLEAN NOT NULL,
+		PRIMARY KEY (pkg_id, bin_id, dep_id)
+	);
+	CREATE INDEX binary_linking_pkg_id_bin_id_idx
+		ON binary_linking (pkg_id, bin_id);
+	CREATE INDEX binary_linking_bin_id_idx
+		ON binary_linking (bin_id);
+	CREATE INDEX binary_linking_dep_id_idx
+		ON binary_linking (dep_id);
+	CREATE INDEX binary_linking_dep_name_idx
+		ON binary_linking (dep_name);
+END IF;
+END $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION analysis_linking()
 RETURNS void AS $$
 
 DECLARE
+	p INT;
 	b INT;
 	d VARCHAR;
 	resolved BOOLEAN;
 
 BEGIN
 	CREATE TEMP TABLE IF NOT EXISTS bin_id (
-		bin_id INT NOT NULL PRIMARY KEY);
+		pkg_id INT NOT NULL,
+		bin_id INT NOT NULL,
+		PRIMARY KEY (pkg_id, bin_id));
 	INSERT INTO bin_id
-		SELECT id AS bin_id FROM binary_id WHERE linking_generated = False;
+		SELECT pkg_id, bin_id FROM binary_list WHERE linking = False
+		UNION
+		SELECT pkg_id, lnk_id FROM binary_link WHERE linking = False;
 	INSERT INTO bin_id
-		SELECT DISTINCT t1.bin_id FROM
-		analysis_linking AS t1 INNER JOIN bin_id AS t2
+		SELECT DISTINCT t1.pkg_id, t1.bin_id FROM
+		binary_linking AS t1 INNER JOIN bin_id AS t2
 		ON t1.dep_id = t2.bin_id AND
 		NOT EXISTS (
-			SELECT * FROM bin_id WHERE bin_id = t1.bin_id
+			SELECT * FROM bin_id WHERE
+			pkg_id = t1.pkg_id AND bin_id = t1.bin_id
 		);
+
+	FOR p, b in (SELECT * FROM bin_id) LOOP
+		RAISE NOTICE 'update linking: % in package %', b, p;
+	END LOOP;
+
+	CREATE TEMP TABLE IF NOT EXISTS bin_dep_name (
+		pkg_id INT NOT NULL, bin_id INT NOT NULL,
+		dep_name VARCHAR NOT NULL,
+		PRIMARY KEY (pkg_id, bin_id, dep_name));
+	INSERT INTO bin_dep_name
+		SELECT DISTINCT t1.pkg_id, t1.bin_id, dependency
+		FROM binary_dependency AS t1
+		INNER JOIN
+		bin_id AS t2
+		ON t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id;
 
 	CREATE TEMP TABLE IF NOT EXISTS bin_dep (
-		bin_id INT NOT NULL,
-		dependency VARCHAR NOT NULL,
-		PRIMARY KEY (bin_id, dependency));
-	INSERT INTO bin_dep
-		SELECT DISTINCT bin_id, dependency FROM binary_dependency AS t
-		WHERE EXISTS (
-			SELECT * FROM bin_id WHERE bin_id = t.bin_id
-		);
-
-	CREATE TEMP TABLE IF NOT EXISTS bin_dep_id (
+		pkg_id INT NOT NULL,
 		bin_id INT NOT NULL,
 		dep_id INT NOT NULL,
 		dep_name VARCHAR NOT NULL,
 		by_link BOOLEAN NOT NULL,
 		PRIMARY KEY (bin_id, dep_id));
-	INSERT INTO bin_dep_id
-		SELECT DISTINCT t1.bin_id, t2.id, t2.file_name, False FROM
-		bin_dep AS t1 INNER JOIN binary_id AS t2
-		ON t1.dependency = t2.file_name
+	INSERT INTO bin_dep
+		SELECT DISTINCT
+		t1.pkg_id, t1.bin_id, t2.id, t2.file_name, False
+		FROM
+		bin_dep_name AS t1 INNER JOIN binary_id AS t2
+		ON t1.dep_name = t2.file_name
 		UNION
-		SELECT DISTINCT t1.bin_id, t1.interp, t3.file_name, False FROM
-		binary_interp AS t1 INNER JOIN bin_id AS t2
-		ON t1.bin_id = t2.bin_id
-		INNER JOIN binary_id AS t3
-		ON t1.interp = t3.id
+		SELECT DISTINCT
+		t3.pkg_id, t3.bin_id, t3.interp, t5.file_name, False
+		FROM
+		binary_interp AS t3 INNER JOIN bin_id AS t4
+		ON t3.pkg_id = t4.pkg_id AND t3.bin_id = t4.bin_id
+		INNER JOIN binary_id AS t5
+		ON t3.interp = t5.id
 		UNION
-		SELECT DISTINCT t3.link_id, t3.target_id, t5.file_name, True FROM
-		binary_link AS t3
-		INNER JOIN
-		bin_id AS t4
-		ON t3.link_id = t4.bin_id
-		INNER JOIN
-		binary_id AS t5
-		ON t3.target_id = t5.id;
+		SELECT DISTINCT
+		t6.pkg_id, t6.lnk_id, t6.target, t8.file_name, True
+		FROM
+		binary_link AS t6 INNER JOIN bin_id AS t7
+		ON t6.pkg_id = t7.pkg_id AND t6.lnk_id = t7.bin_id
+		INNER JOIN binary_id AS t8
+		ON t6.target = t8.id;
 
-	DELETE FROM analysis_linking AS t WHERE EXISTS (
-		SELECT * FROM bin_id WHERE bin_id = t.bin_id
-	);
+	FOR p, b in (SELECT * FROM bin_id) LOOP
+		DELETE FROM binary_linking WHERE pkg_id = p AND bin_id = b;
+	END LOOP;
 
 	WITH RECURSIVE
-	analysis(bin_id, dep_id, dep_name, by_link)
+	analysis(pkg_id, bin_id, dep_id, dep_name, by_link)
 	AS (
-		SELECT * FROM bin_dep_id
+		SELECT * FROM bin_dep
 		UNION
-		SELECT t1.bin_id, t2.dep_id, t2.dep_name, t1.by_link AND t2.by_link FROM
+		SELECT
+		t1.pkg_id, t1.bin_id, t2.dep_id, t2.dep_name,
+		t1.by_link AND t2.by_link
+		FROM
 		analysis AS t1 INNER JOIN (
-			SELECT * FROM bin_dep_id
+			SELECT * FROM bin_dep
 			UNION
-			SELECT * FROM analysis_linking
+			SELECT * FROM binary_linking
 		) AS t2
 		ON t1.dep_id = t2.bin_id
-	) INSERT INTO analysis_linking SELECT * FROM analysis;
+	) INSERT INTO binary_linking SELECT * FROM analysis;
 
-	FOR b in (SELECT * FROM bin_id) LOOP
+	FOR p, b in (SELECT * FROM bin_id) LOOP
 		resolved := True;
 
 		FOR d IN (
-			SELECT dependency FROM binary_dependency
-			WHERE bin_id = b
+			SELECT dependency FROM
+			binary_dependency
+			WHERE pkg_id = p AND bin_id = b
 		) LOOP
 			IF NOT EXISTS (
-				SELECT * FROM analysis_linking
-				WHERE bin_id = b AND dep_name = d
+				SELECT * FROM binary_linking
+				WHERE pkg_id = p AND bin_id = b AND dep_name = d
 			) THEN
 				resolved := False;
-				RAISE NOTICE 'dependency not resolved for %: %', b, d;
+				RAISE NOTICE 'dependency not resolved for binary % in package %: %', b, p, d;
 			END IF;
 		END LOOP;
 
-		UPDATE binary_id SET
-			linking_generated = resolved, footprint_generated = False
-			WHERE id = b;
+		UPDATE binary_list SET linking = resolved
+		WHERE pkg_id = p AND bin_id = b;
+		UPDATE binary_link SET linking = resolved
+		WHERE pkg_id = p AND lnk_id = b;
 	END LOOP;
 
 	TRUNCATE TABLE bin_id;
+	TRUNCATE TABLE bin_dep_name;
 	TRUNCATE TABLE bin_dep;
-	TRUNCATE TABLE bin_dep_id;
 
 	RAISE NOTICE 'linking generated';
 END
