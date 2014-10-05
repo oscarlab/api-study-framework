@@ -38,7 +38,7 @@ END $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION add_pop(pop FLOAT, inst INT, total INT)
 RETURNS FLOAT AS $$
 BEGIN
-	RETURN pop + ln(total) - ln(total - inst);
+	RETURN pop + log(total) - log(total - inst);
 END
 $$ LANGUAGE plpgsql;
 
