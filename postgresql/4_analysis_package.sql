@@ -48,7 +48,6 @@ IF NOT table_exists('package_fileaccess') THEN
 END IF;
 END $$ LANGUAGE plpgsql;
 
-
 CREATE OR REPLACE FUNCTION analysis_package(p INT)
 RETURNS void AS $$
 
