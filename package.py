@@ -341,6 +341,11 @@ def check_script(path):
 def walk_package(dir, find_script=False):
 	binaries = []
 	for (root, subdirs, files) in os.walk(dir):
+		if not os.access(root, os.X_OK):
+			try:
+				os.chmod(root, 0755)
+			except:
+				continue
 		rel_root = root[len(dir) + 1:]
 		for f in files:
 			path = root + '/' + f
