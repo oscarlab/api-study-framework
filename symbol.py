@@ -136,7 +136,7 @@ def BinarySymbol_run(jmgr, sql, args):
 		pkg_id = get_package_id(sql, pkgname)
 		bin_id = get_binary_id(sql, bin)
 
-		sql.delete_record(binary_symbol_table, 'pkg_id=\'' + str(pkg_id) + '\' and bin_id=\'' + str(bin_id) + '\'')
+		sql.delete_record(binary_symbol_table, 'pkg_id=\'' + Table.stringify(pkg_id) + '\' and bin_id=\'' + Table.stringify(bin_id) + '\'')
 
 		for sym in symbols:
 			values = dict()
@@ -254,7 +254,7 @@ def BinaryDependency_run(jmgr, sql, args):
 
 		dependencies = get_dependencies(path)
 
-		condition = 'pkg_id=\'' + str(pkg_id) + '\' and bin_id=\'' + str(bin_id) + '\''
+		condition = 'pkg_id=\'' + Table.stringify(pkg_id) + '\' and bin_id=\'' + Table.stringify(bin_id) + '\''
 		sql.delete_record(binary_dependency_table, condition)
 		sql.delete_record(binary_interp_table, condition)
 

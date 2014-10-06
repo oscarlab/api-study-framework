@@ -1071,7 +1071,7 @@ def BinaryCallgraph_run(jmgr, sql, args):
 				values['file'] = file
 				fileaccess.append(values)
 
-		condition = 'pkg_id=\'' + str(pkg_id) + '\' and bin_id=\'' + str(bin_id) + '\''
+		condition = 'pkg_id=\'' + Table.stringify(pkg_id) + '\' and bin_id=\'' + Table.stringify(bin_id) + '\''
 		condition_unknown = condition + ' and known=False'
 		sql.delete_record(binary_call_table, condition)
 		sql.delete_record(binary_unknown_call_table, condition_unknown)

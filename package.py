@@ -423,7 +423,7 @@ def run_binary_list(sql, pkgname, dir, binaries):
 
 		insert_values.append(values)
 
-	condition = 'pkg_id=\'' + str(pkg_id) + '\''
+	condition = 'pkg_id=\'' + Table.stringify(pkg_id) + '\''
 	sql.delete_record(binary_list_table, condition)
 	sql.delete_record(binary_link_table, condition)
 	sql.delete_record(symbol.binary_interp_table, condition)
