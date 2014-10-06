@@ -50,10 +50,15 @@ BEGIN
 		RAISE NOTICE 'update linking: % in package %', b, p;
 	END LOOP;
 
-	CREATE TEMP TABLE IF NOT EXISTS bin_dep_name (
-		pkg_id INT NOT NULL, bin_id INT NOT NULL,
-		dep_name VARCHAR NOT NULL,
-		PRIMARY KEY (pkg_id, bin_id, dep_name));
+	IF NOT table_exists('bin_dep_name') THEN
+		CREATE TEMP TABLE bin_dep_name (
+			pkg_id INT NOT NULL, bin_id INT NOT NULL,
+			dep_name VARCHAR NOT NULL,
+			PRIMARY KEY (pkg_id, bin_id, dep_name));
+		create index bin_dep_name_pkg_id_idx on bin_dep_name(pkg_id);
+		create index bin_dep_name_bin_id_idx on bin_dep_name(bin_id);
+		create index bin_dep_name_name_idx on bin_dep_name (dep_name);
+	END IF;
 	INSERT INTO bin_dep_name
 		SELECT DISTINCT t1.pkg_id, t1.bin_id, dependency
 		FROM binary_dependency AS t1
@@ -61,13 +66,19 @@ BEGIN
 		bin_id AS t2
 		ON t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id;
 
-	CREATE TEMP TABLE IF NOT EXISTS bin_dep (
-		pkg_id INT NOT NULL,
-		bin_id INT NOT NULL,
-		dep_id INT NOT NULL,
-		dep_name VARCHAR NOT NULL,
-		by_link BOOLEAN NOT NULL,
-		PRIMARY KEY (pkg_id, bin_id, dep_id));
+	IF NOT table_exists('bin_dep') THEN
+		CREATE TEMP TABLE IF NOT EXISTS bin_dep (
+			pkg_id INT NOT NULL,
+			bin_id INT NOT NULL,
+			dep_id INT NOT NULL,
+			dep_name VARCHAR NOT NULL,
+			by_link BOOLEAN NOT NULL,
+			PRIMARY KEY (pkg_id, bin_id, dep_id));
+		create index bin_dep_pkg_id_idx on bin_dep(pkg_id);
+		create index bin_dep_bin_id_idx on bin_dep(bin_id);
+		create index bin_dep_dep_id_idx on bin_dep(dep_id);
+		create index bin_dep_name_idx on bin_dep (dep_name);
+	END IF;
 	INSERT INTO bin_dep
 		SELECT DISTINCT
 		t1.pkg_id, t1.bin_id, t2.id, t2.file_name, False

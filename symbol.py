@@ -209,7 +209,8 @@ binary_dependency_table = Table('binary_dependency', [
 			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
 			('dependency', 'VARCHAR', 'NOT NULL')],
-			['pkg_id', 'bin_id', 'dependency'])
+			['pkg_id', 'bin_id', 'dependency'],
+			[['pkg_id', 'bin_id'], ['dependency']])
 
 binary_interp_table = Table('binary_interp', [
 			('pkg_id', 'INT', 'NOT NULL'),
