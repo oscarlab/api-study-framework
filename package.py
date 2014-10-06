@@ -444,11 +444,11 @@ def BinaryList_run(jmgr, sql, args):
 
 	binaries = walk_package(dir, find_script=True)
 	if not binaries:
-		package.remove_dir(dir)
+		remove_dir(dir)
 		return
 
 	run_binary_list(sql, pkgname, dir, binaries)
-	package.remove_dir(dir)
+	remove_dir(dir)
 
 def BinaryList_job_name(args):
 	return "Binary List: " + args[0]
