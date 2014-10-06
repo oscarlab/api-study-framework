@@ -428,7 +428,7 @@ def run_binary_list(sql, pkgname, dir, binaries):
 			sql.append_record(binary_link_table, values)
 		else:
 			sql.append_record(binary_list_table, values)
-			if type == 'scr':
+			if values['type'] == 'scr':
 				sql.append_record(symbol.binary_interp_table, values)
 
 	sql.commit()
