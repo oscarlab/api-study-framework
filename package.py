@@ -513,7 +513,7 @@ def PackageAnalysis_run(jmgr, sql, args):
 	if not dir:
 		return
 
-	binaries = walk_package(dir)
+	binaries = walk_package(dir, find_script=True)
 	if not binaries:
 		remove_dir(dir)
 		return
