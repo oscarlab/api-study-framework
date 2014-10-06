@@ -18,7 +18,14 @@ import tempfile
 import struct
 import string
 
-package_exclude_rules = [r'^linux-image', r'^linux-headers', r'.+-dev$', r'.+-doc(s)?(-.+)?$']
+package_exclude_rules = [
+		r'^linux-image',
+		r'^linux-headers',
+		r'.+-dev$',
+		r'.+-dbg$',
+		r'.+-debug$',
+		r'.+-doc(s)?(-.+)?$'
+	]
 
 def get_packages():
 	package_source = main.get_config('package_source')
