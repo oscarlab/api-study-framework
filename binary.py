@@ -18,7 +18,7 @@ def get_binary_id(sql, binary_name):
 
 	retry = True
 	while retry:
-		results = sql.search_record(binary_id_table, 'binary_name=\'' + binary_name + '\'', ['id'])
+		results = sql.search_record(binary_id_table, 'binary_name=\'' + Table.stringify(binary_name) + '\'', ['id'])
 		if results:
 			id = results[0][0]
 			break
@@ -45,7 +45,7 @@ def get_binary_id(sql, binary_name):
 
 def get_binary_name(sql, id):
 	sql.connect_table(binary_id_table)
-	results = sql.search_record(binary_id_table, 'id=\'' + str(id) + '\'', ['binary_name'])
+	results = sql.search_record(binary_id_table, 'id=\'' + Table.stringify(id) + '\'', ['binary_name'])
 	if results:
 		return results[0][0]
 	return None
@@ -62,7 +62,7 @@ def get_package_id(sql, package_name):
 
 	retry = True
 	while retry:
-		results = sql.search_record(package_id_table, 'package_name=\'' + package_name + '\'', ['id'])
+		results = sql.search_record(package_id_table, 'package_name=\'' + Table.stringify(package_name) + '\'', ['id'])
 		if results:
 			id = results[0][0]
 			break
@@ -83,13 +83,14 @@ def get_package_id(sql, package_name):
 			sql.commit()
 		except:
 			retry = True
+			raise
 			pass
 
 	return id
 
 def get_package_name(sql, id):
 	sql.connect_table(package_id_table)
-	results = sql.search_record(package_id_table, 'id=\'' + str(id) + '\'', ['package_name'])
+	results = sql.search_record(package_id_table, 'id=\'' + Table.stringify(id) + '\'', ['package_name'])
 	if results:
 		return results[0][0]
 	return None

@@ -13,6 +13,13 @@ class Table:
 		self.keys = keys
 		self.indexes = indexes
 
+	@classmethod
+	def stringify(cls, val):
+		if isinstance(val, str):
+			return val.replace('\'', '\'\'')
+		else:
+			return str(val)
+
 	def create_table(self):
 		query = 'CREATE TABLE ' + self.name + ' ('
 		delim = ''
@@ -55,7 +62,7 @@ class Table:
 			if field not in values or values[field] is None:
 				continue
 			query += delim + field
-			value_str += delim + '\'' + str(values[field]) + '\''
+			value_str += delim + '\'' + Table.stringify(values[field]) + '\''
 			delim = ', '
 		query += ') VALUES (' + value_str + ')'
 		return query
@@ -89,7 +96,7 @@ class Table:
 		for (field, type, attr) in self.fields:
 			if field in values:
 				has_values = True
-				query += delim + field + '=\'' + str(values[field]) + '\''
+				query += delim + field + '=\'' + Table.stringify(values[field]) + '\''
 				delim = ', '
 		if not has_values:
 			raise Exception('syntax error: update ' + self.name)

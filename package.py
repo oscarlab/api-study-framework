@@ -75,7 +75,7 @@ def get_packages_by_ranks(sql, min, max):
 	packages = get_packages()
 	packages_by_ranks = sql.search_record(
 				package_popularity_table,
-				'rank >= ' + str(min) + ' AND rank <= ' + str(max),
+				'rank >= ' + Table.stringify(min) + ' AND rank <= ' + Table.stringify(max),
 				['package_name'])
 	result = []
 	for (name,) in packages_by_ranks:
