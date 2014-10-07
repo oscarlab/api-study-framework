@@ -22,11 +22,9 @@ DECLARE
 	file VARCHAR := (SELECT file_name FROM binary_id WHERE id = b);
 
 BEGIN
-	IF NOT table_exists('lnk') THEN
-		CREATE TEMP TABLE lnk (
-			bin_id INT NOT NULL, dep_name VARCHAR,
-			PRIMARY KEY (bin_id));
-	END IF;
+	CREATE TEMP IF NOT EXISTS TABLE lnk (
+		bin_id INT NOT NULL, dep_name VARCHAR,
+		PRIMARY KEY (bin_id));
 
 	IF is_link THEN
 		INSERT INTO lnk
