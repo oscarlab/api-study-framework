@@ -46,28 +46,8 @@ BEGIN
 			pkg_id = t1.pkg_id AND bin_id = t1.bin_id
 		);
 
-	FOR p, b in (SELECT * FROM bin_id) LOOP
-		RAISE NOTICE 'update linking: % in package %', b, p;
-	END LOOP;
-
-	IF NOT table_exists('bin_dep_name') THEN
-		CREATE TEMP TABLE bin_dep_name (
-			pkg_id INT NOT NULL, bin_id INT NOT NULL,
-			dep_name VARCHAR NOT NULL,
-			PRIMARY KEY (pkg_id, bin_id, dep_name));
-		create index bin_dep_name_pkg_id_idx on bin_dep_name(pkg_id);
-		create index bin_dep_name_bin_id_idx on bin_dep_name(bin_id);
-		create index bin_dep_name_name_idx on bin_dep_name (dep_name);
-	END IF;
-	INSERT INTO bin_dep_name
-		SELECT DISTINCT t1.pkg_id, t1.bin_id, dependency
-		FROM binary_dependency AS t1
-		INNER JOIN
-		bin_id AS t2
-		ON t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id;
-
 	IF NOT table_exists('bin_dep') THEN
-		CREATE TEMP TABLE IF NOT EXISTS bin_dep (
+		CREATE TEMP TABLE bin_dep (
 			pkg_id INT NOT NULL,
 			bin_id INT NOT NULL,
 			dep_id INT NOT NULL,
@@ -79,30 +59,32 @@ BEGIN
 		create index bin_dep_dep_id_idx on bin_dep(dep_id);
 		create index bin_dep_name_idx on bin_dep (dep_name);
 	END IF;
-	INSERT INTO bin_dep
-		SELECT DISTINCT
-		t1.pkg_id, t1.bin_id, t2.id, t2.file_name, False
-		FROM
-		bin_dep_name AS t1 INNER JOIN binary_id AS t2
-		ON t1.dep_name = t2.file_name
-		UNION
-		SELECT DISTINCT
-		t3.pkg_id, t3.bin_id, t3.interp, t5.file_name, False
-		FROM
-		binary_interp AS t3 INNER JOIN bin_id AS t4
-		ON t3.pkg_id = t4.pkg_id AND t3.bin_id = t4.bin_id
-		INNER JOIN binary_id AS t5
-		ON t3.interp = t5.id
-		UNION
-		SELECT DISTINCT
-		t6.pkg_id, t6.lnk_id, t6.target, t8.file_name, True
-		FROM
-		binary_link AS t6 INNER JOIN bin_id AS t7
-		ON t6.pkg_id = t7.pkg_id AND t6.lnk_id = t7.bin_id
-		INNER JOIN binary_id AS t8
-		ON t6.target = t8.id;
 
 	FOR p, b in (SELECT * FROM bin_id) LOOP
+		RAISE NOTICE 'update linking: % in package %', b, p;
+
+		INSERT INTO bin_dep
+			SELECT p, b, t2.id, t1.dependency, False FROM (
+				SELECT dependency FROM binary_dependency
+				WHERE pkg_id = p AND bin_id = b
+			) AS t1
+			INNER JOIN
+			binary_id AS t2
+			ON t1.dependency = t2.file_name
+			UNION
+			SELECT p, b, t3.id, t4.file_name, t3.by_link FROM (
+				SELECT interp AS id, False AS by_link
+				FROM binary_interp
+				WHERE pkg_id = p AND bin_id = b
+				UNION
+				SELECT target AS id, True  AS by_link
+				FROM binary_link
+				WHERE pkg_id = p AND lnk_id = b
+			) AS t3
+			INNER JOIN
+			binary_id AS t4
+			ON t3.id = t4.id;
+
 		DELETE FROM binary_linking WHERE pkg_id = p AND bin_id = b;
 	END LOOP;
 
@@ -147,7 +129,6 @@ BEGIN
 	END LOOP;
 
 	TRUNCATE TABLE bin_id;
-	TRUNCATE TABLE bin_dep_name;
 	TRUNCATE TABLE bin_dep;
 
 	RAISE NOTICE 'linking generated';
