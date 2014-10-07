@@ -218,7 +218,8 @@ binary_interp_table = Table('binary_interp', [
 			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
 			('interp', 'INT', 'NOT NULL')],
-			['pkg_id', 'bin_id'])
+			['pkg_id', 'bin_id'],
+			[['interp']])
 
 def BinaryDependency_run(jmgr, sql, args):
 	sql.connect_table(binary_dependency_table)

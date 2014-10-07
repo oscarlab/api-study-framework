@@ -385,14 +385,15 @@ binary_list_table = Table('binary_list', [
 			('callgraph', 'BOOLEAN', ''),
 			('linking', 'BOOLEAN', '')],
 			['pkg_id', 'bin_id'],
-			[['pkg_id', 'bin_id', 'type']])
+			[['pkg_id', 'bin_id', 'type'], ['bin_id']])
 
 binary_link_table = Table('binary_link', [
 			('pkg_id', 'INT', 'NOT NULL'),
 			('lnk_id', 'INT', 'NOT NULL'),
 			('target', 'INT', 'NOT NULL'),
 			('linking', 'BOOLEAN', '')],
-			['pkg_id', 'lnk_id'])
+			['pkg_id', 'lnk_id'],
+			[['lnk_id'], ['target']])
 
 def run_binary_list(sql, pkgname, dir, binaries):
 	pkg_id = get_package_id(sql, pkgname)
