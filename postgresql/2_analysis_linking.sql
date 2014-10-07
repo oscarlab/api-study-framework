@@ -15,7 +15,7 @@ IF NOT table_exists('binary_linking') THEN
 END IF;
 END $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION analysis_linking(p INT, b INT)
+CREATE OR REPLACE FUNCTION analysis_linking(p INT, b INT, is_link BOOLEAN, do_reverse BOOLEAN)
 RETURNS void AS $$
 
 DECLARE
@@ -28,20 +28,23 @@ BEGIN
 			PRIMARY KEY (bin_id));
 	END IF;
 
-	INSERT INTO lnk
-		SELECT target, NULL
-		FROM binary_link
-		WHERE pkg_id = p AND lnk_id = b
-		UNION
-		SELECT t2.id, t2.file_name AS bin_id FROM
-		binary_dependency AS t1 INNER JOIN binary_id AS t2
-		ON  t1.pkg_id = p
-		AND t1.bin_id = b
-		AND t1.dependency = t2.file_name
-		UNION
-		SELECT interp, file_name FROM
-		binary_interp INNER JOIN binary_id
-		ON pkg_id = p AND bin_id = b AND interp = id;
+	IF in_link THEN
+		INSERT INTO lnk
+			SELECT target, NULL
+			FROM binary_link
+			WHERE pkg_id = p AND lnk_id = b;
+	ELSE
+		INSERT INTO lnk
+			SELECT t2.id, t2.file_name AS bin_id FROM
+			binary_dependency AS t1 INNER JOIN binary_id AS t2
+			ON  t1.pkg_id = p
+			AND t1.bin_id = b
+			AND t1.dependency = t2.file_name
+			UNION
+			SELECT interp, file_name FROM
+			binary_interp INNER JOIN binary_id
+			ON pkg_id = p AND bin_id = b AND interp = id;
+	END IF;
 
 	DELETE FROM binary_linking WHERE pkg_id = p AND bin_id = b;
 
@@ -56,16 +59,19 @@ BEGIN
 		INNER JOIN binary_link AS t2
 		ON t1.bin_id = t2.lnk_id;
 
-	DELETE FROM binary_linking WHERE dep_pkg_id = p AND dep_bin_id = b;
+	IF do_reverse THEN
+		DELETE FROM binary_linking
+		WHERE dep_pkg_id = p AND dep_bin_id = b;
 
-	INSERT INTO binary_linking
-		SELECT pkg_id, bin_id, p, b, file
-		FROM binary_dependency
-		WHERE dependency = file
-		UNION
-		SELECT pkg_id, lnk_id, p, b, NULL
-		FROM binary_link
-		WHERE target = b;
+		INSERT INTO binary_linking
+			SELECT pkg_id, bin_id, p, b, file
+			FROM binary_dependency
+			WHERE dependency = file
+			UNION
+			SELECT pkg_id, lnk_id, p, b, NULL
+			FROM binary_link
+			WHERE target = b;
+	END IF;
 
 	TRUNCATE TABLE lnk;
 

@@ -2,7 +2,7 @@
 
 from task import Task
 from sql import SQL
-from package import binary_list_table
+from package import binary_list_table, binary_link_table
 from binary import get_binary_id, get_binary_name, get_package_id, get_package_name, package_id_table
 from main import get_config
 
@@ -61,8 +61,21 @@ AnalysisAllLibraries = Task(
 		job_name=AnalysisAllLibraries_job_name)
 
 def AnalysisLinking_run(jmgr, sql, args):
-	sql.postgresql_execute('SELECT analysis_linking(pkg_id, lnk_id) FROM binary_link WHERE linking = False')
-	sql.postgresql_execute('SELECT analysis_linking(pkg_id, bin_id) FROM binary_list WHERE linking = False')
+	pkg_name = args[0]
+	bin = args[1]
+	is_link = args[2]
+
+	if args[3]:
+		pkg_id = args[3]
+	else:
+		pkg_id = get_package_id(sql, pkg_name)
+
+	if args[4]:
+		bin_id = args[4]
+	else:
+		bin_id = get_binary_id(sql, bin)
+
+	sql.postgresql_execute('SELECT analysis_linking(%d, %d, %s, False)' % (pkg_id, bin_id, str(is_link)))
 	sql.commit()
 
 def AnalysisLinking_job_name(args):
@@ -71,8 +84,44 @@ def AnalysisLinking_job_name(args):
 AnalysisLinking = Task(
 		name="Analyze Linking by PostgreSQL",
 		func=AnalysisLinking_run,
-		arg_defs=[],
+		arg_defs=["package_name", "binary_name"],
 		job_name=AnalysisLinking_job_name)
+
+def AnalysisAllLinking_run(jmgr, sql, args):
+	sql.connect_table(binary_list_table)
+	sql.connect_table(binary_link_table)
+
+	results = sql.search_record(binary_list_table, 'linking=False AND (type=\'lib\' or type=\'exe\')', ['pkg_id', 'bin_id'])
+
+	for r in results:
+		values = r[0][1:-1].split(',')
+		pkg_id = int(values[0])
+		bin_id = int(values[1])
+		pkg_name = get_package_name(sql, pkg_id)
+		bin = get_binary_name(sql, bin_id)
+		if pkg_name and bin:
+			AnalysisLinking.create_job(jmgr, [pkg_name, bin, False, pkg_id, bin_id]);
+
+	results = sql.search_record(binary_link_table, 'linking=False', ['pkg_id', 'lnk_id'])
+
+	for r in results:
+		values = r[0][1:-1].split(',')
+		pkg_id = int(values[0])
+		lnk_id = int(values[1])
+		pkg_name = get_package_name(sql, pkg_id)
+		lnk = get_binary_name(sql, lnk_id)
+		if pkg_name and bin:
+			AnalysisLinking.create_job(jmgr, [pkg_name, lnk, True, pkg_id, lnk_id]);
+
+def AnalysisAllLinking_job_name(args):
+	return "Analyze All Linking"
+
+AnalysisAllLinking = Task(
+		name="Analyze All Linking by PostgreSQL",
+		func=AnalysisAllLinking_run,
+		arg_defs=[],
+		job_name=AnalysisAllLinking_job_name)
+
 
 def AnalysisExecutable_run(jmgr, sql, args):
 	pkg_name = args[0]
@@ -173,6 +222,7 @@ class PostgreSQL(SQL):
 		Task.register(AnalysisLibrary)
 		Task.register(AnalysisAllLibraries)
 		Task.register(AnalysisLinking)
+		Task.register(AnalysisAllLinking)
 		Task.register(AnalysisExecutable)
 		Task.register(AnalysisAllExecutables)
 		Task.register(AnalysisPackage)
