@@ -1119,7 +1119,9 @@ def BinaryCallgraph_run(jmgr, sql, args):
 			values['bin_id'] = bin_id
 			sql.append_record(binary_fileaccess_table, values)
 
+		sql.update_record(package.binary_list_table, {'callgraph': False}, condition)
 		sql.commit()
+
 	except Exception as err:
 		exc = sys.exc_info()
 

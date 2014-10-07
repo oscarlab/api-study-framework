@@ -136,7 +136,8 @@ def BinarySymbol_run(jmgr, sql, args):
 		pkg_id = get_package_id(sql, pkgname)
 		bin_id = get_binary_id(sql, bin)
 
-		sql.delete_record(binary_symbol_table, 'pkg_id=\'' + Table.stringify(pkg_id) + '\' and bin_id=\'' + Table.stringify(bin_id) + '\'')
+		condition = 'pkg_id=\'' + Table.stringify(pkg_id) + '\' and bin_id=\'' + Table.stringify(bin_id) + '\''
+		sql.delete_record(binary_symbol_table, condition)
 
 		for sym in symbols:
 			values = dict()
@@ -152,6 +153,7 @@ def BinarySymbol_run(jmgr, sql, args):
 
 			sql.append_record(binary_symbol_table, values)
 
+		sql.update_record(package.binary_list_table, {'callgraph': False}, condition)
 		sql.commit()
 
 	except Exception as err:
@@ -273,7 +275,9 @@ def BinaryDependency_run(jmgr, sql, args):
 			values['interp'] = interp
 			sql.append_record(binary_interp_table, values)
 
+		sql.update_record(package.binary_list_table, {'linking': False}, condition)
 		sql.commit()
+
 	except Exception as err:
 		exc = sys.exc_info()
 
