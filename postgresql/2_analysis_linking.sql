@@ -28,7 +28,7 @@ BEGIN
 			PRIMARY KEY (bin_id));
 	END IF;
 
-	IF in_link THEN
+	IF is_link THEN
 		INSERT INTO lnk
 			SELECT target, NULL
 			FROM binary_link
