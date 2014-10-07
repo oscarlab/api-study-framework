@@ -68,8 +68,8 @@ def AnalysisLinking_run(jmgr, sql, args):
 	else:
 		pkg_id = get_package_id(sql, pkg_name)
 
-	sql.postgresql_execute('SELECT analysis_linking(%d, lnk_id, True,  False) FROM binary_link WHERE pkg_id=% AND linking=False' % (pkg_id, pkg_id))
-	sql.postgresql_execute('SELECT analysis_linking(%d, bin_id, False, False) FROM binary_list WHERE pkg_id=% AND linking=False and type != \'scr\'' % (pkg_id, pkg_id))
+	sql.postgresql_execute('SELECT analysis_linking(%d, lnk_id, True,  False) FROM binary_link WHERE pkg_id=%d AND linking=False' % (pkg_id, pkg_id))
+	sql.postgresql_execute('SELECT analysis_linking(%d, bin_id, False, False) FROM binary_list WHERE pkg_id=%d AND linking=False and type != \'scr\'' % (pkg_id, pkg_id))
 	sql.commit()
 
 def AnalysisLinking_job_name(args):
