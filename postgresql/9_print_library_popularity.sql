@@ -21,6 +21,10 @@ END
 $$ LANGUAGE plpgsql;
 
 \copy (SELECT * FROM query_output('libc6', '/lib/x86_64-linux-gnu/libc-2.15.so')) TO '/tmp/libc-popularity.csv' WITH CSV
+\echo 'Output to /tmp/libc-popularity.csv'
+
+\copy (SELECT * FROM query_output('libc6', '/lib/x86_64-linux-gnu/ld-2.15.so')) TO '/tmp/ld-popularity.csv' WITH CSV
+\echo 'Output to /tmp/ld-popularity.csv'
 
 DROP FUNCTION query_output(libpkg VARCHAR, libname VARCHAR);
-DROP TYPE output;
+DROP TYPE output CASCADE;

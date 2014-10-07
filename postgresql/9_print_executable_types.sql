@@ -70,6 +70,7 @@ END
 $$ LANGUAGE plpgsql;
 
 \copy (SELECT * FROM query_output()) TO '/tmp/executable-types.csv' WITH CSV
+\echo 'Output to /tmp/executable-types.csv'
 
 DROP FUNCTION query_output();
 DROP TYPE output CASCADE;
