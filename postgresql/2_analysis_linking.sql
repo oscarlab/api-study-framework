@@ -72,7 +72,7 @@ BEGIN
 	UPDATE binary_list SET linking = True WHERE pkg_id = p AND bin_id = b;
 	UPDATE binary_link SET linking = True WHERE pkg_id = p AND lnk_id = b;
 
-	RAISE NOTICE 'linking generated: % in package %', p, b;
+	RAISE NOTICE 'linking generated: % in package %', b, p;
 END
 $$ LANGUAGE plpgsql;
 
@@ -113,8 +113,6 @@ DECLARE
 	r binary_linking%ROWTYPE;
 
 BEGIN
-	RAISE NOTICE 'get dependency: % in package %', b, p;
-
 	CREATE TEMP TABLE IF NOT EXISTS dep (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
 		dep_name VARCHAR NOT NULL,
