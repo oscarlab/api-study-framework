@@ -62,56 +62,36 @@ AnalysisAllLibraries = Task(
 
 def AnalysisLinking_run(jmgr, sql, args):
 	pkg_name = args[0]
-	bin = args[1]
-	is_link = args[2]
 
-	if args[3]:
-		pkg_id = args[3]
+	if len(args) > 1:
+		pkg_id = args[1]
 	else:
 		pkg_id = get_package_id(sql, pkg_name)
 
-	if args[4]:
-		bin_id = args[4]
-	else:
-		bin_id = get_binary_id(sql, bin)
-
-	sql.postgresql_execute('SELECT analysis_linking(%d, %d, %s, False)' % (pkg_id, bin_id, str(is_link)))
+	sql.postgresql_execute('SELECT analysis_linking(%d, lnk_id, True,  False) FROM binary_link WHERE pkg_id=% AND linking=False' % (pkg_id, pkg_id))
+	sql.postgresql_execute('SELECT analysis_linking(%d, bin_id, False, False) FROM binary_list WHERE pkg_id=% AND linking=False and type != \'scr\'' % (pkg_id, pkg_id))
 	sql.commit()
 
 def AnalysisLinking_job_name(args):
-	return "Analyze Linking"
+	return "Analyze Linking: " + args[0]
 
 AnalysisLinking = Task(
 		name="Analyze Linking by PostgreSQL",
 		func=AnalysisLinking_run,
-		arg_defs=["package_name", "binary_name"],
+		arg_defs=["package_name"],
 		job_name=AnalysisLinking_job_name)
 
 def AnalysisAllLinking_run(jmgr, sql, args):
 	sql.connect_table(binary_list_table)
 	sql.connect_table(binary_link_table)
 
-	results = sql.search_record(binary_list_table, 'linking=False AND (type=\'lib\' or type=\'exe\')', ['pkg_id', 'bin_id'])
+	results = sql.postgresql_execute('SELECT DISTINCT pkg_id FROM binary_link WHERE linking=False UNION SELECT DISTINCT pkg_id FROM binary_list WHERE linking=False AND type != \'scr\'')
 
 	for r in results:
-		values = r[0][1:-1].split(',')
-		pkg_id = int(values[0])
-		bin_id = int(values[1])
+		pkg_id = int(r[0])
 		pkg_name = get_package_name(sql, pkg_id)
-		bin = get_binary_name(sql, bin_id)
-		if pkg_name and bin:
-			AnalysisLinking.create_job(jmgr, [pkg_name, bin, False, pkg_id, bin_id]);
-
-	results = sql.search_record(binary_link_table, 'linking=False', ['pkg_id', 'lnk_id'])
-
-	for r in results:
-		values = r[0][1:-1].split(',')
-		pkg_id = int(values[0])
-		lnk_id = int(values[1])
-		pkg_name = get_package_name(sql, pkg_id)
-		lnk = get_binary_name(sql, lnk_id)
-		if pkg_name and bin:
-			AnalysisLinking.create_job(jmgr, [pkg_name, lnk, True, pkg_id, lnk_id]);
+		if pkg_name:
+			AnalysisLinking.create_job(jmgr, [pkg_name, pkg_id]);
 
 def AnalysisAllLinking_job_name(args):
 	return "Analyze All Linking"
