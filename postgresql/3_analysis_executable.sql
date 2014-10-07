@@ -69,63 +69,39 @@ BEGIN
 	CREATE TEMP TABLE IF NOT EXISTS dep_lib (
 		pkg_id INT NOT NULL,
 		bin_id INT NOT NULL,
-		linking BOOLEAN,
 		PRIMARY KEY(pkg_id, bin_id));
 	INSERT INTO dep_lib
-		SELECT DISTINCT t2.pkg_id, t2.bin_id, t2.linking FROM
-		binary_linking AS t1
-		INNER JOIN
-		binary_list AS t2
-		ON t1.pkg_id = p AND t1.bin_id = b AND t1.dep_id = t2.bin_id;
-	
-	IF EXISTS (
-		SELECT * FROM dep_lib WHERE linking = False
-	) THEN
-		RAISE EXCEPTION 'linking not resolved: % in package %', b, p;
-	END IF;
-
-	FOR q, d IN (SELECT pkg_id, bin_id FROM dep_lib) LOOP
-		RAISE NOTICE 'dependency: % in package %', d, q;
-	END LOOP;
+		SELECT dep_pkg_id, dep_bin_id
+		FROM get_dependency(p, b)
+		UNION
+		SELECT dep_pkg_id, dep_bin_id
+		FROM get_interp(p, b);
 
 	CREATE TEMP TABLE IF NOT EXISTS dep_sym (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
 		symbol_name VARCHAR NOT NULL,
 		func_addr INT NOT NULL);
-	FOR q, d IN (SELECT pkg_id, bin_id FROM dep_lib) LOOP
-		INSERT INTO dep_sym
-			SELECT DISTINCT q, d, symbol_name, func_addr
-			FROM binary_symbol
-			WHERE pkg_id = q AND bin_id = d AND defined = True;
-	END LOOP;
+	INSERT INTO dep_sym
+		SELECT t1.pkg_id, t1.bin_id, t2.symbol_name, t2.func_addr FROM
+		dep_lib AS t1 INNER JOIN binary_symbol AS t2
+		ON  t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id
+		AND t2.defined = True;
 
 	CREATE TEMP TABLE IF NOT EXISTS interp_call (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
 		func_addr INT NOT NULL,
 		call_name VARCHAR NOT NULL);
-	FOR q, d IN (
-		SELECT t2.pkg_id, t2.bin_id FROM (
-			SELECT interp FROM binary_interp WHERE
-			pkg_id = p AND bin_id = b
-			UNION
-			SELECT t2.dep_id AS interp FROM
-			binary_interp AS t1 INNER JOIN binary_linking AS t2
-			ON  t1.pkg_id = p AND t1.bin_id = b
-			AND t1.interp = t2.bin_id AND t2.by_link = True
-		) AS t1 INNER JOIN
-		dep_lib AS t2
-		ON t1.interp = t2.bin_id
-	) LOOP
-		INSERT INTO interp_call
-			SELECT q, d, t1.func_addr, t2.call_name FROM
-			binary_symbol AS t1
-			INNER JOIN
-			library_call AS t2
-			ON  t1.pkg_id = q AND t1.bin_id = d
-			AND t2.pkg_id = q AND t2.bin_id = d
-			AND t1.symbol_name = '.entry'
-			AND t1.func_addr = t2.func_addr;
-	END LOOP;
+	INSERT INTO interp_call
+		SELECT t1.pkg_id, t1.bin_id, t2.func_addr, t3.call_name FROM
+		get_interp(p, b) AS t1
+		INNER JOIN
+		binary_symbol AS t2
+		ON  t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id
+		AND t2.symbol_name = '.entry'
+		INNER JOIN
+		library_call AS t3
+		ON  t1.pkg_id = t3.pkg_id AND t1.bin_id = t3.bin_id
+		AND t2.func_addr = t3.func_addr;
 
 	CREATE TEMP TABLE IF NOT EXISTS dep_call (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,

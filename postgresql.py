@@ -61,7 +61,8 @@ AnalysisAllLibraries = Task(
 		job_name=AnalysisAllLibraries_job_name)
 
 def AnalysisLinking_run(jmgr, sql, args):
-	sql.postgresql_execute('SELECT analysis_linking()')
+	sql.postgresql_execute('SELECT analysis_linking(pkg_id, bin_id) FROM binary_link WHERE linking = False')
+	sql.postgresql_execute('SELECT analysis_linking(pkg_id, bin_id) FROM binary_list WHERE linking = False')
 	sql.commit()
 
 def AnalysisLinking_job_name(args):
