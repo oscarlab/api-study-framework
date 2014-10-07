@@ -42,6 +42,13 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION get_pop(pop FLOAT)
+RETURNS FLOAT AS $$
+BEGIN
+	RETURN 100.0 - 10.0 ^ (2.0 - pop);
+END
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION analysis_call_popularity(p INT, b INT)
 RETURNS void AS $$
 
@@ -74,7 +81,7 @@ BEGIN
 
 	DELETE FROM call_popularity WHERE pkg_id = p AND bin_id = b;
 	INSERT INTO call_popularity
-		SELECT p, b, func_addr, popularity
+		SELECT p, b, func_addr, get_pop(popularity) AS popularity
 		FROM call_tmp
 		ORDER BY popularity DESC, func_addr;
 
@@ -112,7 +119,7 @@ BEGIN
 
 	TRUNCATE TABLE syscall_popularity;
 	INSERT INTO syscall_popularity
-		SELECT syscall, popularity
+		SELECT syscall, get_pop(popularity) as popularity
 		FROM syscall_tmp
 		ORDER BY popularity DESC, syscall;
 
@@ -153,7 +160,7 @@ BEGIN
 
 	TRUNCATE TABLE vecsyscall_popularity;
 	INSERT INTO vecsyscall_popularity
-		SELECT syscall, request, popularity
+		SELECT syscall, request, get_pop(popularity) as popularity
 		FROM vecsyscall_tmp
 		ORDER BY syscall, popularity DESC, request;
 
@@ -191,7 +198,7 @@ BEGIN
 
 	TRUNCATE TABLE fileaccess_popularity;
 	INSERT INTO fileaccess_popularity
-		SELECT file, popularity
+		SELECT file, get_pop(popularity) as popularity
 		FROM fileaccess_tmp
 		ORDER BY popularity DESC, file;
 
