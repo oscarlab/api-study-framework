@@ -85,7 +85,7 @@ def AnalysisAllLinking_run(jmgr, sql, args):
 	sql.connect_table(binary_list_table)
 	sql.connect_table(binary_link_table)
 
-	results = sql.postgresql_execute('SELECT DISTINCT pkg_id FROM binary_link WHERE linking=False UNION SELECT DISTINCT pkg_id FROM binary_list WHERE linking=False AND type != \'scr\'')
+	results = sql.postgresql_query('SELECT DISTINCT pkg_id FROM binary_link WHERE linking=False UNION SELECT DISTINCT pkg_id FROM binary_list WHERE linking=False AND type != \'scr\'')
 
 	for r in results:
 		pkg_id = int(r[0])
