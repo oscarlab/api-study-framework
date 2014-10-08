@@ -6,8 +6,8 @@ IF NOT table_exists('executable_call') THEN
 		dep_pkg_id INT NOT NULL,
 		dep_bin_id INT NOT NULL,
 		call INT NOT NULL,
-		by_pkg_id BOOLEAN NOT NULL,
-		by_bin_id BOOLEAN NOT NULL,
+		by_pkg_id INT NOT NULL,
+		by_bin_id INT NOT NULL,
 		PRIMARY KEY(pkg_id, bin_id, dep_pkg_id, dep_bin_id, call, by_pkg_id, by_bin_id)
 	);
 	CREATE INDEX executable_call_pkg_id_bin_id_idx
@@ -22,8 +22,8 @@ IF NOT table_exists('executable_syscall') THEN
 	CREATE TABLE executable_syscall (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
 		syscall SMALLINT NOT NULL,
-		by_pkg_id BOOLEAN NOT NULL,
-		by_bin_id BOOLEAN NOT NULL,
+		by_pkg_id INT NOT NULL,
+		by_bin_id INT NOT NULL,
 		PRIMARY KEY (pkg_id, bin_id, syscall, by_pkg_id, by_bin_id)
 	);
 	CREATE INDEX executable_syscall_pkg_id_bin_id_idx
@@ -35,8 +35,8 @@ IF NOT table_exists('executable_vecsyscall') THEN
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
 		syscall SMALLINT NOT NULL,
 		request BIGINT NOT NULL,
-		by_pkg_id BOOLEAN NOT NULL,
-		by_bin_id BOOLEAN NOT NULL,
+		by_pkg_id INT NOT NULL,
+		by_bin_id INT NOT NULL,
 		PRIMARY KEY (pkg_id, bin_id, syscall, request, by_pkg_id, by_bin_id)
 	);
 	CREATE INDEX executable_vecsyscall_pkg_id_bin_id_idx
@@ -47,8 +47,8 @@ IF NOT table_exists('executable_fileaccess') THEN
 	CREATE TABLE executable_fileaccess (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
 		file VARCHAR NOT NULL,
-		by_pkg_id BOOLEAN NOT NULL,
-		by_bin_id BOOLEAN NOT NULL,
+		by_pkg_id INT NOT NULL,
+		by_bin_id INT NOT NULL,
 		PRIMARY KEY (pkg_id, bin_id, file, by_pkg_id, by_bin_id)
 	);
 	CREATE INDEX executable_fileaccess_pkg_id_bin_id_idx
@@ -143,7 +143,6 @@ BEGIN
 	CREATE TEMP TABLE IF NOT EXISTS bin_call (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
 		func_addr INT NOT NULL,
-		by_interp BOOLEAN NOT NULL,
 		by_pkg_id INT NOT NULL,
 		by_bin_id INT NOT NULL,
 		PRIMARY KEY (pkg_id, bin_id, func_addr, by_pkg_id, by_bin_id));
@@ -156,7 +155,7 @@ BEGIN
 		UNION
 		SELECT *, pkg_id, bin_id FROM interp_call
 		UNION
-		SELECT *, pkg_id, bin_id FROM dep_call
+		SELECT pkg_id, bin_id, func_addr, call_name, pkg_id, bin_id FROM dep_call
 		WHERE symbol_name = '.init'
 		OR    symbol_name = '.fini'
 		OR    symbol_name = '.init_array'
@@ -178,8 +177,7 @@ BEGIN
 	DELETE FROM executable_call WHERE pkg_id = p AND bin_id = b;
 	INSERT INTO executable_call
 		SELECT
-		p, b, pkg_id, bin_id, func_addr, by_interp,
-		by_pkg_id, by_bin_id
+		p, b, pkg_id, bin_id, func_addr, by_pkg_id, by_bin_id
 		FROM bin_call;
 
 	DELETE FROM executable_syscall WHERE pkg_id = p AND bin_id = b;
