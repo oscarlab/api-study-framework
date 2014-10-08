@@ -161,7 +161,7 @@ def AnalysisPackage_run(jmgr, sql, args):
 	sql.commit()
 
 def AnalysisPackage_job_name(args):
-	return "Analyze Executable: " + args[0]
+	return "Analyze Package: " + args[0]
 
 AnalysisPackage = Task(
 		name="Analyze Package by PostgreSQL",

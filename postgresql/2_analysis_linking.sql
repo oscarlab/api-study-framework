@@ -22,7 +22,7 @@ DECLARE
 	file VARCHAR := (SELECT file_name FROM binary_id WHERE id = b);
 
 BEGIN
-	CREATE TEMP IF NOT EXISTS TABLE lnk (
+	CREATE TEMP TABLE IF NOT EXISTS lnk (
 		bin_id INT NOT NULL, dep_name VARCHAR,
 		PRIMARY KEY (bin_id));
 

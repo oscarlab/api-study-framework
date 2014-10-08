@@ -47,9 +47,9 @@ def get_temp_dir():
 def main():
 	# Task.register(ExampleTask)
 	# Task.register(ExampleMoreTask)
-	Task.register(package.PackageListByNames)
-	Task.register(package.PackageListByPrefixes)
-	Task.register(package.PackageListByRanks)
+	# Task.register(package.PackageListByNames)
+	# Task.register(package.PackageListByPrefixes)
+	# Task.register(package.PackageListByRanks)
 	Task.register(package.PackageUnpack)
 	Task.register(package.BinaryListByNames)
 	Task.register(package.BinaryListByPrefixes)
