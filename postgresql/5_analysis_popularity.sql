@@ -86,7 +86,7 @@ BEGIN
 
 		IF NOT EXISTS (
 			SELECT * FROM package_call
-			WHERE pkg_id = q AND bin_id = b AND call = c
+			WHERE pkg_id = q AND dep_bin_id = d AND call = c
 			AND by_pkg_id != p
 		) THEN
 			UPDATE call_tmp SET
