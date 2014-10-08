@@ -77,6 +77,16 @@ BEGIN
 		SELECT dep_pkg_id, dep_bin_id
 		FROM get_interp(p, b);
 
+	FOR q, d IN (SELECT * FROM dep_lib) LOOP
+		IF NOT EXISTS (
+			SELECT * FROM binary_list
+			WHERE pkg_id = q AND bin_id = d
+			AND callgraph = True
+		) THEN
+			RAISE EXCEPTION 'binary % in package % dependency not analyzed: % in package %', b, p, d, q;
+		END IF;
+	END LOOP;
+
 	CREATE TEMP TABLE IF NOT EXISTS dep_sym (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
 		symbol_name VARCHAR NOT NULL,
