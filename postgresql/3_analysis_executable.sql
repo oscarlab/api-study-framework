@@ -6,7 +6,9 @@ IF NOT table_exists('executable_call') THEN
 		dep_pkg_id INT NOT NULL,
 		dep_bin_id INT NOT NULL,
 		call INT NOT NULL,
-		PRIMARY KEY(pkg_id, bin_id, dep_pkg_id, dep_bin_id, call)
+		by_pkg_id BOOLEAN NOT NULL,
+		by_bin_id BOOLEAN NOT NULL,
+		PRIMARY KEY(pkg_id, bin_id, dep_pkg_id, dep_bin_id, call, by_pkg_id, by_bin_id)
 	);
 	CREATE INDEX executable_call_pkg_id_bin_id_idx
 		ON executable_call (pkg_id, bin_id);
@@ -20,7 +22,9 @@ IF NOT table_exists('executable_syscall') THEN
 	CREATE TABLE executable_syscall (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
 		syscall SMALLINT NOT NULL,
-		PRIMARY KEY (pkg_id, bin_id, syscall)
+		by_pkg_id BOOLEAN NOT NULL,
+		by_bin_id BOOLEAN NOT NULL,
+		PRIMARY KEY (pkg_id, bin_id, syscall, by_pkg_id, by_bin_id)
 	);
 	CREATE INDEX executable_syscall_pkg_id_bin_id_idx
 		ON executable_syscall (pkg_id, bin_id);
@@ -31,7 +35,9 @@ IF NOT table_exists('executable_vecsyscall') THEN
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
 		syscall SMALLINT NOT NULL,
 		request BIGINT NOT NULL,
-		PRIMARY KEY (pkg_id, bin_id, syscall, request)
+		by_pkg_id BOOLEAN NOT NULL,
+		by_bin_id BOOLEAN NOT NULL,
+		PRIMARY KEY (pkg_id, bin_id, syscall, request, by_pkg_id, by_bin_id)
 	);
 	CREATE INDEX executable_vecsyscall_pkg_id_bin_id_idx
 		ON executable_vecsyscall (pkg_id, bin_id);
@@ -41,7 +47,9 @@ IF NOT table_exists('executable_fileaccess') THEN
 	CREATE TABLE executable_fileaccess (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
 		file VARCHAR NOT NULL,
-		PRIMARY KEY (pkg_id, bin_id, file)
+		by_pkg_id BOOLEAN NOT NULL,
+		by_bin_id BOOLEAN NOT NULL,
+		PRIMARY KEY (pkg_id, bin_id, file, by_pkg_id, by_bin_id)
 	);
 	CREATE INDEX executable_fileaccess_pkg_id_bin_id_idx
 		ON executable_fileaccess (pkg_id, bin_id);
@@ -135,70 +143,85 @@ BEGIN
 	CREATE TEMP TABLE IF NOT EXISTS bin_call (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
 		func_addr INT NOT NULL,
-		PRIMARY KEY (pkg_id, bin_id, func_addr));
+		by_interp BOOLEAN NOT NULL,
+		by_pkg_id INT NOT NULL,
+		by_bin_id INT NOT NULL,
+		PRIMARY KEY (pkg_id, bin_id, func_addr, by_pkg_id, by_bin_id));
 
 	WITH RECURSIVE
-	analysis(pkg_id, bin_id, func_addr, call_name) AS (
-		SELECT 0, 0, 0, symbol_name FROM binary_symbol
+	analysis(pkg_id, bin_id, func_addr, call_name, by_pkg_id, by_bin_id) AS (
+		SELECT 0, 0, 0, symbol_name, p, b
+		FROM binary_symbol
 		WHERE pkg_id = p AND bin_id = b AND defined = 'False'
 		UNION
-		SELECT * FROM interp_call
+		SELECT *, pkg_id, bin_id FROM interp_call
 		UNION
-		VALUES	(0, 0, 0, '.init'),
-			(0, 0, 0, '.fini'),
-			(0, 0, 0, '.init_array'),
-			(0, 0, 0, '.fini_array')
+		SELECT *, pkg_id, bin_id FROM dep_call
+		WHERE symbol_name = '.init'
+		OR    symbol_name = '.fini'
+		OR    symbol_name = '.init_array'
+		OR    symbol_name = '.fini_array'
 		UNION
 		SELECT DISTINCT
-		t2.pkg_id, t2.bin_id, t2.func_addr, t2.call_name
+		t2.pkg_id, t2.bin_id, t2.func_addr, t2.call_name,
+		t1.by_pkg_id, t1.by_bin_id
 		FROM analysis AS t1
 		INNER JOIN
 		dep_call AS t2
 		ON t1.call_name = t2.symbol_name
 	)
 	INSERT INTO bin_call
-		SELECT DISTINCT pkg_id, bin_id, func_addr
+		SELECT DISTINCT pkg_id, bin_id, func_addr, by_pkg_id, by_bin_id
 		from analysis
 		WHERE pkg_id != 0 AND bin_id != 0 AND func_addr != 0;
 
 	DELETE FROM executable_call WHERE pkg_id = p AND bin_id = b;
 	INSERT INTO executable_call
-		SELECT p, b, pkg_id, bin_id, func_addr FROM bin_call;
+		SELECT
+		p, b, pkg_id, bin_id, func_addr, by_interp,
+		by_pkg_id, by_bin_id
+		FROM bin_call;
 
 	DELETE FROM executable_syscall WHERE pkg_id = p AND bin_id = b;
 	INSERT INTO executable_syscall
-		SELECT DISTINCT p, b, syscall FROM binary_syscall
+		SELECT DISTINCT p, b, syscall, p, b FROM binary_syscall
 		WHERE pkg_id = p AND bin_id = b
 		UNION
-		SELECT DISTINCT p, b, syscall FROM binary_unknown_syscall
+		SELECT DISTINCT p, b, syscall, p, b FROM binary_unknown_syscall
 		WHERE pkg_id = p AND bin_id = b
 		AND known = True
 		UNION
-		SELECT DISTINCT p, b, t2.syscall FROM
+		SELECT DISTINCT p, b, t2.syscall,
+		t1.by_pkg_id, t1.by_bin_id
+		FROM
 		bin_call AS t1 INNER JOIN library_syscall AS t2
 		ON  t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id
 		AND t1.func_addr = t2.func_addr;
 
 	DELETE FROM executable_vecsyscall WHERE pkg_id = p AND bin_id = b;
 	INSERT INTO executable_vecsyscall
-		SELECT DISTINCT p, b, syscall, request FROM binary_vecsyscall
+		SELECT DISTINCT p, b, syscall, request, p, b FROM binary_vecsyscall
 		WHERE pkg_id = p AND bin_id = b
 		UNION
-		SELECT DISTINCT p, b, syscall, request FROM binary_unknown_vecsyscall
+		SELECT DISTINCT p, b, syscall, request, p, b FROM binary_unknown_vecsyscall
 		WHERE pkg_id = p AND bin_id = b
 		AND known = True
 		UNION
-		SELECT DISTINCT p, b, t2.syscall, t2.request FROM
+		SELECT DISTINCT p, b, t2.syscall, t2.request,
+		t1.by_pkg_id, t1.by_bin_id
+		FROM
 		bin_call AS t1 INNER JOIN library_vecsyscall AS t2
 		ON  t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id
 		AND t1.func_addr = t2.func_addr;
 
 	DELETE FROM executable_fileaccess WHERE pkg_id = p AND bin_id = b;
 	INSERT INTO executable_fileaccess
-		SELECT DISTINCT p, b, file FROM binary_fileaccess
+		SELECT DISTINCT p, b, file, p, b FROM binary_fileaccess
 		WHERE pkg_id = p AND bin_id = b
 		UNION
-		SELECT DISTINCT p, b, t2.file FROM
+		SELECT DISTINCT p, b, t2.file,
+		t1.by_pkg_id, t1.by_bin_id
+		FROM
 		bin_call AS t1 INNER JOIN library_fileaccess AS t2
 		ON  t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id
 		AND t1.func_addr = t2.func_addr;
