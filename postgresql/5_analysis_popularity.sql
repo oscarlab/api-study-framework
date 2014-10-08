@@ -62,6 +62,7 @@ DECLARE
 	d INT;
 	c INT;
 	inst INT;
+	is_internal BOOLEAN;
 
 BEGIN
 	CREATE TEMP TABLE IF NOT EXISTS call_tmp (
@@ -73,9 +74,11 @@ BEGIN
 		SELECT DISTINCT dep_bin_id, call, 0.0, 0.0 FROM package_call
 		WHERE dep_pkg_id = p;
 
-	FOR q, d, c IN (
-		SELECT DISTINCT pkg_id, dep_bin_id, call FROM package_call
+	FOR q, d, c, is_internal IN (
+		SELECT pkg_id, dep_bin_id, call, bool_and(by_pkg_id = p)
+		FROM package_call
 		WHERE dep_pkg_id = p
+		GROUP BY pkg_id, dep_bin_id, call
 	) LOOP
 		inst := (
 			SELECT t1.inst FROM
@@ -84,11 +87,7 @@ BEGIN
 			AND t1.package_name = t2.package_name
 		);
 
-		IF NOT EXISTS (
-			SELECT * FROM package_call
-			WHERE pkg_id = q AND dep_bin_id = d AND call = c
-			AND by_pkg_id != p
-		) THEN
+		IF is_internal THEN
 			UPDATE call_tmp SET
 			popularity_with_internal =
 			add_pop(popularity_with_internal, inst, total)
@@ -123,6 +122,7 @@ DECLARE
 	p INT;
 	s SMALLINT;
 	inst INT;
+	is_libc BOOLEAN;
 
 BEGIN
 	CREATE TEMP TABLE IF NOT EXISTS syscall_tmp (
@@ -133,8 +133,10 @@ BEGIN
 	INSERT INTO syscall_tmp
 		SELECT DISTINCT syscall, 0.0, 0.0 FROM package_syscall;
 
-	FOR p, s IN (
-		SELECT DISTINCT pkg_id, syscall FROM package_syscall
+	FOR p, s, is_libc IN (
+		SELECT pkg_id, syscall, bool_and(by_pkg_id = libc)
+		FROM package_syscall
+		GROUP BY pkg_id, syscall
 	) LOOP
 		inst := (
 			SELECT t1.inst FROM
@@ -143,11 +145,7 @@ BEGIN
 			AND t1.package_name = t2.package_name
 		);
 
-		IF NOT EXISTS (
-			SELECT * FROM package_syscall
-			WHERE pkg_id = p AND syscall = s
-			AND by_pkg_id != libc
-		) THEN
+		IF is_libc THEN
 			UPDATE syscall_tmp SET
 			popularity_with_libc =
 			add_pop(popularity_with_libc, inst, total)
@@ -183,6 +181,7 @@ DECLARE
 	s SMALLINT;
 	r BIGINT;
 	inst INT;
+	is_libc BOOLEAN;
 
 BEGIN
 	CREATE TEMP TABLE IF NOT EXISTS vecsyscall_tmp (
@@ -195,8 +194,11 @@ BEGIN
 		SELECT DISTINCT syscall, request, 0.0, 0.0
 		FROM package_vecsyscall;
 
-	FOR p, s, r IN (
-		SELECT DISTINCT pkg_id, syscall, request FROM package_vecsyscall
+	FOR p, s, r, is_libc IN (
+		SELECT pkg_id, syscall, request,
+		bool_and(by_pkg_id = libc)
+		FROM package_vecsyscall
+		GROUP BY pkg_id, syscall, request
 	) LOOP
 		inst := (
 			SELECT t1.inst FROM
@@ -205,11 +207,7 @@ BEGIN
 			AND t1.package_name = t2.package_name
 		);
 
-		IF NOT EXISTS (
-			SELECT * FROM package_vecsyscall
-			WHERE pkg_id = p AND syscall = s AND request = r
-			AND by_pkg_id != libc
-		) THEN
+		IF is_libc THEN
 			UPDATE vecsyscall_tmp SET
 			popularity_with_libc =
 			add_pop(popularity_with_libc, inst, total)
@@ -271,8 +269,10 @@ BEGIN
 	INSERT INTO fileaccess_tmp
 		SELECT DISTINCT file, 0.0, 0.0 FROM package_fileaccess_tmp;
 
-	FOR p, f IN (
-		SELECT DISTINCT pkg_id, file FROM package_fileaccess
+	FOR p, f, is_libc IN (
+		SELECT pkg_id, file, bool_and(by_pkg_id = libc)
+		FROM package_fileaccess_tmp
+		GROUP BY pkg_id, file
 	) LOOP
 		inst := (
 			SELECT t1.inst FROM
@@ -281,11 +281,7 @@ BEGIN
 			AND t1.package_name = t2.package_name
 		);
 
-		IF NOT EXISTS (
-			SELECT * FROM package_fileaccess
-			WHERE pkg_id = p AND file = f
-			AND by_pkg_id != libc
-		) THEN
+		IF is_libc THEN
 			UPDATE fileaccess_tmp SET
 			popularity_with_libc =
 			add_pop(popularity_with_libc, inst, total)
