@@ -58,10 +58,10 @@ RETURNS void AS $$
 
 DECLARE
 	total INT := inst FROM package_popularity WHERE package_name = 'Total';
+	q INT;
 	d INT;
 	c INT;
 	inst INT;
-	internal BOOLEAN;
 
 BEGIN
 	CREATE TEMP TABLE IF NOT EXISTS call_tmp (
@@ -73,30 +73,32 @@ BEGIN
 		SELECT DISTINCT dep_bin_id, call, 0.0, 0.0 FROM package_call
 		WHERE dep_pkg_id = p;
 
-	FOR d, c, inst, internal IN (
-		SELECT
-		t1.dep_bin_id, t1.call, t3.inst,
-		bool_and(t1.by_pkg_id = p)
-		FROM
-		package_call AS t1 INNER JOIN package_id AS t2
-		ON  t1.dep_pkg_id = p
-		AND t1.pkg_id = t2.id
-		INNER JOIN package_popularity AS t3
-		ON  t2.package_name = t3.package_name
-		AND t3.inst != 0
-		GROUP BY t1.dep_bin_id, t1.call, t3.inst
+	FOR q, d, c IN (
+		SELECT DISTINCT pkg_id, dep_bin_id, call FROM package_call
+		WHERE dep_pkg_id = p
 	) LOOP
-		IF internal THEN
+		inst := (
+			SELECT t1.inst FROM
+			package_popularity AS t1 INNER JOIN package_id AS t2
+			ON  t2.id = q
+			AND t1.package_name = t2.package_name
+		);
+
+		IF NOT EXISTS (
+			SELECT * FROM package_call
+			WHERE pkg_id = q AND bin_id = b AND call = c
+			AND by_pkg_id != p
+		) THEN
 			UPDATE call_tmp SET
 			popularity_with_internal =
 			add_pop(popularity_with_internal, inst, total)
-			WHERE func_addr = c;
+			WHERE bin_id = d AND func_addr = c;
 		ELSE
 			UPDATE call_tmp SET
 			popularity = add_pop(popularity, inst, total),
 			popularity_with_internal =
 			add_pop(popularity_with_internal, inst, total)
-			WHERE func_addr = c;
+			WHERE bin_id = d AND func_addr = c;
 		END IF;
 	END LOOP;
 
@@ -106,7 +108,7 @@ BEGIN
 		get_pop(popularity) AS popularity,
 		get_pop(popularity_with_internal) AS popularity_with_internal
 		FROM call_tmp
-		ORDER BY popularity_with_internal DESC, func_addr;
+		ORDER BY popularity DESC, func_addr;
 
 	TRUNCATE TABLE call_tmp;
 END
@@ -118,9 +120,9 @@ RETURNS void AS $$
 DECLARE
 	libc INT := id FROM package_id WHERE package_name = 'libc6';
 	total INT := inst FROM package_popularity WHERE package_name = 'Total';
+	p INT;
 	s SMALLINT;
 	inst INT;
-	is_libc BOOLEAN;
 
 BEGIN
 	CREATE TEMP TABLE IF NOT EXISTS syscall_tmp (
@@ -131,19 +133,21 @@ BEGIN
 	INSERT INTO syscall_tmp
 		SELECT DISTINCT syscall, 0.0, 0.0 FROM package_syscall;
 
-	FOR s, inst, is_libc IN (
-		SELECT
-		t1.syscall, t3.inst,
-		bool_and(t1.by_pkg_id = libc)
-		FROM
-		package_syscall AS t1 INNER JOIN package_id AS t2
-		ON  t1.pkg_id = t2.id
-		INNER JOIN package_popularity AS t3
-		ON  t2.package_name = t3.package_name
-		AND t3.inst != 0
-		GROUP BY t1.syscall, t3.inst
+	FOR p, s IN (
+		SELECT DISTINCT pkg_id, syscall FROM package_syscall
 	) LOOP
-		IF is_libc THEN
+		inst := (
+			SELECT t1.inst FROM
+			package_popularity AS t1 INNER JOIN package_id AS t2
+			ON  t2.id = p
+			AND t1.package_name = t2.package_name
+		);
+
+		IF NOT EXISTS (
+			SELECT * FROM package_syscall
+			WHERE pkg_id = p AND syscall = s
+			AND by_pkg_id != libc
+		) THEN
 			UPDATE syscall_tmp SET
 			popularity_with_libc =
 			add_pop(popularity_with_libc, inst, total)
@@ -163,7 +167,7 @@ BEGIN
 		get_pop(popularity) AS popularity,
 		get_pop(popularity_with_libc) AS popularity_with_libc
 		FROM syscall_tmp
-		ORDER BY popularity_with_libc DESC, syscall;
+		ORDER BY popularity DESC, syscall;
 
 	TRUNCATE TABLE syscall_tmp;
 END
@@ -175,10 +179,10 @@ RETURNS void AS $$
 DECLARE
 	libc INT := id FROM package_id WHERE package_name = 'libc6';
 	total INT := inst FROM package_popularity WHERE package_name = 'Total';
+	p INT;
 	s SMALLINT;
 	r BIGINT;
 	inst INT;
-	is_libc BOOLEAN;
 
 BEGIN
 	CREATE TEMP TABLE IF NOT EXISTS vecsyscall_tmp (
@@ -188,21 +192,24 @@ BEGIN
 		popularity_with_libc FLOAT,
 		PRIMARY KEY(syscall, request));
 	INSERT INTO vecsyscall_tmp
-		SELECT DISTINCT syscall, request, 0.0, 0.0 FROM package_vecsyscall;
+		SELECT DISTINCT syscall, request, 0.0, 0.0
+		FROM package_vecsyscall;
 
-	FOR s, r, inst, is_libc IN (
-		SELECT
-		t1.syscall, t1.request, t3.inst,
-		bool_and(t1.by_pkg_id = libc)
-		FROM
-		package_vecsyscall AS t1 INNER JOIN package_id AS t2
-		ON  t1.pkg_id = t2.id
-		INNER JOIN package_popularity AS t3
-		ON  t2.package_name = t3.package_name
-		AND t3.inst != 0
-		GROUP BY t1.syscall, t1.request, t3.inst
+	FOR p, s, r IN (
+		SELECT DISTINCT pkg_id, syscall, request FROM package_vecsyscall
 	) LOOP
-		IF is_libc THEN
+		inst := (
+			SELECT t1.inst FROM
+			package_popularity AS t1 INNER JOIN package_id AS t2
+			ON  t2.id = p
+			AND t1.package_name = t2.package_name
+		);
+
+		IF NOT EXISTS (
+			SELECT * FROM package_vecsyscall
+			WHERE pkg_id = p AND syscall = s AND request = r
+			AND by_pkg_id != libc
+		) THEN
 			UPDATE vecsyscall_tmp SET
 			popularity_with_libc =
 			add_pop(popularity_with_libc, inst, total)
@@ -222,7 +229,7 @@ BEGIN
 		get_pop(popularity) AS popularity,
 		get_pop(popularity_with_libc) AS popularity_with_libc
 		FROM vecsyscall_tmp
-		ORDER BY syscall, popularity_with_libc DESC, request;
+		ORDER BY syscall, popularity DESC, request;
 
 	TRUNCATE TABLE vecsyscall_tmp;
 END
@@ -234,6 +241,7 @@ RETURNS void AS $$
 DECLARE
 	libc INT := id FROM package_id WHERE package_name = 'libc6';
 	total INT := inst FROM package_popularity WHERE package_name = 'Total';
+	p INT;
 	f VARCHAR;
 	inst INT;
 	is_libc BOOLEAN;
@@ -263,18 +271,21 @@ BEGIN
 	INSERT INTO fileaccess_tmp
 		SELECT DISTINCT file, 0.0, 0.0 FROM package_fileaccess_tmp;
 
-	FOR f, inst, is_libc IN (
-		SELECT
-		t1.file, t3.inst, bool_and(t1.by_pkg_id = libc)
-		FROM
-		package_fileaccess_tmp AS t1 INNER JOIN package_id AS t2
-		ON  t1.pkg_id = t2.id
-		INNER JOIN package_popularity AS t3
-		ON  t2.package_name = t3.package_name
-		AND t3.inst != 0
-		GROUP BY t1.file, t3.inst
+	FOR p, f IN (
+		SELECT DISTINCT pkg_id, file FROM package_fileaccess
 	) LOOP
-		IF is_libc THEN
+		inst := (
+			SELECT t1.inst FROM
+			package_popularity AS t1 INNER JOIN package_id AS t2
+			ON  t2.id = p
+			AND t1.package_name = t2.package_name
+		);
+
+		IF NOT EXISTS (
+			SELECT * FROM package_fileaccess
+			WHERE pkg_id = p AND file = f
+			AND by_pkg_id != libc
+		) THEN
 			UPDATE fileaccess_tmp SET
 			popularity_with_libc =
 			add_pop(popularity_with_libc, inst, total)
@@ -294,7 +305,7 @@ BEGIN
 		get_pop(popularity) AS popularity,
 		get_pop(popularity_with_libc) AS popularity_with_libc
 		FROM fileaccess_tmp
-		ORDER BY popularity_with_libc DESC, file;
+		ORDER BY popularity DESC, file;
 
 	TRUNCATE TABLE package_fileaccess_tmp;
 	TRUNCATE TABLE fileaccess_tmp;
