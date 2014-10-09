@@ -3,25 +3,19 @@ BEGIN
 IF NOT table_exists('package_call') THEN
 	CREATE TABLE package_call (
 		pkg_id INT NOT NULL,
-		dep_pkg_id INT NOT NULL,
 		dep_bin_id INT NOT NULL,
 		call INT NOT NULL,
-		by_pkg_id INT NOT NULL,
-		PRIMARY KEY(pkg_id, dep_pkg_id, dep_bin_id, call, by_pkg_id)
+		PRIMARY KEY(pkg_id, dep_bin_id, call)
 	);
 	CREATE INDEX package_call_pkg_id_idx
 		ON package_call (pkg_id);
-	CREATE INDEX package_call_dep_pkg_id_dep_bin_id_idx
-		ON package_call (dep_pkg_id, dep_bin_id);
-	CREATE INDEX package_call_call_idx
-		ON package_call (call);
 END IF;
 
 IF NOT table_exists('package_syscall') THEN
 	CREATE TABLE package_syscall (
 		pkg_id INT NOT NULL, syscall SMALLINT NOT NULL,
-		by_pkg_id INT NOT NULL,
-		PRIMARY KEY (pkg_id, syscall, by_pkg_id)
+		by_libc BOOLEAN,
+		PRIMARY KEY (pkg_id, syscall, by_libc)
 	);
 	CREATE INDEX package_syscall_pkg_id_idx
 		ON package_syscall (pkg_id);
@@ -32,8 +26,8 @@ IF NOT table_exists('package_vecsyscall') THEN
 		pkg_id INT NOT NULL,
 		syscall SMALLINT NOT NULL,
 		request BIGINT NOT NULL,
-		by_pkg_id INT NOT NULL,
-		PRIMARY KEY (pkg_id, syscall, request, by_pkg_id)
+		by_libc BOOLEAN,
+		PRIMARY KEY (pkg_id, syscall, request, by_libc)
 	);
 	CREATE INDEX package_vecsyscall_pkg_id_idx
 		ON package_vecsyscall (pkg_id);
@@ -43,8 +37,8 @@ IF NOT table_exists('package_fileaccess') THEN
 	CREATE TABLE package_fileaccess (
 		pkg_id INT NOT NULL,
 		file VARCHAR NOT NULL,
-		by_pkg_id INT NOT NULL,
-		PRIMARY KEY (pkg_id, file, by_pkg_id)
+		by_libc BOOLEAN,
+		PRIMARY KEY (pkg_id, file, by_libc)
 	);
 	CREATE INDEX package_fileaccess_pkg_id_idx
 		ON package_fileaccess (pkg_id);
@@ -81,15 +75,9 @@ BEGIN
 		RAISE EXCEPTION 'binary not resolved: %', p;
 	END IF;
 
-	FOR b IN (SELECT bin_id FROM pkg_bin) LOOP
-		RAISE NOTICE 'executable: %', b;
-	END LOOP;
-
 	DELETE FROM package_call WHERE pkg_id = p;
 	INSERT INTO package_call
-		SELECT DISTINCT
-		p, t1.dep_pkg_id, t1.dep_bin_id, t1.call,
-		t1.by_pkg_id
+		SELECT DISTINCT p, t1.dep_bin_id, t1.call
 		FROM executable_call AS t1
 		INNER JOIN
 		pkg_bin AS t2
@@ -97,7 +85,7 @@ BEGIN
 
 	DELETE FROM package_syscall WHERE pkg_id = p;
 	INSERT INTO package_syscall
-		SELECT DISTINCT p, t1.syscall, t1.by_pkg_id
+		SELECT DISTINCT p, t1.syscall, t1.by_libc
 		FROM executable_syscall AS t1
 		INNER JOIN
 		pkg_bin AS t2
@@ -106,7 +94,7 @@ BEGIN
 	DELETE FROM package_vecsyscall WHERE pkg_id = p;
 	INSERT INTO package_vecsyscall
 		SELECT DISTINCT
-		p, t1.syscall, t1.request, t1.by_pkg_id
+		p, t1.syscall, t1.request, t1.by_libc
 		FROM executable_vecsyscall AS t1
 		INNER JOIN
 		pkg_bin AS t2
@@ -114,7 +102,7 @@ BEGIN
 
 	DELETE FROM package_fileaccess WHERE pkg_id = p;
 	INSERT INTO package_fileaccess
-		SELECT DISTINCT p, t1.file, t1.by_pkg_id
+		SELECT DISTINCT p, t1.file, t1.by_libc
 		FROM executable_fileaccess AS t1
 		INNER JOIN
 		pkg_bin AS t2

@@ -3,28 +3,22 @@ BEGIN
 IF NOT table_exists('executable_call') THEN
 	CREATE TABLE executable_call (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
-		dep_pkg_id INT NOT NULL,
 		dep_bin_id INT NOT NULL,
 		call INT NOT NULL,
-		by_pkg_id INT NOT NULL,
-		by_bin_id INT NOT NULL,
-		PRIMARY KEY(pkg_id, bin_id, dep_pkg_id, dep_bin_id, call, by_pkg_id, by_bin_id)
+		PRIMARY KEY(pkg_id, bin_id, dep_bin_id, call)
 	);
 	CREATE INDEX executable_call_pkg_id_bin_id_idx
 		ON executable_call (pkg_id, bin_id);
-	CREATE INDEX executable_call_dep_pkg_id_dep_bin_id_idx
-		ON executable_call (dep_pkg_id, dep_bin_id);
-	CREATE INDEX executable_call_call_idx
-		ON executable_call (call);
+	CREATE INDEX executable_call_dep_bin_id_call_idx
+		ON executable_call (dep_bin_id, call);
 END IF;
 
 IF NOT table_exists('executable_syscall') THEN
 	CREATE TABLE executable_syscall (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
 		syscall SMALLINT NOT NULL,
-		by_pkg_id INT NOT NULL,
-		by_bin_id INT NOT NULL,
-		PRIMARY KEY (pkg_id, bin_id, syscall, by_pkg_id, by_bin_id)
+		by_libc BOOLEAN,
+		PRIMARY KEY (pkg_id, bin_id, syscall, by_libc)
 	);
 	CREATE INDEX executable_syscall_pkg_id_bin_id_idx
 		ON executable_syscall (pkg_id, bin_id);
@@ -35,9 +29,8 @@ IF NOT table_exists('executable_vecsyscall') THEN
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
 		syscall SMALLINT NOT NULL,
 		request BIGINT NOT NULL,
-		by_pkg_id INT NOT NULL,
-		by_bin_id INT NOT NULL,
-		PRIMARY KEY (pkg_id, bin_id, syscall, request, by_pkg_id, by_bin_id)
+		by_libc BOOLEAN,
+		PRIMARY KEY (pkg_id, bin_id, syscall, request, by_libc)
 	);
 	CREATE INDEX executable_vecsyscall_pkg_id_bin_id_idx
 		ON executable_vecsyscall (pkg_id, bin_id);
@@ -47,9 +40,8 @@ IF NOT table_exists('executable_fileaccess') THEN
 	CREATE TABLE executable_fileaccess (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
 		file VARCHAR NOT NULL,
-		by_pkg_id INT NOT NULL,
-		by_bin_id INT NOT NULL,
-		PRIMARY KEY (pkg_id, bin_id, file, by_pkg_id, by_bin_id)
+		by_libc BOOLEAN,
+		PRIMARY KEY (pkg_id, bin_id, file, by_libc)
 	);
 	CREATE INDEX executable_fileaccess_pkg_id_bin_id_idx
 		ON executable_fileaccess (pkg_id, bin_id);
@@ -61,6 +53,7 @@ CREATE OR REPLACE FUNCTION analysis_executable(p INT, b INT)
 RETURNS void AS $$
 
 DECLARE
+	libc INT := id FROM package_id WHERE package_name = 'libc6';
 	q INT;
 	d INT;
 	time1 TIMESTAMP;
@@ -103,44 +96,23 @@ BEGIN
 	RAISE NOTICE 'dep_lib: %', time2 - time1;
 	time1 := time2;
 
-	IF NOT temp_table_exists('interp_call') THEN
-		CREATE TEMP TABLE interp_call (
-			pkg_id INT NOT NULL, bin_id INT NOT NULL,
-			func_addr INT NOT NULL,
-			call_name VARCHAR NOT NULL);
-		CREATE INDEX interp_call_pkg_id_bin_id_idx ON interp_call(pkg_id, bin_id);
-		CREATE INDEX interp_call_call_name_idx ON interp_call(call_name);
-	END IF;
-
-	INSERT INTO interp_call
-		SELECT t1.pkg_id, t1.bin_id, t2.func_addr, t3.call_name FROM
-		get_interp(p, b) AS t1
-		INNER JOIN
-		binary_symbol AS t2
-		ON  t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id
-		AND t2.symbol_name = '.entry'
-		INNER JOIN
-		library_call AS t3
-		ON  t1.pkg_id = t3.pkg_id AND t1.bin_id = t3.bin_id
-		AND t2.func_addr = t3.func_addr;
-
-	time2 := clock_timestamp();
-	RAISE NOTICE 'interp_call: %', time2 - time1;
-	time1 := time2;
-
-	IF NOT temp_table_exists('dep_call') THEN
-		CREATE TEMP TABLE dep_call (
+	IF NOT temp_table_exists('dep_sym') THEN
+		CREATE TEMP TABLE dep_sym (
 			pkg_id INT NOT NULL, bin_id INT NOT NULL,
 			func_addr INT NOT NULL,
 			symbol_name VARCHAR, call_name VARCHAR);
-		CREATE INDEX dep_call_pkg_id_bin_id_idx ON dep_call(pkg_id, bin_id);
-		CREATE INDEX dep_call_call_name_idx ON dep_call(call_name);
+		CREATE INDEX dep_sym_pkg_id_bin_id_idx
+			ON dep_sym(pkg_id, bin_id);
+		CREATE INDEX dep_sym_symbol_name_idx
+			ON dep_sym(symbol_name);
+		CREATE INDEX dep_sym_call_name_idx
+			ON dep_sym(call_name);
 	END IF;
 
 	FOR q, d IN (SELECT * FROM dep_lib) LOOP
 		RAISE NOTICE '% in %', d, q;
 
-		INSERT INTO dep_call
+		INSERT INTO dep_sym
 			SELECT q, d, t1.func_addr, symbol_name, call_name FROM
 			binary_symbol AS t1
 			RIGHT JOIN
@@ -156,41 +128,81 @@ BEGIN
 	RAISE NOTICE 'dep_call: %', time2 - time1;
 	time1 := time2;
 
+	IF NOT temp_table_exists('init_call') THEN
+		CREATE TEMP TABLE init_call (
+			pkg_id INT NOT NULL, bin_id INT NOT NULL,
+			func_addr INT NOT NULL);
+		CREATE INDEX init_call_pkg_id_bin_id_idx
+			ON init_call(pkg_id, bin_id);
+	END IF;
+
+	INSERT INTO init_call
+		SELECT DISTINCT t1.pkg_id, t1.bin_id, t2.func_addr FROM
+		get_interp(p, b) AS t1
+		INNER JOIN
+		dep_sym AS t2
+		ON t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id
+		WHERE t2.symbol_name = '.entry'
+		UNION
+		SELECT DISTINCT pkg_id, bin_id, func_addr FROM
+		dep_sym
+		WHERE symbol_name = '.init'
+		OR    symbol_name = '.init_array'
+		OR    symbol_name = '.fini'
+		OR    symbol_name = '.fini_array';
+
+	time2 := clock_timestamp();
+	RAISE NOTICE 'init_call: %', time2 - time1;
+	time1 := time2;
+
+	IF NOT temp_table_exists('dep_call') THEN
+		CREATE TEMP TABLE dep_call (
+			pkg_id INT NOT NULL, bin_id INT NOT NULL,
+			func_addr INT NOT NULL,
+			dep_pkg_id INT NOT NULL, dep_bin_id INT NOT NULL,
+			call_addr INT NOT NULL);
+		CREATE INDEX dep_call_pkg_id_bin_id_idx
+			ON dep_call(pkg_id, bin_id);
+	END IF;
+
+	INSERT INTO dep_call
+		SELECT
+		t1.pkg_id, t1.bin_id, t1.func_addr,
+		t2.pkg_id, t2.bin_id, t2.func_addr
+		FROM dep_sym AS t1 INNER JOIN dep_sym AS t2
+		ON t1.call_name = t2.symbol_name;
+
 	IF NOT temp_table_exists('bin_call') THEN
 		CREATE TEMP TABLE IF NOT EXISTS bin_call (
 			pkg_id INT NOT NULL, bin_id INT NOT NULL,
 			func_addr INT NOT NULL,
-			by_pkg_id INT NOT NULL,
-			by_bin_id INT NOT NULL);
-		CREATE INDEX bin_call_pkg_id_bin_id_func_addr_idx ON bin_call(pkg_id, bin_id, func_addr);
+			by_libc BOOLEAN);
+		CREATE INDEX bin_call_pkg_id_bin_id_func_addr_idx
+			ON bin_call(pkg_id, bin_id, func_addr);
 	END IF;
 
 	WITH RECURSIVE
-	analysis(pkg_id, bin_id, func_addr, call_name, by_pkg_id, by_bin_id) AS (
-		SELECT 0, 0, 0, symbol_name, p, b
-		FROM binary_symbol
-		WHERE pkg_id = p AND bin_id = b AND defined = False
+	analysis(pkg_id, bin_id, func_addr, by_libc) AS (
+		SELECT t2.pkg_id, t2.bin_id, t2.func_addr, False
+		FROM binary_symbol AS t1 INNER JOIN dep_sym AS t2
+		ON t1.symbol_name = t2.call_name
+		WHERE t1.pkg_id = p AND t1.bin_id = b AND t1.defined = False
 		UNION
-		SELECT *, pkg_id, bin_id FROM interp_call
+		SELECT *, pkg_id = libc FROM init_call
 		UNION
-		SELECT pkg_id, bin_id, func_addr, call_name, pkg_id, bin_id FROM dep_call
-		WHERE symbol_name = '.init'
-		OR    symbol_name = '.fini'
-		OR    symbol_name = '.init_array'
-		OR    symbol_name = '.fini_array'
-		UNION
-		SELECT
-		t2.pkg_id, t2.bin_id, t2.func_addr, t2.call_name,
-		t1.by_pkg_id, t1.by_bin_id
+		SELECT DISTINCT
+		t2.dep_pkg_id, t2.dep_bin_id, t2.call_addr,
+		t1.by_libc AND (t2.dep_pkg_id = libc)
 		FROM analysis AS t1
 		INNER JOIN
 		dep_call AS t2
-		ON t1.call_name = t2.symbol_name
+		ON  t1.pkg_id = t2.pkg_id
+		AND t1.bin_id = t2.bin_id
+		AND t1.func_addr = t2.func_addr
 	)
 	INSERT INTO bin_call
-		SELECT pkg_id, bin_id, func_addr, by_pkg_id, by_bin_id
-		from analysis
-		WHERE pkg_id != 0 AND bin_id != 0 AND func_addr != 0;
+		SELECT pkg_id, bin_id, func_addr, by_libc
+		from analysis;
 
 	time2 := clock_timestamp();
 	RAISE NOTICE 'bin_call: %', time2 - time1;
@@ -199,8 +211,9 @@ BEGIN
 	DELETE FROM executable_call WHERE pkg_id = p AND bin_id = b;
 	INSERT INTO executable_call
 		SELECT DISTINCT
-		p, b, pkg_id, bin_id, func_addr, by_pkg_id, by_bin_id
-		FROM bin_call;
+		p, b, bin_id, func_addr
+		FROM bin_call
+		WHERE pkg_id = libc AND by_libc = False;
 
 	time2 := clock_timestamp();
 	RAISE NOTICE '%', time2 - time1;
@@ -208,15 +221,16 @@ BEGIN
 
 	DELETE FROM executable_syscall WHERE pkg_id = p AND bin_id = b;
 	INSERT INTO executable_syscall
-		SELECT DISTINCT p, b, syscall, p, b FROM binary_syscall
+		SELECT DISTINCT p, b, syscall, False
+		FROM binary_syscall
 		WHERE pkg_id = p AND bin_id = b
 		UNION
-		SELECT DISTINCT p, b, syscall, p, b FROM binary_unknown_syscall
+		SELECT DISTINCT p, b, syscall, False
+		FROM binary_unknown_syscall
 		WHERE pkg_id = p AND bin_id = b
 		AND known = True
 		UNION
-		SELECT DISTINCT p, b, t2.syscall,
-		t1.by_pkg_id, t1.by_bin_id
+		SELECT DISTINCT p, b, t2.syscall, by_libc
 		FROM
 		bin_call AS t1 INNER JOIN library_syscall AS t2
 		ON  t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id
@@ -228,15 +242,16 @@ BEGIN
 
 	DELETE FROM executable_vecsyscall WHERE pkg_id = p AND bin_id = b;
 	INSERT INTO executable_vecsyscall
-		SELECT DISTINCT p, b, syscall, request, p, b FROM binary_vecsyscall
+		SELECT DISTINCT p, b, syscall, request, False
+		FROM binary_vecsyscall
 		WHERE pkg_id = p AND bin_id = b
 		UNION
-		SELECT DISTINCT p, b, syscall, request, p, b FROM binary_unknown_vecsyscall
+		SELECT DISTINCT p, b, syscall, request, False
+		FROM binary_unknown_vecsyscall
 		WHERE pkg_id = p AND bin_id = b
 		AND known = True
 		UNION
-		SELECT DISTINCT p, b, t2.syscall, t2.request,
-		t1.by_pkg_id, t1.by_bin_id
+		SELECT DISTINCT p, b, t2.syscall, t2.request, by_libc
 		FROM
 		bin_call AS t1 INNER JOIN library_vecsyscall AS t2
 		ON  t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id
@@ -248,11 +263,11 @@ BEGIN
 
 	DELETE FROM executable_fileaccess WHERE pkg_id = p AND bin_id = b;
 	INSERT INTO executable_fileaccess
-		SELECT DISTINCT p, b, file, p, b FROM binary_fileaccess
+		SELECT DISTINCT p, b, file, False
+		FROM binary_fileaccess
 		WHERE pkg_id = p AND bin_id = b
 		UNION
-		SELECT DISTINCT p, b, t2.file,
-		t1.by_pkg_id, t1.by_bin_id
+		SELECT DISTINCT p, b, t2.file, by_libc
 		FROM
 		bin_call AS t1 INNER JOIN library_fileaccess AS t2
 		ON  t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id
@@ -266,7 +281,8 @@ BEGIN
 	UPDATE package_id SET footprint = False WHERE id = p;
 
 	TRUNCATE TABLE dep_lib;
-	TRUNCATE TABLE interp_call;
+	TRUNCATE TABLE dep_sym;
+	TRUNCATE TABLE init_call;
 	TRUNCATE TABLE dep_call;
 	TRUNCATE TABLE bin_call;
 

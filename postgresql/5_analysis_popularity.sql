@@ -2,11 +2,10 @@ DO $$
 BEGIN
 IF NOT table_exists('call_popularity') THEN
 	CREATE TABLE call_popularity (
-		pkg_id INT NOT NULL, bin_id INT NOT NULL,
+		bin_id INT NOT NULL,
 		func_addr INT NOT NULL,
 		popularity FLOAT,
-		popularity_with_internal FLOAT,
-		PRIMARY KEY(pkg_id, bin_id, func_addr)
+		PRIMARY KEY(bin_id, func_addr)
 	);
 END IF;
 
@@ -39,10 +38,10 @@ IF NOT table_exists('fileaccess_popularity') THEN
 END IF;
 END $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION add_pop(pop FLOAT, inst INT, total INT)
+CREATE OR REPLACE FUNCTION add_pop(inst INT, total INT)
 RETURNS FLOAT AS $$
 BEGIN
-	RETURN pop + log(total) - log(total - inst);
+	RETURN log(total) - log(total - inst);
 END
 $$ LANGUAGE plpgsql;
 
@@ -53,63 +52,51 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION analysis_call_popularity(p INT)
+CREATE OR REPLACE FUNCTION analysis_call_popularity()
 RETURNS void AS $$
 
 DECLARE
 	total INT := inst FROM package_popularity WHERE package_name = 'Total';
-	q INT;
+	p INT;
 	d INT;
 	c INT;
-	inst INT;
-	is_internal BOOLEAN;
+	x FLOAT;
 
 BEGIN
 	CREATE TEMP TABLE IF NOT EXISTS call_tmp (
 		bin_id INT NOT NULL, func_addr INT NOT NULL,
 		popularity FLOAT,
-		popularity_with_internal FLOAT,
 		PRIMARY KEY(bin_id, func_addr));
 	INSERT INTO call_tmp
-		SELECT DISTINCT dep_bin_id, call, 0.0, 0.0 FROM package_call
-		WHERE dep_pkg_id = p;
+		SELECT DISTINCT dep_bin_id, call, 0.0 FROM package_call;
 
-	FOR q, d, c, is_internal IN (
-		SELECT pkg_id, dep_bin_id, call, bool_and(by_pkg_id = p)
+	CREATE TEMP TABLE IF NOT EXISTS pop_tmp (
+		pkg_id INT NOT NULL PRIMARY KEY, pop FLOAT);
+	INSERT INTO pop_tmp
+		SELECT t1.id, add_pop(t2.inst, total) FROM
+		package_id AS t1 INNER JOIN package_popularity AS t2
+		ON t1.package_name = t2.package_name;
+
+	FOR p, d, c IN (
+		SELECT pkg_id, dep_bin_id, call
 		FROM package_call
-		WHERE dep_pkg_id = p
 		GROUP BY pkg_id, dep_bin_id, call
 	) LOOP
-		inst := (
-			SELECT t1.inst FROM
-			package_popularity AS t1 INNER JOIN package_id AS t2
-			ON  t2.id = q
-			AND t1.package_name = t2.package_name
-		);
-
-		IF is_internal THEN
-			UPDATE call_tmp SET
-			popularity_with_internal =
-			add_pop(popularity_with_internal, inst, total)
-			WHERE bin_id = d AND func_addr = c;
-		ELSE
-			UPDATE call_tmp SET
-			popularity = add_pop(popularity, inst, total),
-			popularity_with_internal =
-			add_pop(popularity_with_internal, inst, total)
-			WHERE bin_id = d AND func_addr = c;
-		END IF;
+		x := (SELECT pop FROM pop_tmp WHERE pkg_id = p);
+		UPDATE call_tmp SET
+		popularity = popularity + x
+		WHERE bin_id = d AND func_addr = c;
 	END LOOP;
 
-	DELETE FROM call_popularity WHERE pkg_id = p;
+	TRUNCATE TABLE call_popularity;
 	INSERT INTO call_popularity
-		SELECT p, bin_id, func_addr,
-		get_pop(popularity) AS popularity,
-		get_pop(popularity_with_internal) AS popularity_with_internal
+		SELECT bin_id, func_addr,
+		get_pop(popularity) AS popularity
 		FROM call_tmp
 		ORDER BY popularity DESC, func_addr;
 
 	TRUNCATE TABLE call_tmp;
+	TRUNCATE TABLE pop_tmp;
 END
 $$ LANGUAGE plpgsql;
 
@@ -117,11 +104,10 @@ CREATE OR REPLACE FUNCTION analysis_syscall_popularity()
 RETURNS void AS $$
 
 DECLARE
-	libc INT := id FROM package_id WHERE package_name = 'libc6';
 	total INT := inst FROM package_popularity WHERE package_name = 'Total';
 	p INT;
 	s SMALLINT;
-	inst INT;
+	x FLOAT;
 	is_libc BOOLEAN;
 
 BEGIN
@@ -133,28 +119,30 @@ BEGIN
 	INSERT INTO syscall_tmp
 		SELECT DISTINCT syscall, 0.0, 0.0 FROM package_syscall;
 
+	CREATE TEMP TABLE IF NOT EXISTS pop_tmp (
+		pkg_id INT NOT NULL PRIMARY KEY, pop FLOAT);
+	INSERT INTO pop_tmp
+		SELECT t1.id, add_pop(t2.inst, total) FROM
+		package_id AS t1 INNER JOIN package_popularity AS t2
+		ON t1.package_name = t2.package_name;
+
 	FOR p, s, is_libc IN (
-		SELECT pkg_id, syscall, bool_and(by_pkg_id = libc)
+		SELECT pkg_id, syscall, bool_and(by_libc)
 		FROM package_syscall
 		GROUP BY pkg_id, syscall
 	) LOOP
-		inst := (
-			SELECT t1.inst FROM
-			package_popularity AS t1 INNER JOIN package_id AS t2
-			ON  t2.id = p
-			AND t1.package_name = t2.package_name
-		);
+		x := (SELECT pop FROM pop_tmp WHERE pkg_id = p);
 
 		IF is_libc THEN
 			UPDATE syscall_tmp SET
 			popularity_with_libc =
-			add_pop(popularity_with_libc, inst, total)
+			popularity_with_libc + x
 			WHERE syscall = s;
 		ELSE
 			UPDATE syscall_tmp SET
-			popularity = add_pop(popularity, inst, total),
+			popularity = popularity + x,
 			popularity_with_libc =
-			add_pop(popularity_with_libc, inst, total)
+			popularity_with_libc + x
 			WHERE syscall = s;
 		END IF;
 	END LOOP;
@@ -168,6 +156,7 @@ BEGIN
 		ORDER BY popularity DESC, syscall;
 
 	TRUNCATE TABLE syscall_tmp;
+	TRUNCATE TABLE pop_tmp;
 END
 $$ LANGUAGE plpgsql;
 
@@ -175,12 +164,11 @@ CREATE OR REPLACE FUNCTION analysis_vecsyscall_popularity()
 RETURNS void AS $$
 
 DECLARE
-	libc INT := id FROM package_id WHERE package_name = 'libc6';
 	total INT := inst FROM package_popularity WHERE package_name = 'Total';
 	p INT;
 	s SMALLINT;
 	r BIGINT;
-	inst INT;
+	x FLOAT;
 	is_libc BOOLEAN;
 
 BEGIN
@@ -194,29 +182,30 @@ BEGIN
 		SELECT DISTINCT syscall, request, 0.0, 0.0
 		FROM package_vecsyscall;
 
+	CREATE TEMP TABLE IF NOT EXISTS pop_tmp (
+		pkg_id INT NOT NULL PRIMARY KEY, pop FLOAT);
+	INSERT INTO pop_tmp
+		SELECT t1.id, add_pop(t2.inst, total) FROM
+		package_id AS t1 INNER JOIN package_popularity AS t2
+		ON t1.package_name = t2.package_name;
+
 	FOR p, s, r, is_libc IN (
-		SELECT pkg_id, syscall, request,
-		bool_and(by_pkg_id = libc)
+		SELECT pkg_id, syscall, request, bool_and(by_libc)
 		FROM package_vecsyscall
 		GROUP BY pkg_id, syscall, request
 	) LOOP
-		inst := (
-			SELECT t1.inst FROM
-			package_popularity AS t1 INNER JOIN package_id AS t2
-			ON  t2.id = p
-			AND t1.package_name = t2.package_name
-		);
+		x := (SELECT pop FROM pop_tmp WHERE pkg_id = p);
 
 		IF is_libc THEN
 			UPDATE vecsyscall_tmp SET
 			popularity_with_libc =
-			add_pop(popularity_with_libc, inst, total)
+			popularity_with_libc + x
 			WHERE syscall = s AND request = r;
 		ELSE
 			UPDATE vecsyscall_tmp SET
-			popularity = add_pop(popularity, inst, total),
+			popularity = popularity + x,
 			popularity_with_libc =
-			add_pop(popularity_with_libc, inst, total)
+			popularity_with_libc + x
 			WHERE syscall = s AND request = r;
 		END IF;
 	END LOOP;
@@ -230,6 +219,7 @@ BEGIN
 		ORDER BY syscall, popularity DESC, request;
 
 	TRUNCATE TABLE vecsyscall_tmp;
+	TRUNCATE TABLE pop_tmp;
 END
 $$ LANGUAGE plpgsql;
 
@@ -237,25 +227,24 @@ CREATE OR REPLACE FUNCTION analysis_fileaccess_popularity()
 RETURNS void AS $$
 
 DECLARE
-	libc INT := id FROM package_id WHERE package_name = 'libc6';
 	total INT := inst FROM package_popularity WHERE package_name = 'Total';
 	p INT;
 	f VARCHAR;
-	inst INT;
+	x FLOAT;
 	is_libc BOOLEAN;
 
 BEGIN
 	CREATE TEMP TABLE IF NOT EXISTS package_fileaccess_tmp (
 		pkg_id INT NOT NULL, file VARCHAR NOT NULL,
-		by_pkg_id INT NOT NULL,
-		PRIMARY KEY (pkg_id, file, by_pkg_id));
+		by_libc BOOLEAN,
+		PRIMARY KEY (pkg_id, file, by_libc));
 	WITH RECURSIVE
-	analysis (pkg_id, file, by_pkg_id)
+	analysis (pkg_id, file, by_libc)
 	AS (
-		SELECT pkg_id, trim(trailing '/' from file), by_pkg_id
+		SELECT pkg_id, trim(trailing '/' from file), by_libc
 		FROM package_fileaccess
 		UNION
-		SELECT pkg_id, regexp_replace(file, '/[^/]+$', ''), by_pkg_id
+		SELECT pkg_id, regexp_replace(file, '/[^/]+$', ''), by_libc
 		FROM analysis WHERE file != ''
 	)
 	INSERT INTO package_fileaccess_tmp
@@ -269,28 +258,30 @@ BEGIN
 	INSERT INTO fileaccess_tmp
 		SELECT DISTINCT file, 0.0, 0.0 FROM package_fileaccess_tmp;
 
+	CREATE TEMP TABLE IF NOT EXISTS pop_tmp (
+		pkg_id INT NOT NULL PRIMARY KEY, pop FLOAT);
+	INSERT INTO pop_tmp
+		SELECT t1.id, add_pop(t2.inst, total) FROM
+		package_id AS t1 INNER JOIN package_popularity AS t2
+		ON t1.package_name = t2.package_name;
+
 	FOR p, f, is_libc IN (
-		SELECT pkg_id, file, bool_and(by_pkg_id = libc)
+		SELECT pkg_id, file, bool_and(by_libc)
 		FROM package_fileaccess_tmp
 		GROUP BY pkg_id, file
 	) LOOP
-		inst := (
-			SELECT t1.inst FROM
-			package_popularity AS t1 INNER JOIN package_id AS t2
-			ON  t2.id = p
-			AND t1.package_name = t2.package_name
-		);
+		x := (SELECT pop FROM pop_tmp WHERE pkg_id = p);
 
 		IF is_libc THEN
 			UPDATE fileaccess_tmp SET
 			popularity_with_libc =
-			add_pop(popularity_with_libc, inst, total)
+			popularity_with_libc + x
 			WHERE file = f;
 		ELSE
 			UPDATE fileaccess_tmp SET
-			popularity = add_pop(popularity, inst, total),
+			popularity = popularity + x,
 			popularity_with_libc =
-			add_pop(popularity_with_libc, inst, total)
+			popularity_with_libc + x
 			WHERE file = f;
 		END IF;
 	END LOOP;
@@ -305,5 +296,6 @@ BEGIN
 
 	TRUNCATE TABLE package_fileaccess_tmp;
 	TRUNCATE TABLE fileaccess_tmp;
+	TRUNCATE TABLE pop_tmp;
 END
 $$ LANGUAGE plpgsql;
