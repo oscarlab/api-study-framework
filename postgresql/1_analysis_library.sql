@@ -1,15 +1,3 @@
-CREATE OR REPLACE FUNCTION table_exists(name VARCHAR)
-RETURNS BOOLEAN AS $$
-BEGIN
-	IF EXISTS (
-		SELECT relname FROM pg_class WHERE relname=name
-	) THEN
-		RETURN True;
-	END IF;
-	RETURN False;
-END
-$$ LANGUAGE plpgsql;
-
 DO $$
 BEGIN
 IF NOT table_exists('library_call') THEN
