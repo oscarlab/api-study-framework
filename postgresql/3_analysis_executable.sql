@@ -100,29 +100,18 @@ BEGIN
 		CREATE TEMP TABLE dep_sym (
 			pkg_id INT NOT NULL, bin_id INT NOT NULL,
 			func_addr INT NOT NULL,
-			symbol_name VARCHAR, call_name VARCHAR);
-		CREATE INDEX dep_sym_pkg_id_bin_id_idx
-			ON dep_sym(pkg_id, bin_id);
+			symbol_name VARCHAR);
+		CREATE INDEX dep_sym_pkg_id_bin_id_func_addr_idx
+			ON dep_sym(pkg_id, bin_id, func_addr);
 		CREATE INDEX dep_sym_symbol_name_idx
 			ON dep_sym(symbol_name);
-		CREATE INDEX dep_sym_call_name_idx
-			ON dep_sym(call_name);
 	END IF;
 
-	FOR q, d IN (SELECT * FROM dep_lib) LOOP
-		RAISE NOTICE '% in %', d, q;
-
-		INSERT INTO dep_sym
-			SELECT q, d, t1.func_addr, symbol_name, call_name FROM
-			binary_symbol AS t1
-			RIGHT JOIN
-			library_call AS t2
-			ON t1.func_addr = t2.func_addr
-			WHERE t1.pkg_id = q AND t1.bin_id = d
-			AND   t2.pkg_id = q AND t2.bin_id = d
-			AND   t1.defined = True;
-
-	END LOOP;
+	INSERT INTO dep_sym
+		SELECT t1.pkg_id, t1.bin_id, t2.func_addr, t2.symbol_name FROM
+		dep_lib AS t1 INNER JOIN binary_symbol AS t2
+		ON t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id
+		WHERE t1.defined = True;
 
 	time2 := clock_timestamp();
 	RAISE NOTICE 'dep_call: %', time2 - time1;
@@ -168,9 +157,12 @@ BEGIN
 	INSERT INTO dep_call
 		SELECT
 		t1.pkg_id, t1.bin_id, t1.func_addr,
-		t2.pkg_id, t2.bin_id, t2.func_addr
-		FROM dep_sym AS t1 INNER JOIN dep_sym AS t2
-		ON t1.call_name = t2.symbol_name;
+		t3.pkg_id, t3.bin_id, t3.func_addr
+		FROM library_call AS t1 INNER JOIN dep_lib AS t2
+		ON  t1.pkg_id = t2.pkg_id
+		AND t1.bin_id = t2.bin_id
+		INNER JOIN dep_sym AS t3
+		ON  t1.call_name = t3.symbol_name;
 
 	IF NOT temp_table_exists('bin_call') THEN
 		CREATE TEMP TABLE IF NOT EXISTS bin_call (
