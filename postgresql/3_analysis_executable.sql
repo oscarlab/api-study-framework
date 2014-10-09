@@ -111,7 +111,7 @@ BEGIN
 		SELECT t1.pkg_id, t1.bin_id, t2.func_addr, t2.symbol_name FROM
 		dep_lib AS t1 INNER JOIN binary_symbol AS t2
 		ON t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id
-		WHERE t1.defined = True;
+		WHERE t2.defined = True;
 
 	time2 := clock_timestamp();
 	RAISE NOTICE 'dep_call: %', time2 - time1;
@@ -177,14 +177,14 @@ BEGIN
 	analysis(pkg_id, bin_id, func_addr, by_libc) AS (
 		SELECT t2.pkg_id, t2.bin_id, t2.func_addr, False
 		FROM binary_symbol AS t1 INNER JOIN dep_sym AS t2
-		ON t1.symbol_name = t2.call_name
+		ON t1.symbol_name = t2.symbol_name
 		WHERE t1.pkg_id = p AND t1.bin_id = b AND t1.defined = False
 		UNION
 		SELECT *, pkg_id = libc FROM init_call
 		UNION
 		SELECT DISTINCT
 		t2.dep_pkg_id, t2.dep_bin_id, t2.call_addr,
-		t1.by_libc AND (t2.dep_pkg_id = libc)
+		t1.by_libc AND t2.dep_pkg_id = libc
 		FROM analysis AS t1
 		INNER JOIN
 		dep_call AS t2
