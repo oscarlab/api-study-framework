@@ -189,12 +189,11 @@ BEGIN
 			ON t1.call = t2.symbol
 			WHERE t1.pkg_id = q AND t1.bin_id = d;
 
-		time2 := clock_timestamp();
-		RAISE NOTICE 'dep_call: %', time2 - time1;
-		time1 := time2;
 	END LOOP;
 
-	RETURN;
+	time2 := clock_timestamp();
+	RAISE NOTICE 'dep_call: %', time2 - time1;
+	time1 := time2;
 
 	IF NOT temp_table_exists('bin_call') THEN
 		CREATE TEMP TABLE IF NOT EXISTS bin_call (
@@ -209,7 +208,7 @@ BEGIN
 	analysis(pkg_id, bin_id, func_addr, by_libc) AS (
 		SELECT t2.pkg_id, t2.bin_id, t2.func_addr, False
 		FROM binary_symbol AS t1 INNER JOIN dep_sym AS t2
-		ON t1.symbol_name = t2.symbol_name
+		ON hashtext(t1.symbol_name) = t2.symbol
 		WHERE t1.pkg_id = p AND t1.bin_id = b AND t1.defined = False
 		UNION
 		SELECT *, pkg_id = libc FROM init_call
