@@ -103,7 +103,7 @@ binary_symbol_table = Table('binary_symbol', [
 			('func_addr','INT', ''),
 			('version', 'VARCHAR', '')],
 			['pkg_id', 'bin_id', 'symbol_name', 'version'],
-			[['symbol_name'], ['pkg_id', 'bin_id', 'func_addr']])
+			[['symbol_name'], ['pkg_id', 'bin_id', 'func_addr'], ['pkg_id', 'bin_id']])
 
 def BinarySymbol_run(jmgr, sql, args):
 	sql.connect_table(binary_symbol_table)

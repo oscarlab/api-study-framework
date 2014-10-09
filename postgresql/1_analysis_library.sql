@@ -8,7 +8,9 @@ IF NOT table_exists('library_call') THEN
 		PRIMARY KEY (pkg_id, bin_id, func_addr, call_name)
 	);
 	CREATE INDEX library_call_pkg_id_bin_id_idx
-		ON library_call (pkg_id, bin_id);
+		ON library_call (pkg_id, bin_id;
+	CREATE INDEX library_call_pkg_id_bin_id_func_addr_idx
+		ON library_call (pkg_id, bin_id, func_addr);
 END IF;
 
 IF NOT table_exists('library_syscall') THEN
@@ -18,8 +20,8 @@ IF NOT table_exists('library_syscall') THEN
 		syscall SMALLINT NOT NULL,
 		PRIMARY KEY (pkg_id, bin_id, func_addr, syscall)
 	);
-	CREATE INDEX library_syscall_pkg_id_bin_id_idx
-		ON library_syscall (pkg_id, bin_id);
+	CREATE INDEX library_syscall_pkg_id_bin_id_func_addr_idx
+		ON library_syscall (pkg_id, bin_id, func_addr);
 END IF;
 
 IF NOT table_exists('library_vecsyscall') THEN
@@ -30,8 +32,8 @@ IF NOT table_exists('library_vecsyscall') THEN
 		request BIGINT NOT NULL,
 		PRIMARY KEY (pkg_id, bin_id, func_addr, syscall, request)
 	);
-	CREATE INDEX library_vecsyscall_pkg_id_bin_id_idx
-		ON library_vecsyscall (pkg_id, bin_id);
+	CREATE INDEX library_syscall_pkg_id_bin_id_idx
+		ON library_syscall (pkg_id, bin_id, func_addr);
 END IF;
 
 IF NOT table_exists('library_fileaccess') THEN
@@ -41,8 +43,8 @@ IF NOT table_exists('library_fileaccess') THEN
 		file VARCHAR NOT NULL,
 		PRIMARY KEY (pkg_id, bin_id, func_addr, file)
 	);
-	CREATE INDEX library_fileaccess_pkg_id_bin_id_idx
-		ON library_fileaccess (pkg_id, bin_id);
+	CREATE INDEX library_fileaccess_pkg_id_bin_id_func_addr_idx
+		ON library_fileaccess (pkg_id, bin_id, func_addr);
 END IF;
 END
 $$ LANGUAGE plpgsql;
