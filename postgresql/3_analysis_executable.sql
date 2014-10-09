@@ -132,7 +132,7 @@ BEGIN
 			INNER JOIN
 			library_call AS t2
 			ON  t1.pkg_id = q AND t1.bin_id = d
-			AND t2.pkg_id = 1 AND t2.bin_id = d
+			AND t2.pkg_id = q AND t2.bin_id = d
 			AND t1.func_addr = t2.func_addr
 			UNION
 			SELECT q, d, func_addr, symbol_name, NULL

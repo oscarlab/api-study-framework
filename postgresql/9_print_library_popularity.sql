@@ -12,7 +12,8 @@ BEGIN
 	FROM call_popularity AS t1
 	INNER JOIN
 	binary_symbol AS t2
-	ON t1.pkg_id = p AND t2.pkg_id = p AND t1.bin_id = t2.bin_id
+	ON  t1.popularity >= 0.000001
+	AND t1.pkg_id = p AND t2.pkg_id = p AND t1.bin_id = t2.bin_id
 	INNER JOIN
 	binary_id AS t3
 	ON t1.bin_id = t3.id
