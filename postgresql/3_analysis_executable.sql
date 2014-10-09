@@ -150,18 +150,18 @@ BEGIN
 			AND   t2.pkg_id = q AND t2.bin_id = d
 			AND   t1.defined = True;
 
-		time2 := clock_timestamp();
-		RAISE NOTICE 'dep_call: %', time2 - time1;
-		time1 := time2;
 	END LOOP;
+
+	time2 := clock_timestamp();
+	RAISE NOTICE 'dep_call: %', time2 - time1;
+	time1 := time2;
 
 	IF NOT temp_table_exists('bin_call') THEN
 		CREATE TEMP TABLE IF NOT EXISTS bin_call (
 			pkg_id INT NOT NULL, bin_id INT NOT NULL,
 			func_addr INT NOT NULL,
 			by_pkg_id INT NOT NULL,
-			by_bin_id INT NOT NULL,
-			PRIMARY KEY (pkg_id, bin_id, func_addr, by_pkg_id, by_bin_id));
+			by_bin_id INT NOT NULL);
 		CREATE INDEX bin_call_pkg_id_bin_id_func_addr_idx ON bin_call(pkg_id, bin_id, func_addr);
 	END IF;
 
@@ -179,7 +179,7 @@ BEGIN
 		OR    symbol_name = '.init_array'
 		OR    symbol_name = '.fini_array'
 		UNION
-		SELECT DISTINCT
+		SELECT
 		t2.pkg_id, t2.bin_id, t2.func_addr, t2.call_name,
 		t1.by_pkg_id, t1.by_bin_id
 		FROM analysis AS t1
@@ -188,7 +188,7 @@ BEGIN
 		ON t1.call_name = t2.symbol_name
 	)
 	INSERT INTO bin_call
-		SELECT DISTINCT pkg_id, bin_id, func_addr, by_pkg_id, by_bin_id
+		SELECT pkg_id, bin_id, func_addr, by_pkg_id, by_bin_id
 		from analysis
 		WHERE pkg_id != 0 AND bin_id != 0 AND func_addr != 0;
 
@@ -198,7 +198,7 @@ BEGIN
 
 	DELETE FROM executable_call WHERE pkg_id = p AND bin_id = b;
 	INSERT INTO executable_call
-		SELECT
+		SELECT DISTINCT
 		p, b, pkg_id, bin_id, func_addr, by_pkg_id, by_bin_id
 		FROM bin_call;
 
