@@ -8,7 +8,7 @@ IF NOT table_exists('library_call') THEN
 		PRIMARY KEY (pkg_id, bin_id, func_addr, call_name)
 	);
 	CREATE INDEX library_call_pkg_id_bin_id_idx
-		ON library_call (pkg_id, bin_id;
+		ON library_call (pkg_id, bin_id);
 	CREATE INDEX library_call_pkg_id_bin_id_func_addr_idx
 		ON library_call (pkg_id, bin_id, func_addr);
 END IF;
