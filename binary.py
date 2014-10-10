@@ -83,7 +83,6 @@ def get_package_id(sql, package_name):
 			sql.commit()
 		except:
 			retry = True
-			raise
 			pass
 
 	return id
