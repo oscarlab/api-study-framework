@@ -9,8 +9,6 @@ IF NOT table_exists('library_call') THEN
 	);
 	CREATE INDEX library_call_pkg_id_bin_id_idx
 		ON library_call (pkg_id, bin_id);
-	CREATE INDEX library_call_pkg_id_bin_id_func_addr_idx
-		ON library_call (pkg_id, bin_id, func_addr);
 END IF;
 
 IF NOT table_exists('library_syscall') THEN

@@ -157,7 +157,7 @@ BEGIN
 		END LOOP;
 	END LOOP;
 
-	FOR r in (SELECT p, b, * FROM dep) LOOP
+	FOR r in (SELECT DISTINCT p, b, * FROM dep) LOOP
 		RETURN NEXT r;
 	END LOOP;
 
@@ -180,10 +180,10 @@ DECLARE
 
 BEGIN
 	FOR p1, b1 IN (
-		SELECT * FROM binary_interp WHERE pkg_id = p AND bin_id = b
+		SELECT DISTINCT * FROM binary_interp WHERE pkg_id = p AND bin_id = b
 	) LOOP
 		FOR r IN (
-			SELECT * FROM get_link(p1, b1)
+			SELECT DISTINCT * FROM get_link(p1, b1)
 		) LOOP
 			RETURN NEXT r;
 		END LOOP;

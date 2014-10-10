@@ -56,6 +56,11 @@ DECLARE
 	libc INT := id FROM package_id WHERE package_name = 'libc6';
 	q INT;
 	d INT;
+	entry		INT := hashtext('.entry');
+	init		INT := hashtext('.init');
+	init_array	INT := hashtext('.init_array');
+	fini		INT := hashtext('.fini');
+	fini_array	INT := hashtext('.fini_array');
 	time1 TIMESTAMP;
 	time2 TIMESTAMP;
 
@@ -64,7 +69,7 @@ BEGIN
 		SELECT * FROM binary_list WHERE pkg_id = p AND bin_id = b
 		AND type = 'exe'
 	) THEN
-		RAISE EXCEPTION 'binary %d in package %d: not a executable', b, p;
+		RAISE EXCEPTION 'binary % in package %: not a executable', b, p;
 	END IF;
 
 	RAISE NOTICE 'analyze binary: % in package %', b, p;
@@ -76,10 +81,10 @@ BEGIN
 		bin_id INT NOT NULL,
 		PRIMARY KEY(pkg_id, bin_id));
 	INSERT INTO dep_lib
-		SELECT dep_pkg_id, dep_bin_id
+		SELECT DISTINCT dep_pkg_id, dep_bin_id
 		FROM get_dependency(p, b)
 		UNION
-		SELECT dep_pkg_id, dep_bin_id
+		SELECT DISTINCT dep_pkg_id, dep_bin_id
 		FROM get_interp(p, b);
 
 	FOR q, d IN (SELECT * FROM dep_lib) LOOP
@@ -100,27 +105,50 @@ BEGIN
 		CREATE TEMP TABLE dep_sym (
 			pkg_id INT NOT NULL, bin_id INT NOT NULL,
 			func_addr INT NOT NULL,
-			symbol_name VARCHAR);
+			symbol INT);
 		CREATE INDEX dep_sym_pkg_id_bin_id_func_addr_idx
-			ON dep_sym(pkg_id, bin_id, func_addr);
-		CREATE INDEX dep_sym_symbol_name_idx
-			ON dep_sym(symbol_name);
+			ON dep_sym(pkg_id, bin_id, symbol);
+		CREATE INDEX dep_sym_symbol_idx ON dep_sym(symbol);
 	END IF;
 
-	INSERT INTO dep_sym
-		SELECT t1.pkg_id, t1.bin_id, t2.func_addr, t2.symbol_name FROM
-		dep_lib AS t1 INNER JOIN binary_symbol AS t2
-		ON t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id
-		WHERE t2.defined = True;
+	FOR q, d IN (SELECT * FROM dep_lib) LOOP
+		INSERT INTO dep_sym
+			SELECT q, d, func_addr, symbol FROM
+			binary_symbol_hash
+			WHERE pkg_id = q AND bin_id = d AND func_addr != 0;
+	END LOOP;
 
 	time2 := clock_timestamp();
-	RAISE NOTICE 'dep_call: %', time2 - time1;
+	RAISE NOTICE 'dep_sym: %', time2 - time1;
+	time1 := time2;
+
+	IF NOT temp_table_exists('lib_call') THEN
+		CREATE TEMP TABLE lib_call (
+			pkg_id INT NOT NULL, bin_id INT NOT NULL,
+			func_addr INT NOT NULL,
+			call INT NOT NULL,
+			PRIMARY KEY(pkg_id, bin_id, func_addr, call));
+		CREATE INDEX lib_call_pkg_id_bin_id_func_addr_idx
+			ON lib_call(pkg_id, bin_id, func_addr);
+		CREATE INDEX lib_call_call_idx ON lib_call(call);
+	END IF;
+
+	FOR q, d IN (SELECT * FROM dep_lib) LOOP
+		INSERT INTO lib_call
+			SELECT q, d, func_addr, call FROM
+			library_call_hash
+			WHERE pkg_id = q AND bin_id = d;
+	END LOOP;
+
+	time2 := clock_timestamp();
+	RAISE NOTICE 'lib_call: %', time2 - time1;
 	time1 := time2;
 
 	IF NOT temp_table_exists('init_call') THEN
 		CREATE TEMP TABLE init_call (
 			pkg_id INT NOT NULL, bin_id INT NOT NULL,
-			func_addr INT NOT NULL);
+			func_addr INT NOT NULL,
+			PRIMARY KEY (pkg_id, bin_id, func_addr));
 		CREATE INDEX init_call_pkg_id_bin_id_idx
 			ON init_call(pkg_id, bin_id);
 	END IF;
@@ -131,44 +159,25 @@ BEGIN
 		INNER JOIN
 		dep_sym AS t2
 		ON t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id
-		WHERE t2.symbol_name = '.entry'
+		WHERE t2.symbol = entry
 		UNION
 		SELECT DISTINCT pkg_id, bin_id, func_addr FROM
 		dep_sym
-		WHERE symbol_name = '.init'
-		OR    symbol_name = '.init_array'
-		OR    symbol_name = '.fini'
-		OR    symbol_name = '.fini_array';
+		WHERE symbol = init
+		OR    symbol = init_array
+		OR    symbol = fini
+		OR    symbol = fini_array;
 
 	time2 := clock_timestamp();
 	RAISE NOTICE 'init_call: %', time2 - time1;
 	time1 := time2;
 
-	IF NOT temp_table_exists('dep_call') THEN
-		CREATE TEMP TABLE dep_call (
-			pkg_id INT NOT NULL, bin_id INT NOT NULL,
-			func_addr INT NOT NULL,
-			dep_pkg_id INT NOT NULL, dep_bin_id INT NOT NULL,
-			call_addr INT NOT NULL);
-		CREATE INDEX dep_call_pkg_id_bin_id_idx
-			ON dep_call(pkg_id, bin_id);
-	END IF;
-
-	INSERT INTO dep_call
-		SELECT
-		t1.pkg_id, t1.bin_id, t1.func_addr,
-		t3.pkg_id, t3.bin_id, t3.func_addr
-		FROM library_call AS t1 INNER JOIN dep_lib AS t2
-		ON  t1.pkg_id = t2.pkg_id
-		AND t1.bin_id = t2.bin_id
-		INNER JOIN dep_sym AS t3
-		ON  t1.call_name = t3.symbol_name;
-
 	IF NOT temp_table_exists('bin_call') THEN
 		CREATE TEMP TABLE IF NOT EXISTS bin_call (
 			pkg_id INT NOT NULL, bin_id INT NOT NULL,
 			func_addr INT NOT NULL,
-			by_libc BOOLEAN);
+			by_libc BOOLEAN,
+			PRIMARY KEY(pkg_id, bin_id, func_addr, by_libc));
 		CREATE INDEX bin_call_pkg_id_bin_id_func_addr_idx
 			ON bin_call(pkg_id, bin_id, func_addr);
 	END IF;
@@ -176,21 +185,24 @@ BEGIN
 	WITH RECURSIVE
 	analysis(pkg_id, bin_id, func_addr, by_libc) AS (
 		SELECT t2.pkg_id, t2.bin_id, t2.func_addr, False
-		FROM binary_symbol AS t1 INNER JOIN dep_sym AS t2
-		ON t1.symbol_name = t2.symbol_name
-		WHERE t1.pkg_id = p AND t1.bin_id = b AND t1.defined = False
+		FROM binary_symbol_hash AS t1 INNER JOIN dep_sym AS t2
+		ON t1.symbol = t2.symbol
+		WHERE t1.pkg_id = p AND t1.bin_id = b AND t1.func_addr = 0
 		UNION
 		SELECT *, pkg_id = libc FROM init_call
 		UNION
 		SELECT DISTINCT
-		t2.dep_pkg_id, t2.dep_bin_id, t2.call_addr,
-		t1.by_libc AND t2.dep_pkg_id = libc
+		t3.pkg_id, t3.bin_id, t3.func_addr,
+		t1.by_libc AND t3.pkg_id = libc
 		FROM analysis AS t1
 		INNER JOIN
-		dep_call AS t2
+		lib_call AS t2
 		ON  t1.pkg_id = t2.pkg_id
 		AND t1.bin_id = t2.bin_id
 		AND t1.func_addr = t2.func_addr
+		INNER JOIN
+		dep_sym AS t3
+		ON  t2.call = t3.symbol
 	)
 	INSERT INTO bin_call
 		SELECT pkg_id, bin_id, func_addr, by_libc
@@ -274,8 +286,8 @@ BEGIN
 
 	TRUNCATE TABLE dep_lib;
 	TRUNCATE TABLE dep_sym;
+	TRUNCATE TABLE lib_call;
 	TRUNCATE TABLE init_call;
-	TRUNCATE TABLE dep_call;
 	TRUNCATE TABLE bin_call;
 
 	RAISE NOTICE 'binary % of package %: callgraph generated', b, p;

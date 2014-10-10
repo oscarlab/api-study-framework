@@ -189,30 +189,80 @@ AnalysisAllPackages = Task(
 		arg_defs=[],
 		job_name=AnalysisAllPackages_job_name)
 
+def HashBinary_run(jmgr, sql, args):
+	pkg_name = args[0]
+	bin = args[1]
+	if len(args) > 2:
+		pkg_id = args[2]
+	else:
+		pkg_id = get_package_id(sql, pkg_name)
+	if len(args) > 3:
+		bin_id = args[3]
+	else:
+		bin_id = get_binary_id(sql, bin)
+
+	sql.postgresql_execute('SELECT hash_binary(%d, %d)' % (pkg_id, bin_id))
+	sql.commit()
+
+def HashBinary_job_name(args):
+	return "Hash Binary: " + args[1] + " in " + args[0]
+
+HashBinary = Task(
+		name="Hash Binary by PostgreSQL",
+		func=HashBinary_run,
+		arg_defs=["Package Name", "Binary Name"],
+		job_name=HashBinary_job_name)
+
+def HashAllBinaries_run(jmgr, sql, args):
+	sql.connect_table(binary_list_table)
+
+	results = sql.search_record(binary_list_table, 'type!=\'scr\'', ['pkg_id', 'bin_id'])
+
+	for r in results:
+		values = r[0][1:-1].split(',')
+		pkg_id = int(values[0])
+		bin_id = int(values[1])
+		pkg_name = get_package_name(sql, pkg_id)
+		bin = get_binary_name(sql, bin_id)
+		if pkg_name and bin:
+			HashBinary.create_job(jmgr, [pkg_name, bin, pkg_id, bin_id]);
+
+def HashAllBinaries_job_name(args):
+	return "Hash All Binaries"
+
+HashAllBinaries = Task(
+		name="Hash All Binaries by PostgreSQL",
+		func=HashAllBinaries_run,
+		arg_defs=[],
+		job_name=HashAllBinaries_job_name)
+
 class PostgreSQL(SQL):
 	def __init__(self):
 		SQL.__init__(self)
 		self.hostname = get_config('postgresql_host', 'localhost')
+		self.port     = get_config('postgresql_port', '5432')
 		self.username = get_config('postgresql_user', 'postgres')
 		self.password = get_config('postgresql_pass', 'postgres')
 		self.dbname = get_config('postgresql_db', 'syscall_popularity')
 		self.db = None
 		self.tables = []
 
-		Task.register(AnalysisLibrary)
+		#Task.register(AnalysisLibrary)
 		Task.register(AnalysisAllLibraries)
-		Task.register(AnalysisLinking)
+		#Task.register(AnalysisLinking)
 		Task.register(AnalysisAllLinking)
-		Task.register(AnalysisExecutable)
+		#Task.register(AnalysisExecutable)
 		Task.register(AnalysisAllExecutables)
-		Task.register(AnalysisPackage)
+		#Task.register(AnalysisPackage)
 		Task.register(AnalysisAllPackages)
+		#Task.register(HashBinary)
+		Task.register(HashAllBinaries)
 
 	def __del__(self):
 		self.disconnect()
 
 	def connect(self):
-		self.db = psycopg2.connect(database=self.dbname, host=self.hostname, user=self.username, password=self.password)
+		self.db = psycopg2.connect(database=self.dbname, host=self.hostname, port=self.port, user=self.username, password=self.password)
 
 	def disconnect(self):
 		if self.db:
