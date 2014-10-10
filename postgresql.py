@@ -193,6 +193,7 @@ class PostgreSQL(SQL):
 	def __init__(self):
 		SQL.__init__(self)
 		self.hostname = get_config('postgresql_host', 'localhost')
+		self.port     = get_config('postgresql_port', '5432')
 		self.username = get_config('postgresql_user', 'postgres')
 		self.password = get_config('postgresql_pass', 'postgres')
 		self.dbname = get_config('postgresql_db', 'syscall_popularity')
@@ -212,7 +213,7 @@ class PostgreSQL(SQL):
 		self.disconnect()
 
 	def connect(self):
-		self.db = psycopg2.connect(database=self.dbname, host=self.hostname, user=self.username, password=self.password)
+		self.db = psycopg2.connect(database=self.dbname, host=self.hostname, port=self.port, user=self.username, password=self.password)
 
 	def disconnect(self):
 		if self.db:
