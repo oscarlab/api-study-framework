@@ -187,8 +187,8 @@ BEGIN
 	WITH RECURSIVE
 	analysis(pkg_id, bin_id, func_addr, by_libc) AS (
 		SELECT t2.pkg_id, t2.bin_id, t2.func_addr, False
-		FROM binary_symbol AS t1 INNER JOIN dep_sym AS t2
-		ON hashtext(t1.symbol_name) = t2.symbol
+		FROM binary_symbol_hash AS t1 INNER JOIN dep_sym AS t2
+		ON t1.symbol = t2.symbol
 		WHERE t1.pkg_id = p AND t1.bin_id = b AND t1.defined = False
 		UNION
 		SELECT *, pkg_id = libc FROM init_call
