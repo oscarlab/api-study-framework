@@ -115,7 +115,7 @@ BEGIN
 		INSERT INTO dep_sym
 			SELECT q, d, func_addr, symbol FROM
 			binary_symbol_hash
-			WHERE pkg_id = q AND bin_id = d AND defined = True;
+			WHERE pkg_id = q AND bin_id = d AND func_addr != 0;
 	END LOOP;
 
 	time2 := clock_timestamp();
@@ -172,8 +172,6 @@ BEGIN
 	RAISE NOTICE 'init_call: %', time2 - time1;
 	time1 := time2;
 
-	RETURN;
-
 	IF NOT temp_table_exists('bin_call') THEN
 		CREATE TEMP TABLE IF NOT EXISTS bin_call (
 			pkg_id INT NOT NULL, bin_id INT NOT NULL,
@@ -189,7 +187,7 @@ BEGIN
 		SELECT t2.pkg_id, t2.bin_id, t2.func_addr, False
 		FROM binary_symbol_hash AS t1 INNER JOIN dep_sym AS t2
 		ON t1.symbol = t2.symbol
-		WHERE t1.pkg_id = p AND t1.bin_id = b AND t1.defined = False
+		WHERE t1.pkg_id = p AND t1.bin_id = b AND t1.func_addr = 0
 		UNION
 		SELECT *, pkg_id = libc FROM init_call
 		UNION
