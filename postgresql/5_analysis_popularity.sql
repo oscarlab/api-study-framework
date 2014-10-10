@@ -70,12 +70,14 @@ BEGIN
 	INSERT INTO call_tmp
 		SELECT DISTINCT dep_bin_id, call, 0.0 FROM package_call;
 
-	CREATE TEMP TABLE IF NOT EXISTS pop_tmp (
-		pkg_id INT NOT NULL PRIMARY KEY, pop FLOAT);
-	INSERT INTO pop_tmp
-		SELECT t1.id, add_pop(t2.inst, total) FROM
-		package_id AS t1 INNER JOIN package_popularity AS t2
-		ON t1.package_name = t2.package_name;
+	IF NOT temp_table_exists('pop_tmp') THEN
+		CREATE TEMP TABLE IF NOT EXISTS pop_tmp (
+			pkg_id INT NOT NULL PRIMARY KEY, pop FLOAT);
+		INSERT INTO pop_tmp
+			SELECT t1.id, add_pop(t2.inst, total) FROM
+			package_id AS t1 INNER JOIN package_popularity AS t2
+			ON t1.package_name = t2.package_name;
+	END IF;
 
 	FOR p, d, c IN (
 		SELECT pkg_id, dep_bin_id, call
@@ -96,7 +98,6 @@ BEGIN
 		ORDER BY popularity DESC, func_addr;
 
 	TRUNCATE TABLE call_tmp;
-	TRUNCATE TABLE pop_tmp;
 END
 $$ LANGUAGE plpgsql;
 
@@ -119,12 +120,14 @@ BEGIN
 	INSERT INTO syscall_tmp
 		SELECT DISTINCT syscall, 0.0, 0.0 FROM package_syscall;
 
-	CREATE TEMP TABLE IF NOT EXISTS pop_tmp (
-		pkg_id INT NOT NULL PRIMARY KEY, pop FLOAT);
-	INSERT INTO pop_tmp
-		SELECT t1.id, add_pop(t2.inst, total) FROM
-		package_id AS t1 INNER JOIN package_popularity AS t2
-		ON t1.package_name = t2.package_name;
+	IF NOT temp_table_exists('pop_tmp') THEN
+		CREATE TEMP TABLE IF NOT EXISTS pop_tmp (
+			pkg_id INT NOT NULL PRIMARY KEY, pop FLOAT);
+		INSERT INTO pop_tmp
+			SELECT t1.id, add_pop(t2.inst, total) FROM
+			package_id AS t1 INNER JOIN package_popularity AS t2
+			ON t1.package_name = t2.package_name;
+	END IF;
 
 	FOR p, s, is_libc IN (
 		SELECT pkg_id, syscall, bool_and(by_libc)
@@ -156,7 +159,6 @@ BEGIN
 		ORDER BY popularity DESC, syscall;
 
 	TRUNCATE TABLE syscall_tmp;
-	TRUNCATE TABLE pop_tmp;
 END
 $$ LANGUAGE plpgsql;
 
@@ -182,12 +184,14 @@ BEGIN
 		SELECT DISTINCT syscall, request, 0.0, 0.0
 		FROM package_vecsyscall;
 
-	CREATE TEMP TABLE IF NOT EXISTS pop_tmp (
-		pkg_id INT NOT NULL PRIMARY KEY, pop FLOAT);
-	INSERT INTO pop_tmp
-		SELECT t1.id, add_pop(t2.inst, total) FROM
-		package_id AS t1 INNER JOIN package_popularity AS t2
-		ON t1.package_name = t2.package_name;
+	IF NOT temp_table_exists('pop_tmp') THEN
+		CREATE TEMP TABLE IF NOT EXISTS pop_tmp (
+			pkg_id INT NOT NULL PRIMARY KEY, pop FLOAT);
+		INSERT INTO pop_tmp
+			SELECT t1.id, add_pop(t2.inst, total) FROM
+			package_id AS t1 INNER JOIN package_popularity AS t2
+			ON t1.package_name = t2.package_name;
+	END IF;
 
 	FOR p, s, r, is_libc IN (
 		SELECT pkg_id, syscall, request, bool_and(by_libc)
@@ -219,7 +223,6 @@ BEGIN
 		ORDER BY syscall, popularity DESC, request;
 
 	TRUNCATE TABLE vecsyscall_tmp;
-	TRUNCATE TABLE pop_tmp;
 END
 $$ LANGUAGE plpgsql;
 
@@ -258,12 +261,14 @@ BEGIN
 	INSERT INTO fileaccess_tmp
 		SELECT DISTINCT file, 0.0, 0.0 FROM package_fileaccess_tmp;
 
-	CREATE TEMP TABLE IF NOT EXISTS pop_tmp (
-		pkg_id INT NOT NULL PRIMARY KEY, pop FLOAT);
-	INSERT INTO pop_tmp
-		SELECT t1.id, add_pop(t2.inst, total) FROM
-		package_id AS t1 INNER JOIN package_popularity AS t2
-		ON t1.package_name = t2.package_name;
+	IF NOT temp_table_exists('pop_tmp') THEN
+		CREATE TEMP TABLE IF NOT EXISTS pop_tmp (
+			pkg_id INT NOT NULL PRIMARY KEY, pop FLOAT);
+		INSERT INTO pop_tmp
+			SELECT t1.id, add_pop(t2.inst, total) FROM
+			package_id AS t1 INNER JOIN package_popularity AS t2
+			ON t1.package_name = t2.package_name;
+	END IF;
 
 	FOR p, f, is_libc IN (
 		SELECT pkg_id, file, bool_and(by_libc)
@@ -296,6 +301,5 @@ BEGIN
 
 	TRUNCATE TABLE package_fileaccess_tmp;
 	TRUNCATE TABLE fileaccess_tmp;
-	TRUNCATE TABLE pop_tmp;
 END
 $$ LANGUAGE plpgsql;
