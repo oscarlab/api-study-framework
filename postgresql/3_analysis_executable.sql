@@ -286,6 +286,7 @@ BEGIN
 
 	TRUNCATE TABLE dep_lib;
 	TRUNCATE TABLE dep_sym;
+	TRUNCATE TABLE lib_call;
 	TRUNCATE TABLE init_call;
 	TRUNCATE TABLE bin_call;
 
