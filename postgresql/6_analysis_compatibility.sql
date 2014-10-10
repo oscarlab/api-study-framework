@@ -27,7 +27,11 @@ BEGIN
 		compat := compat + (SELECT pop FROM pop_tmp WHERE pkg_id = p);
 	END LOOP;
 
-	RETURN 10.0 ^ (-compat);
+	IF compat > 6 THEN
+		RETURN 0.0;
+	ELSE
+		RETURN 10.0 ^ (-compat);
+	END IF;
 END
 $$ LANGUAGE plpgsql;
 
