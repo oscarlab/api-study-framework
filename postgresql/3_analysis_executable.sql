@@ -69,7 +69,7 @@ BEGIN
 		SELECT * FROM binary_list WHERE pkg_id = p AND bin_id = b
 		AND type = 'exe'
 	) THEN
-		RAISE EXCEPTION 'binary %d in package %d: not a executable', b, p;
+		RAISE EXCEPTION 'binary % in package %: not a executable', b, p;
 	END IF;
 
 	RAISE NOTICE 'analyze binary: % in package %', b, p;
@@ -81,10 +81,10 @@ BEGIN
 		bin_id INT NOT NULL,
 		PRIMARY KEY(pkg_id, bin_id));
 	INSERT INTO dep_lib
-		SELECT dep_pkg_id, dep_bin_id
+		SELECT DISTINCT dep_pkg_id, dep_bin_id
 		FROM get_dependency(p, b)
 		UNION
-		SELECT dep_pkg_id, dep_bin_id
+		SELECT DISTINCT dep_pkg_id, dep_bin_id
 		FROM get_interp(p, b);
 
 	FOR q, d IN (SELECT * FROM dep_lib) LOOP
@@ -107,7 +107,7 @@ BEGIN
 			func_addr INT NOT NULL,
 			symbol INT);
 		CREATE INDEX dep_sym_pkg_id_bin_id_func_addr_idx
-			ON dep_sym(pkg_id, bin_id, func_addr);
+			ON dep_sym(pkg_id, bin_id, symbol);
 		CREATE INDEX dep_sym_symbol_idx ON dep_sym(symbol);
 	END IF;
 
@@ -127,8 +127,8 @@ BEGIN
 			pkg_id INT NOT NULL, bin_id INT NOT NULL,
 			func_addr INT NOT NULL,
 			call INT);
-		CREATE INDEX lib_call_pkg_id_bin_id_func_addr_idx
-			ON lib_call(pkg_id, bin_id, func_addr);
+		CREATE INDEX lib_call_pkg_id_bin_id_call_idx
+			ON lib_call(pkg_id, bin_id, call);
 		CREATE INDEX lib_call_call_idx ON lib_call(call);
 	END IF;
 
@@ -140,6 +140,34 @@ BEGIN
 
 	time2 := clock_timestamp();
 	RAISE NOTICE 'lib_call: %', time2 - time1;
+	time1 := time2;
+
+	IF NOT temp_table_exists('dep_call') THEN
+		CREATE TEMP TABLE dep_call (
+			pkg_id INT NOT NULL, bin_id INT NOT NULL,
+			func_addr INT NOT NULL,
+			dep_pkg_id INT NOT NULL, dep_bin_id INT NOT NULL,
+			call_addr INT NOT NULL);
+		CREATE INDEX dep_call_pkg_id_bin_id_func_addr_idx
+			ON dep_call(pkg_id, bin_id, func_addr);
+	END IF;
+
+	FOR q, d IN (SELECT * FROM dep_lib) LOOP
+		INSERT INTO dep_call
+			SELECT q, d, t1.func_addr,
+			t2.pkg_id, t2.bin_id, t2.func_addr
+			FROM lib_call AS t1
+			INNER JOIN
+			dep_sym AS t2
+			ON t1.call = t2.symbol
+			WHERE t1.pkg_id = q AND t1.bin_id = d;
+
+	END LOOP;
+
+	TRUNCATE TABLE lib_call;
+
+	time2 := clock_timestamp();
+	RAISE NOTICE 'dep_call: %', time2 - time1;
 	time1 := time2;
 
 	IF NOT temp_table_exists('init_call') THEN
@@ -169,31 +197,6 @@ BEGIN
 	RAISE NOTICE 'init_call: %', time2 - time1;
 	time1 := time2;
 
-	IF NOT temp_table_exists('dep_call') THEN
-		CREATE TEMP TABLE dep_call (
-			pkg_id INT NOT NULL, bin_id INT NOT NULL,
-			func_addr INT NOT NULL,
-			dep_pkg_id INT NOT NULL, dep_bin_id INT NOT NULL,
-			call_addr INT NOT NULL);
-		CREATE INDEX dep_call_pkg_id_bin_id_idx
-			ON dep_call(pkg_id, bin_id);
-	END IF;
-
-	FOR q, d IN (SELECT * FROM dep_lib) LOOP
-		INSERT INTO dep_call
-			SELECT q, d, t1.func_addr,
-			t2.pkg_id, t2.bin_id, t2.func_addr
-			FROM lib_call AS t1
-			INNER JOIN
-			dep_sym AS t2
-			ON t1.call = t2.symbol
-			WHERE t1.pkg_id = q AND t1.bin_id = d;
-
-	END LOOP;
-
-	time2 := clock_timestamp();
-	RAISE NOTICE 'dep_call: %', time2 - time1;
-	time1 := time2;
 
 	IF NOT temp_table_exists('bin_call') THEN
 		CREATE TEMP TABLE IF NOT EXISTS bin_call (
