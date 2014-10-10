@@ -28,3 +28,24 @@ BEGIN
 	END IF;
 END
 $$ LANGUAGE plpgsql;
+
+CREATE or REPLACE FUNCTION get_binary_name(b INT)
+RETURNS VARCHAR AS $$
+BEGIN
+	RETURN (SELECT binary_name FROM binary_id WHERE id = b);
+END
+$$ LANGUAGE plpgsql;
+
+CREATE or REPLACE FUNCTION get_package_name(p INT)
+RETURNS VARCHAR AS $$
+BEGIN
+	RETURN (SELECT package_name FROM package_id WHERE id = p);
+END
+$$ LANGUAGE plpgsql;
+
+CREATE or REPLACE FUNCTION get_syscall(s INT)
+RETURNS VARCHAR AS $$
+BEGIN
+	RETURN (SELECT name FROM syscall WHERE number = s);
+END
+$$ LANGUAGE plpgsql;
