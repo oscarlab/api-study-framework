@@ -10,11 +10,9 @@ BEGIN
 	RETURN QUERY
 	SELECT DISTINCT t2.symbol_name, t1.popularity
 	FROM call_popularity AS t1
-	INNER JOIN
-	binary_symbol AS t2
-	ON t1.bin_id = t2.bin_id
-	WHERE t1.popularity >= 0.000001
-	AND   t2.pkg_id = p AND t1.bin_id = t2.bin_id
+	RIGHT JOIN
+	libc_symbol AS t2
+	ON t1.bin_id = t2.bin_id AND t1.func_addr = t2.func_addr
 	ORDER BY t1.popularity DESC, t2.symbol_name;
 
 END
