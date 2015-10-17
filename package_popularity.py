@@ -14,7 +14,7 @@ package_popularity_table = Table('package_popularity', [
 			('inst', 'INT', 'NOT NULL'),
 			('vote', 'INT', 'NOT NULL')],
 			['rank'],
-			[['package_popularity']])
+			[['package_name']])
 
 popcon_urls = [
 	"http://popcon.ubuntu.com/by_inst",
