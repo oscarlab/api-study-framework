@@ -8,7 +8,7 @@ IF table_exists('package_inst') THEN
 END IF;
 
 CREATE TABLE package_inst AS
-SELECT id AS pkg_id, inst/total::float AS inst
+SELECT id AS pkg_id, log(total/(total-inst)::float) AS inst
 FROM package_popularity AS T1 JOIN package_id AS T2
 ON T1.package_name = T2.package_name;
 
@@ -17,7 +17,7 @@ IF table_exists('package_vote') THEN
 END IF;
 
 CREATE TABLE package_vote AS
-SELECT id AS pkg_id, vote/total::float AS vote
+SELECT id AS pkg_id, log(total/(total-vote)::float) AS vote
 FROM package_popularity AS T1 JOIN package_id AS T2
 ON T1.package_name = T2.package_name;
 

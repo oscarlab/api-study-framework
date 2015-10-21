@@ -8,7 +8,7 @@ DECLARE
 BEGIN
 
 	RETURN QUERY
-	SELECT DISTINCT t2.symbol_name, t1.popularity
+	SELECT DISTINCT t2.symbol_name, get_pop(t1.popularity)
 	FROM call_popularity AS t1
 	RIGHT JOIN
 	libc_symbol AS t2
@@ -26,7 +26,7 @@ DECLARE
 BEGIN
 
 	RETURN QUERY
-	SELECT DISTINCT t2.symbol_name, t1.popularity
+	SELECT DISTINCT t2.symbol_name, get_pop(t1.popularity)
 	FROM call_popularity_by_vote AS t1
 	RIGHT JOIN
 	libc_symbol AS t2
