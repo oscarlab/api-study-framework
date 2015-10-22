@@ -6,9 +6,8 @@ DECLARE
 	p INT := id FROM package_id WHERE package_name = 'libc6';
 
 BEGIN
-
 	RETURN QUERY
-	SELECT DISTINCT t2.symbol_name, get_pop(t1.popularity)
+	SELECT t2.symbol_name AS symbol_name, get_pop(t1.popularity) AS popularity
 	FROM call_popularity AS t1
 	RIGHT JOIN
 	libc_symbol AS t2
@@ -24,9 +23,8 @@ DECLARE
 	p INT := id FROM package_id WHERE package_name = 'libc6';
 
 BEGIN
-
 	RETURN QUERY
-	SELECT DISTINCT t2.symbol_name, get_pop(t1.popularity)
+	SELECT t2.symbol_name AS symbol_name, get_pop(t1.popularity) AS popularity
 	FROM call_popularity_by_vote AS t1
 	RIGHT JOIN
 	libc_symbol AS t2
@@ -36,10 +34,10 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-\copy (SELECT * FROM query_output()) TO '/tmp/libc-popularity.csv' WITH CSV
+\copy (SELECT * FROM query_output()) TO '/tmp/libc-popularity.csv' WITH CSV HEADER
 \echo 'Output to /tmp/libc-popularity.csv'
 
-\copy (SELECT * FROM query_output_by_vote()) TO '/tmp/libc-popularity-by-vote.csv' WITH CSV
+\copy (SELECT * FROM query_output_by_vote()) TO '/tmp/libc-popularity-by-vote.csv' WITH CSV HEADER
 \echo 'Output to /tmp/libc-popularity-by-vote.csv'
 
 DROP FUNCTION query_output();
