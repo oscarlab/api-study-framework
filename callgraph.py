@@ -129,7 +129,7 @@ class Syscall_Inst(Inst):
 
 	@classmethod
 	def is_valid(cls, num):
-		if isinstance(num, int) and num >= 0 and num < len(syscall.syscalls):
+		if isinstance(num, int) and num >= 0 and num < 1024:
 			return True
 		return False
 
