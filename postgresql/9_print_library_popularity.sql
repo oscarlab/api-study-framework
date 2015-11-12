@@ -7,7 +7,7 @@ DECLARE
 
 BEGIN
 	RETURN QUERY
-	SELECT t2.symbol_name AS symbol_name, get_pop(t1.popularity) AS popularity
+	SELECT DISTINCT t2.symbol_name AS symbol_name, t1.popularity AS popularity
 	FROM call_popularity AS t1
 	RIGHT JOIN
 	libc_symbol AS t2
@@ -24,7 +24,7 @@ DECLARE
 
 BEGIN
 	RETURN QUERY
-	SELECT t2.symbol_name AS symbol_name, get_pop(t1.popularity) AS popularity
+	SELECT DISTINCT t2.symbol_name AS symbol_name, t1.popularity AS popularity
 	FROM call_popularity_by_vote AS t1
 	RIGHT JOIN
 	libc_symbol AS t2
@@ -34,11 +34,8 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-\copy (SELECT * FROM query_output()) TO '/tmp/libc-popularity.csv' WITH CSV HEADER
+\copy (SELECT t1.symbol, get_pop(t1.popularity) AS by_inst, get_pop(t2.popularity) AS by_vote FROM query_output() AS t1 JOIN query_output_by_vote() AS t2 ON t1.symbol = t2.symbol) TO '/tmp/libc-popularity.csv' WITH CSV HEADER
 \echo 'Output to /tmp/libc-popularity.csv'
-
-\copy (SELECT * FROM query_output_by_vote()) TO '/tmp/libc-popularity-by-vote.csv' WITH CSV HEADER
-\echo 'Output to /tmp/libc-popularity-by-vote.csv'
 
 DROP FUNCTION query_output();
 DROP FUNCTION query_output_by_vote();
