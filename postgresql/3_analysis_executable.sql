@@ -122,19 +122,19 @@ BEGIN
 	RAISE NOTICE 'dep_sym: %', time2 - time1;
 	time1 := time2;
 
-	IF NOT temp_table_exists('lib_call') THEN
-		CREATE TEMP TABLE lib_call (
+	IF NOT temp_table_exists('dep_lib_call') THEN
+		CREATE TEMP TABLE dep_lib_call (
 			pkg_id INT NOT NULL, bin_id INT NOT NULL,
 			func_addr INT NOT NULL,
 			call INT NOT NULL,
 			PRIMARY KEY(pkg_id, bin_id, func_addr, call));
-		CREATE INDEX lib_call_pkg_id_bin_id_func_addr_idx
-			ON lib_call(pkg_id, bin_id, func_addr);
-		CREATE INDEX lib_call_call_idx ON lib_call(call);
+		CREATE INDEX dep_lib_call_pkg_id_bin_id_func_addr_idx
+			ON dep_lib_call(pkg_id, bin_id, func_addr);
+		CREATE INDEX dep_lib_call_call_idx ON dep_lib_call(call);
 	END IF;
 
 	FOR q, d IN (SELECT * FROM dep_lib) LOOP
-		INSERT INTO lib_call
+		INSERT INTO dep_lib_call
 			SELECT q, d, func_addr, call FROM
 			library_call_hash
 			WHERE pkg_id = q AND bin_id = d;
@@ -196,7 +196,7 @@ BEGIN
 		t1.by_libc AND t3.pkg_id = libc
 		FROM analysis AS t1
 		INNER JOIN
-		lib_call AS t2
+		dep_lib_call AS t2
 		ON  t1.pkg_id = t2.pkg_id
 		AND t1.bin_id = t2.bin_id
 		AND t1.func_addr = t2.func_addr
@@ -286,7 +286,7 @@ BEGIN
 
 	TRUNCATE TABLE dep_lib;
 	TRUNCATE TABLE dep_sym;
-	TRUNCATE TABLE lib_call;
+	TRUNCATE TABLE dep_lib_call;
 	TRUNCATE TABLE init_call;
 	TRUNCATE TABLE bin_call;
 
