@@ -100,7 +100,23 @@ def PackageInfo_run(jmgr, sql, args):
 
 	process = subprocess.Popen(cmd + ["showpkg", args[0]], stdout=subprocess.PIPE, stderr=main.null_dev)
 	(stdout, stderr) = process.communicate()
-	print stdout
+	#print stdout
+
+	extensions = [".c", ".cpp", ".c++", ".cxx", ".cc", ".cp"]
+	dir = unpack_package_source(args[0])
+	if not dir:
+		return
+	sources = []
+	for (root, subdirs, files) in os.walk(dir):
+		for f in files:
+			fname = f.lower()
+			for ext in extensions:
+				if fname.endswith(ext):
+					sources.append(root + '/' + f)
+					break
+	if sources:
+		print "%s contains source" % (args[0])
+	remove_dir(dir)
 
 def PackageInfo_job_name(args):
 	return "Package Info: " + args[0]
@@ -205,6 +221,22 @@ def download_from_apt(name, source=None, arch=None, options=None):
 
 	raise Exception("\'" + name + "\' is not properly downloaded")
 
+def download_source_from_apt(name, source=None, arch=None, options=None):
+	cmd = ["apt-get", "source"]
+
+	if source:
+		cmd += apt_options_for_source(source)
+	if arch:
+		cmd += ["-o", "APT::Architectures=" + arch]
+	if options:
+		for (opt, val) in options.items():
+			cmd += ["-o", opt + "=" + val]
+
+	process = subprocess.Popen(cmd + [name], stdout=subprocess.PIPE, stderr=main.null_dev)
+	(stdout, stderr) = process.communicate()
+	if process.returncode != 0:
+		raise Exception("Cannot download \'" + name + "\'")
+
 def unpack_package(name):
 	package_source = main.get_config('package_source')
 	package_arch = main.get_config('package_arch')
@@ -233,6 +265,28 @@ def unpack_package(name):
 	os.mkdir(dir + '/refs')
 	os.chdir(main.root_dir)
 	return (dir, name, version)
+
+def unpack_package_source(name):
+	package_source = main.get_config('package_source')
+	package_arch = main.get_config('package_arch')
+	package_options = main.get_config('package_options')
+
+	print "unpack", name
+
+	dir = tempfile.mkdtemp('', '', main.get_temp_dir())
+	os.chdir(dir)
+
+	try:
+		download_source_from_apt(name, package_source,
+			package_arch, package_options)
+	except:
+		os.chdir(main.root_dir)
+		remove_dir(dir)
+		raise
+
+	os.mkdir(dir + '/refs')
+	os.chdir(main.root_dir)
+	return dir
 
 def reference_dir(dir):
 	(file, path) = tempfile.mkstemp(dir=dir + '/refs')

@@ -4,3 +4,8 @@ deb http://us.archive.ubuntu.com/ubuntu vivid-updates main restricted multiverse
 deb http://us.archive.ubuntu.com/ubuntu vivid-backports main restricted multiverse universe
 deb http://archive.canonical.com/ubuntu vivid partner
 deb http://us.archive.ubuntu.com/ubuntu vivid-security main restricted multiverse universe
+deb-src http://archive.ubuntu.com/ubuntu vivid main restricted multiverse universe
+deb-src http://us.archive.ubuntu.com/ubuntu vivid-updates main restricted multiverse universe
+deb-src http://us.archive.ubuntu.com/ubuntu vivid-backports main restricted multiverse universe
+deb-src http://archive.canonical.com/ubuntu vivid partner
+deb-src http://us.archive.ubuntu.com/ubuntu vivid-security main restricted multiverse universe
