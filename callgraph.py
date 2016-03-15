@@ -414,7 +414,7 @@ def get_callgraph(binary_name):
 				inst = token
 				args = parts[i + 1].split(',')
 				break
-			if token == 'callq':
+			if token == 'callq' or token == 'jmpq':
 				inst = token
 				args = []
 				if i + 1 < len(parts):
@@ -531,7 +531,7 @@ def get_callgraph(binary_name):
 
 			continue
 
-		if inst == 'callq':
+		if inst == 'callq' or inst == 'jmpq':
 			match = re.match(r'(0x)?([a-f0-9]+)$', args[0])
 			if match:
 				func_addr = int(match.group(2), 16)
