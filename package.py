@@ -99,8 +99,15 @@ package_dependency_table = Table('package_dependency', [
 
 def PackageInfo_run(jmgr, sql, args):
 	sql.connect_table(package_list_table)
-	sql.connect_table(package_dependency_table)
 	pkgname = args[0]
+	pkg_id = get_package_id(sql, pkgname)
+
+	if sql.search_record(package_list_table,
+			'pkg_id = ' + Table.stringify(pkg_id), ['pkg_id']):
+		print pkgname + " is already known. Remove the record to retry."
+		return
+
+	sql.connect_table(package_dependency_table)
 
 	package_source = main.get_config('package_source')
 	package_arch = main.get_config('package_arch')
@@ -160,7 +167,6 @@ def PackageInfo_run(jmgr, sql, args):
 	if dir:
 		remove_dir(dir)
 
-	pkg_id = get_package_id(sql, pkgname)
 	values = dict()
 	values['pkg_id'] = pkg_id
 	values['arch'] = arch
