@@ -116,30 +116,49 @@ def PackageInfo_run(jmgr, sql, args):
 		for (opt, val) in package_options.items():
 			cmd += ["-o", opt + "=" + val]
 
+	has_source = False
 	arch = 'all'
 	process = subprocess.Popen(cmd + ["showpkg", pkgname], stdout=subprocess.PIPE, stderr=main.null_dev)
-	stdout = process.communicate()[0]
-	for line in stdout.split('\n'):
+	for line in process.stdout:
 		m = re.match('\s*Architecture:\s*(\S+)', line)
 		if m:
 			arch = m.group(1)
+	if process.wait() != 0:
+		return False
 
-	has_source = False
 	extensions = [".c", ".cpp", ".c++", ".cxx", ".cc", ".cp"]
+	dir = None
+	process = None
 	try:
-		dir = unpack_package_source(args[0])
-		if not dir:
-			return
+		dir = download_package_source(pkgname)
 		for (root, subdirs, files) in os.walk(dir):
 			for f in files:
-				fname = f.lower()
-				for ext in extensions:
-					if fname.endswith(ext):
-						has_source = True
-						break
+				args = None
+				if f.endswith(".tar"):
+					args = "-tf"
+				elif f.endswith(".tar.gz") or f.endswith(".tgz"):
+					args = "-tzf"
+				elif f.endswith(".tar.bz2"):
+					args = "-tjf"
+				elif f.endswith(".tar.xz"):
+					args = "-tJf"
+				if args is None:
+					continue
+				process = subprocess.Popen(["tar", args, root + "/" + f], stdout=subprocess.PIPE, stderr=main.null_dev)
+				for line in process.stdout:
+					line = line.strip()
+					for ext in extensions:
+						if line.endswith(ext):
+							has_source = True
+							raise Exception(pkgname + " contains source")
+	except Exception as e:
+		print str(e)
+		pass
+
+	if process:
+		process.kill()
+	if dir:
 		remove_dir(dir)
-	except:
-		has_source = False
 
 	pkg_id = get_package_id(sql, pkgname)
 	values = dict()
@@ -272,8 +291,11 @@ def download_from_apt(name, source=None, arch=None, options=None):
 
 	raise Exception("\'" + name + "\' is not properly downloaded")
 
-def download_source_from_apt(name, source=None, arch=None, options=None):
+def download_source_from_apt(name, source=None, arch=None, options=None, unpack=False):
 	cmd = ["apt-get", "source"]
+
+	if not unpack:
+		cmd += ["--download-only"]
 
 	if source:
 		cmd += apt_options_for_source(source)
@@ -318,19 +340,17 @@ def unpack_package(name):
 	os.chdir(main.root_dir)
 	return (dir, name, version)
 
-def unpack_package_source(name):
+def download_package_source(name, unpack=False):
 	package_source = main.get_config('package_source')
 	package_arch = main.get_config('package_arch')
 	package_options = main.get_config('package_options')
-
-	print "unpack", name
 
 	dir = tempfile.mkdtemp('', '', main.get_temp_dir())
 	os.chdir(dir)
 
 	try:
 		download_source_from_apt(name, package_source,
-			package_arch, package_options)
+			package_arch, package_options, unpack)
 	except:
 		os.chdir(main.root_dir)
 		remove_dir(dir)
@@ -361,9 +381,8 @@ def remove_dir(dir):
 
 def PackageUnpack_run(jmgr, sql, args):
 	(dir, pkgname, version) = unpack_package(args[0])
-	if not dir:
-		return
-	print "Unpacked", pkgname, "(" + version + ")", "to", dir
+	if dir:
+		print "Unpacked", pkgname, "(" + version + ")", "to", dir
 
 def PackageUnpack_job_name(args):
 	return "Package Unpack: " + args[0]
