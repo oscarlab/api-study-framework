@@ -83,7 +83,25 @@ def get_packages_by_ranks(sql, min, max):
 			result.append(name)
 	return result
 
+package_list_table = Table('package_list', [
+			('pkg_id', 'INT', 'NOT NULL'),
+			('arch', 'CHAR(6)', 'NOT NULL'),
+			('has_src', 'BOOLEAN', '')],
+			['pkg_id'],
+			[])
+
+package_dependency_table = Table('package_dependency', [
+			('pkg_id', 'INT', 'NOT NULL'),
+			('dependency', 'INT', 'NOT NULL')],
+			['pkg_id', 'dependency'],
+			[['dependency']])
+
+
 def PackageInfo_run(jmgr, sql, args):
+	sql.connect_table(package_list_table)
+	sql.connect_table(package_dependency_table)
+	pkgname = args[0]
+
 	package_source = main.get_config('package_source')
 	package_arch = main.get_config('package_arch')
 	package_options = main.get_config('package_options')
@@ -98,25 +116,58 @@ def PackageInfo_run(jmgr, sql, args):
 		for (opt, val) in package_options.items():
 			cmd += ["-o", opt + "=" + val]
 
-	process = subprocess.Popen(cmd + ["showpkg", args[0]], stdout=subprocess.PIPE, stderr=main.null_dev)
-	(stdout, stderr) = process.communicate()
-	#print stdout
+	arch = 'all'
+	process = subprocess.Popen(cmd + ["showpkg", pkgname], stdout=subprocess.PIPE, stderr=main.null_dev)
+	stdout = process.communicate()[0]
+	for line in stdout.split('\n'):
+		m = re.match('\s*Architecture:\s*(\S+)', line)
+		if m:
+			arch = m.group(1)
 
+	has_source = False
 	extensions = [".c", ".cpp", ".c++", ".cxx", ".cc", ".cp"]
-	dir = unpack_package_source(args[0])
-	if not dir:
-		return
-	sources = []
-	for (root, subdirs, files) in os.walk(dir):
-		for f in files:
-			fname = f.lower()
-			for ext in extensions:
-				if fname.endswith(ext):
-					sources.append(root + '/' + f)
-					break
-	if sources:
-		print "%s contains source" % (args[0])
-	remove_dir(dir)
+	try:
+		dir = unpack_package_source(args[0])
+		if not dir:
+			return
+		for (root, subdirs, files) in os.walk(dir):
+			for f in files:
+				fname = f.lower()
+				for ext in extensions:
+					if fname.endswith(ext):
+						has_source = True
+						break
+		remove_dir(dir)
+	except:
+		has_source = False
+
+	pkg_id = get_package_id(sql, pkgname)
+	values = dict()
+	values['pkg_id'] = pkg_id
+	values['arch'] = arch
+	values['has_src'] = has_source
+	condition = 'pkg_id=\'' + Table.stringify(pkg_id) + '\''
+	sql.delete_record(package_list_table, condition)
+	sql.append_record(package_list_table, values)
+
+	condition = 'pkg_id=\'' + Table.stringify(values['pkg_id']) + '\''
+	sql.delete_record(package_dependency_table, condition)
+	process = subprocess.Popen(cmd + ["depends", pkgname], stdout=subprocess.PIPE, stderr=main.null_dev)
+	stdout = process.communicate()[0]
+	deps = []
+	for line in stdout.split('\n'):
+		m = re.match('\s*\|?Depends:\s+(\S+)', line)
+		if m:
+			if m.group(1) not in deps:
+				deps.append(m.group(1))
+	for dep in deps:
+		dep_id = get_package_id(sql, dep)
+		values = dict()
+		values['pkg_id'] = pkg_id
+		values['dependency'] = dep_id
+		sql.append_record(package_dependency_table, values)
+
+	sql.commit()
 
 def PackageInfo_job_name(args):
 	return "Package Info: " + args[0]
@@ -211,7 +262,7 @@ def download_from_apt(name, source=None, arch=None, options=None):
 			cmd += ["-o", opt + "=" + val]
 
 	process = subprocess.Popen(cmd + [name], stdout=subprocess.PIPE, stderr=main.null_dev)
-	(stdout, stderr) = process.communicate()
+	stdout = process.communicate()[0]
 	if process.returncode != 0:
 		raise Exception("Cannot download \'" + name + "\'")
 
@@ -232,9 +283,10 @@ def download_source_from_apt(name, source=None, arch=None, options=None):
 		for (opt, val) in options.items():
 			cmd += ["-o", opt + "=" + val]
 
-	process = subprocess.Popen(cmd + [name], stdout=subprocess.PIPE, stderr=main.null_dev)
+	process = subprocess.Popen(cmd + [name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	(stdout, stderr) = process.communicate()
 	if process.returncode != 0:
+		print stderr
 		raise Exception("Cannot download \'" + name + "\'")
 
 def unpack_package(name):

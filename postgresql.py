@@ -297,9 +297,10 @@ class PostgreSQL(SQL):
 	def connect_table(self, table):
 		if table not in self.tables:
 			query = 'SELECT relname FROM pg_class WHERE relname=\'' + table.name + '\''
+			create_query = table.create_table()
 			while not self.postgresql_query(query):
 				try:
-					self.postgresql_execute(table.create_table())
+					self.postgresql_execute(create_query)
 					for q in table.create_indexes():
 						self.postgresql_execute(q)
 					self.db.commit()
