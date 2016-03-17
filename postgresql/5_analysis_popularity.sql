@@ -3,9 +3,9 @@ BEGIN
 IF NOT table_exists('call_popularity') THEN
 	CREATE TABLE call_popularity (
 		bin_id INT NOT NULL,
-		func_addr INT NOT NULL,
+		call VARCHAR NOT NULL,
 		popularity FLOAT,
-		PRIMARY KEY(bin_id, func_addr)
+		PRIMARY KEY(bin_id, call)
 	);
 END IF;
 
@@ -40,9 +40,9 @@ END IF;
 IF NOT table_exists('call_popularity_by_vote') THEN
 	CREATE TABLE call_popularity_by_vote (
 		bin_id INT NOT NULL,
-		func_addr INT NOT NULL,
+		call VARCHAR NOT NULL,
 		popularity FLOAT,
-		PRIMARY KEY(bin_id, func_addr)
+		PRIMARY KEY(bin_id, call)
 	);
 END IF;
 
@@ -130,17 +130,25 @@ BEGIN
 
 	TRUNCATE TABLE call_popularity;
 	INSERT INTO call_popularity
-		SELECT bin_id, func_addr,
-		popularity
-		FROM call_tmp
-		ORDER BY popularity DESC, func_addr;
+		SELECT t1.bin_id, t2,symbol_name,
+		t1.popularity
+		FROM call_tmp AS t1
+		JOIN
+		binary_symbol AS t2
+		ON
+		t1.bin_id = t2.bin_id AND t1.func_addr = t2.func_addr
+		ORDER BY t1.popularity DESC, t1.func_addr;
 
 	TRUNCATE TABLE call_popularity_by_vote;
 	INSERT INTO call_popularity_by_vote
-		SELECT bin_id, func_addr,
-		popularity_by_vote
-		FROM call_tmp
-		ORDER BY popularity_by_vote DESC, func_addr;
+		SELECT t1.bin_id, t2.symbol_name,
+		t1.popularity_by_vote
+		FROM call_tmp AS t1
+		JOIN
+		binary_symbol AS t2
+		ON
+		t1.bin_id = t2.bin_id AND t1.func_addr = t2.func_addr
+		ORDER BY t1.popularity_by_vote DESC, t1.func_addr;
 
 	TRUNCATE TABLE call_tmp;
 END
