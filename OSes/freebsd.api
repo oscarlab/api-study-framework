@@ -2,12 +2,12 @@ read
 write
 open
 close
-newstat
-newfstat
-newlstat
+stat
+fstat
+lstat
 poll
 lseek
-mmap2
+mmap
 mprotect
 munmap
 brk
@@ -59,7 +59,7 @@ execve
 exit
 wait4
 kill
-newuname
+uname
 semget
 semop
 semctl
@@ -173,7 +173,7 @@ lremovexattr
 fremovexattr
 tkill
 time
-sys_futex
+futex
 sched_setaffinity
 sched_getaffinity
 epoll_create

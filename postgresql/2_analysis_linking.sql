@@ -191,3 +191,49 @@ BEGIN
 	RETURN;
 END
 $$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION get_depends(p INT, b INT)
+RETURNS SETOF binary_linking AS $$
+DECLARE
+	p1 INT;
+	b1 INT;
+	d VARCHAR := '';
+	unresolved VARCHAR;
+	r binary_linking%ROWTYPE;
+
+BEGIN
+	CREATE TEMP TABLE IF NOT EXISTS dep (
+		pkg_id INT NOT NULL, bin_id INT NOT NULL,
+		dep_name VARCHAR NOT NULL,
+		PRIMARY KEY (pkg_id, bin_id));
+	WITH RECURSIVE
+	analysis (pkg_id, bin_id)
+	AS (
+		SELECT pkg_id, bin_id, dep_name FROM
+		binary_linking
+		WHERE dep_pkg_id = p AND dep_bin_id = b
+		UNION
+		SELECT t2.pkg_id, t2.bin_id,
+		COALESCE(t1.dep_name, t2.dep_name) FROM
+		analysis AS t1 INNER JOIN binary_linking AS t2
+		ON  t1.pkg_id = t2.dep_pkg_id
+		AND t1.bin_id = t2.dep_bin_id
+	) INSERT INTO dep
+		SELECT t1.pkg_id, t1.bin_id, t1.dep_name FROM
+		analysis AS t1 INNER JOIN binary_list AS t2
+		ON  t1.pkg_id = t2.pkg_id
+		AND t1.bin_id = t2.bin_id
+		AND (t2.type = 'lib' OR t2.type = 'exe')
+		AND t1.dep_name IS NOT NULL;
+
+	FOR r in (SELECT DISTINCT pkg_id, bin_id, p, b, dep_name FROM dep) LOOP
+		RETURN NEXT r;
+	END LOOP;
+
+	TRUNCATE TABLE dep;
+
+	RETURN;
+END
+$$ LANGUAGE plpgsql;
+
+

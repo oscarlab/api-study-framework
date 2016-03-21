@@ -49,3 +49,10 @@ BEGIN
 	RETURN (SELECT name FROM syscall WHERE number = s);
 END
 $$ LANGUAGE plpgsql;
+
+CREATE or REPLACE FUNCTION get_syscall_no(n VARCHAR)
+RETURNS VARCHAR AS $$
+BEGIN
+	RETURN (SELECT number FROM syscall WHERE name = n);
+END
+$$ LANGUAGE plpgsql;

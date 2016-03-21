@@ -459,6 +459,39 @@ def get_callgraph(binary_name):
 					register_values[d_reg] = (int(source), inst_addr)
 				continue
 
+			match = re.match(r'\((\%[^\)\+]+)\)', source)
+			if match:
+				for i in range(len(registers)):
+					if match.group(1) in registers[i]:
+						s_reg = main_register[i]
+						break
+				if s_reg and isinstance(register_values[s_reg][0], int) and register_values[s_reg][0] > 0:
+					addr = register_values[s_reg][0]
+					register_values[d_reg] = (0, inst_addr)
+					for (fo, va, fsz, msz) in load_list:
+						if addr >= va and addr < va + fsz:
+							binary.seek(fo + (addr - va))
+							register_values[d_reg] = \
+								(struct.unpack('L', binary.read(8))[0], inst_addr);
+							break
+					continue
+				s_reg = None
+
+			match = re.match(r'\*?(-?)0x([a-f0-9]+)\(%rip\)$', source)
+			if match:
+				if match.group(1) == '-':
+					addr = inst_addr + inst_size - int(match.group(2), 16)
+				else:
+					addr = inst_addr + inst_size + int(match.group(2), 16)
+				register_values[d_reg] = (0, inst_addr)
+				for (fo, va, fsz, msz) in load_list:
+					if addr >= va and addr < va + fsz:
+						binary.seek(fo + (addr - va))
+						register_values[d_reg] = \
+							(struct.unpack('L', binary.read(8))[0], inst_addr);
+						break
+				continue
+
 			#if source_reg is not direct value ,rather register itself or mem location
 			if s_reg:
 				register_values[d_reg] = register_values[s_reg]

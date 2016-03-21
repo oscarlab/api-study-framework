@@ -1,1900 +1,1890 @@
-
-libc.so:     file format elf64-x86-64
-
-DYNAMIC SYMBOL TABLE:
-0000000000016200 l    d  .text	0000000000000000 .text
-000000000028b454 l    D  .bss	0000000000000000 __bss_start
-000000000028b454 l    D  .data	0000000000000000 _edata
-000000000028e190 l    D  .bss	0000000000000000 _end
-000000000002fefd g    DF .text	0000000000000164 .protected y0f
-000000000001aca0 g    DF .text	0000000000000075 .protected strlen
-00000000000206be g    DF .text	000000000000007e .protected ctanf
-000000000004fd9b g    DF .text	0000000000000170 .protected vfprintf
-000000000004ab40 g    DF .text	0000000000000017 .protected mkdirat
-000000000004246b g    DF .text	0000000000000023 .protected srandom
-0000000000049693 g    DF .text	000000000000000f .protected sched_setparam
-00000000000872d0 g    DO .rodata	0000000000000010 .protected in6addr_any
-000000000002073c g    DF .text	0000000000000240 .protected ctanh
-0000000000028b87 g    DF .text	0000000000000037 .protected __fpclassifyf
-0000000000026051 g    DF .text	000000000000002f .protected epoll_create1
-00000000000266a9 g    DF .text	0000000000000012 .protected __lsysinfo
-000000000002659a g    DF .text	0000000000000014 .protected settimeofday
-000000000004a819 g    DF .text	0000000000000000 .protected __restore
-0000000000039747 g    DF .text	0000000000000003 .protected grantpt
-00000000000552d0 g    DF .text	0000000000000018 .protected pthread_mutex_init
-000000000001ad20 g    DF .text	00000000000000a6 .protected strncasecmp
-00000000000534de g    DF .text	000000000000000c .protected cfsetispeed
-000000000005553c  w   DF .text	000000000000011f .protected pthread_mutex_unlock
-00000000000561dc g    DF .text	0000000000000005 .protected sem_unlink
-000000000028de00 g    DO .bss	0000000000000008 __environ
-00000000000559b8  w   DF .text	0000000000000023 .protected pthread_setcancelstate
-0000000000020c2a g    DF .text	000000000000003e .protected ctanl
-0000000000023cc3 g    DF .text	0000000000000005 .protected __iswgraph_l
-0000000000028bbe g    DF .text	000000000000004a .protected __fpclassifyl
-000000000004a853 g    DF .text	0000000000000010 .protected __fxstatat
-000000000004e454 g    DF .text	000000000000006e .protected vasprintf
-0000000000023b32 g    DF .text	000000000000000c .protected __isupper_l
-0000000000038d32 g    DF .text	0000000000000028 .protected getpriority
-0000000000042283 g    DF .text	0000000000000060 .protected __rand48_step
-000000000003be39 g    DF .text	0000000000000004 .protected ether_line
-000000000002c3d1 g    DF .text	0000000000000158 .protected erfc
-0000000000053880 g    DF .text	000000000000000c .protected __inhibit_ptc
-0000000000056621 g    DF .text	0000000000000008 .protected thrd_yield
-00000000000595e2 g    DF .text	0000000000000008 .protected geteuid
-0000000000059c68 g    DF .text	0000000000000040 .protected ualarm
-000000000001af70 g    DF .text	000000000000003a .protected strndup
-000000000002c81f g    DF .text	000000000000014d .protected erff
-0000000000021419 g    DF .text	0000000000000191 .protected __crypt_blowfish
-00000000000533d5 g    DF .text	0000000000000009 .protected mkstemp
-0000000000026337 g    DF .text	00000000000000a5 .protected prctl
-00000000000364bd g    DF .text	0000000000000028 .protected significandf
-0000000000023cdf g    DF .text	0000000000000066 .protected iswprint
-00000000000417fb g    DF .text	000000000000002b .protected setpwent
-000000000005ce75 g    DF .text	00000000000000b0 .protected dl_iterate_phdr
-000000000003b782 g    DF .text	0000000000000344 .protected __dn_comp
-0000000000056804 g    DF .text	000000000000007f .protected __map_file
-000000000002510d  w   DF .text	000000000000001c .protected posix_fadvise64
-0000000000023c3f g    DF .text	0000000000000042 .protected wctype
-000000000003bd68 g    DF .text	0000000000000001 .protected endhostent
-0000000000043282 g    DF .text	0000000000000006 .protected posix_spawnattr_setpgroup
-0000000000024013  w   DF .text	0000000000000005 .protected towctrans_l
-0000000000056883 g    DF .text	0000000000000022 .protected __month_to_secs
-0000000000023b5b  w   DF .text	0000000000000005 .protected iswalnum_l
-000000000004b727 g    DF .text	000000000000000c .protected __freadable
-0000000000020ceb g    DF .text	000000000000000d .protected get_nprocs_conf
-000000000005565b g    DF .text	0000000000000003 .protected pthread_mutexattr_destroy
-0000000000052e1f  w   DF .text	0000000000000005 .protected __strtoumax_internal
-000000000002cdf4 g    DF .text	0000000000000133 .protected erfl
-00000000000405a5 g    DF .text	0000000000000001 .protected setservent
-0000000000038d7e  w   DF .text	00000000000000b0 .protected getrlimit64
-0000000000019aa0 g    DF .text	000000000000001b .protected malloc_usable_size
-000000000004ac88 g    DF .text	0000000000000093 .protected fstatvfs
-0000000000023c86 g    DF .text	0000000000000005 .protected __wctype_l
-0000000000033aa3 g    DF .text	0000000000000009 .protected nanf
-000000000001c420 g    DF .text	0000000000000044 .protected wmemcmp
-000000000003a61b g    DF .text	000000000000002f .protected __munmap
-000000000001d967  w   DF .text	0000000000000009 .protected aio_error64
-00000000000240f8 g    DF .text	0000000000000025 .protected closedir
-00000000000405a9 g    DF .text	0000000000000024 .protected setsockopt
-0000000000023ddc  w   DF .text	0000000000000005 .protected iswxdigit_l
-0000000000036397 g    DF .text	0000000000000074 .protected scalbnf
-000000000005568a g    DF .text	0000000000000019 .protected pthread_mutexattr_setrobust
-000000000004ab64 g    DF .text	000000000000000a .protected mkfifoat
-0000000000040001  w   DF .text	0000000000000044 .protected res_send
-0000000000037831 g    DF .text	0000000000000010 .protected tgammaf
-0000000000033aac g    DF .text	0000000000000007 .protected nanl
-0000000000041a62 g    DF .text	0000000000000064 .protected getspnam
-0000000000038016 g    DF .text	0000000000000030 .protected l64a
-000000000004b63d g    DF .text	0000000000000027 .protected clearerr
-0000000000057cd9  w   DF .text	0000000000000066 .protected localtime_r
-000000000001da94 g    DF .text	00000000000001c9 .protected aio_suspend
-000000000004ba60 g    DF .text	00000000000000cb .protected fgetln
-000000000004a47b g    DF .text	000000000000001c .protected sigisemptyset
-000000000003640b g    DF .text	0000000000000088 .protected scalbnl
-0000000000030a4b g    DF .text	000000000000016a .protected y1f
-000000000004a070 g    DF .text	0000000000000044 .protected psiginfo
-000000000002ba5d g    DF .text	000000000000002c .protected copysignf
-0000000000037958 g    DF .text	00000000000002ef .protected tgammal
-000000000005553c g    DF .text	000000000000011f .protected __pthread_mutex_unlock
-0000000000023a2d g    DF .text	000000000000000f .protected __isalpha_l
-000000000004c9ce g    DF .text	000000000000000a .protected fsetpos
-0000000000028931 g    DF .text	000000000000000e .protected wcscoll
-000000000003be76 g    DF .text	000000000000026c .protected getaddrinfo
-0000000000023a57 g    DF .text	0000000000000012 .protected __isblank_l
-000000000004b932 g    DF .text	00000000000000c2 .protected fflush
-00000000000591f8 g    DF .text	0000000000000015 .protected dup
-000000000028ae18 g    DO .data.rel.ro	0000000000000008 stderr
-0000000000025dda g    DF .text	0000000000000012 .protected isastream
-000000000003a6f3 g    DF .text	0000000000000063 .protected shm_open
-000000000002ba89 g    DF .text	000000000000002d .protected copysignl
-000000000004a027 g    DF .text	0000000000000015 .protected getitimer
-00000000000336c3 g    DF .text	000000000000004d .protected logbf
-000000000003a7fb g    DF .text	000000000000014b .protected mq_notify
-00000000000557d1 g    DF .text	0000000000000007 .protected pthread_rwlock_rdlock
-00000000000405f0 g    DF .text	0000000000000027 .protected sockatmark
-000000000004c2ba g    DF .text	000000000000008f .protected fprintf
-000000000004aa1a  w   DF .text	000000000000005e .protected fstat64
-0000000000033710 g    DF .text	0000000000000051 .protected logbl
-000000000003fefd g    DF .text	000000000000005c .protected __res_query
-0000000000029ff7 g    DF .text	00000000000001c7 .protected acos
-000000000004a16c g    DF .text	0000000000000144 .protected __libc_sigaction
-000000000003d33d g    DF .text	0000000000000039 .protected getservbyport
-000000000004a2b0 g    DF .text	0000000000000028 .protected __sigaction
-000000000003f160 g    DF .text	0000000000000003 .protected getnetbyaddr
-000000000003906f g    DF .text	0000000000000005 .protected setmntent
-0000000000055b63 g    DF .text	000000000000000a .protected pthread_spin_unlock
-000000000004ca63 g    DF .text	000000000000002f .protected __do_orphaned_stdio_locks
-0000000000029dea g    DF .text	0000000000000184 .protected __tanl
-0000000000019c40 g    DF .text	000000000000000e .protected bcopy
-000000000004dab1 g    DF .text	000000000000009b .protected putc
-00000000000260a5 g    DF .text	0000000000000046 .protected epoll_pwait
-0000000000027ffb g    DF .text	0000000000000008 .protected localeconv
-0000000000041b00 g    DF .text	000000000000014a .protected __parsespent
-00000000000405cd g    DF .text	0000000000000023 .protected shutdown
-00000000000534b5 g    DF .text	0000000000000029 .protected cfsetospeed
-000000000001d970 g    DF .text	000000000000010c .protected aio_cancel
-000000000004a909 g    DF .text	0000000000000111 .protected fchmodat
-000000000003d5b4 g    DF .text	0000000000000005 .protected if_freenameindex
-00000000000256d9 g    DF .text	0000000000000058 .protected cuserid
-0000000000018760 g    DF .text	0000000000000161 .protected __expand_heap
-000000000003dd60 g    DF .text	000000000000024f .protected inet_pton
-00000000000872e0 g    DO .rodata	0000000000000010 .protected in6addr_loopback
-000000000003a9fa g    DF .text	0000000000000030 .protected mq_timedsend
-0000000000028867 g    DF .text	0000000000000074 .protected textdomain
-000000000004231c g    DF .text	000000000000000c .protected drand48
-0000000000025af6 g    DF .text	0000000000000014 .protected euidaccess
-000000000004320f g    DF .text	000000000000000b .protected posix_spawn_file_actions_init
-000000000002906e g    DF .text	0000000000000643 .protected __rem_pio2_large
-000000000004dab1  w   DF .text	000000000000009b .protected _IO_putc
-0000000000018720 g    DF .text	0000000000000036 .protected calloc
-0000000000023c81  w   DF .text	0000000000000005 .protected iswctype_l
-00000000000358d5 g    DF .text	0000000000000013 .protected remainder
-0000000000059a26 g    DF .text	0000000000000010 .protected setregid
-0000000000042661 g    DF .text	0000000000000028 .protected srand48
-0000000000026adb g    DF .text	000000000000017a .protected bindtextdomain
-000000000004dbc0 g    DF .text	0000000000000088 .protected puts
-000000000001bf10 g    DF .text	000000000000002f .protected wcsnlen
-000000000001aa20  w   DF .text	0000000000000041 .protected strdup
-000000000002892c g    DF .text	0000000000000005 .protected __wcscoll_l
-00000000000553f4 g    DF .text	000000000000012e .protected __pthread_mutex_trylock_owner
-000000000005383f g    DF .text	0000000000000008 .protected cnd_broadcast
-0000000000017cf0 g    DF .text	0000000000000586 .protected __intscan
-00000000000254fa g    DF .text	000000000000001c .protected __dl_thread_cleanup
-00000000000240d0  w   DF .text	0000000000000015 .protected getdents64
-0000000000023d7f  w   DF .text	0000000000000005 .protected iswpunct_l
-000000000004dc48 g    DF .text	0000000000000026 .protected putw
-0000000000053a89 g    DF .text	000000000000000d .protected pthread_barrierattr_getpshared
-0000000000057a32 g    DF .text	0000000000000072 .protected __clock_gettime
-000000000005bddc g    DF .text	000000000000087a .protected __dls3
-000000000002a7d1 g    DF .text	0000000000000152 .protected asinf
-0000000000052e02  w   DF .text	0000000000000009 .protected __strtoul_internal
-000000000004cccc g    DF .text	00000000000000aa .protected __fwritex
-000000000004b9f4 g    DF .text	000000000000006c .protected fgetc
-00000000000598c9 g    DF .text	000000000000002e .protected pwrite
-000000000002a923 g    DF .text	0000000000000125 .protected asinh
-000000000004c216 g    DF .text	00000000000000a4 .protected fopen
-0000000000055672 g    DF .text	0000000000000018 .protected pthread_mutexattr_setpshared
-000000000005328e g    DF .text	000000000000008c .protected mkdtemp
-000000000004a886 g    DF .text	000000000000000f .protected __xmknodat
-0000000000037d03 g    DF .text	0000000000000000 asinl
-000000000004abd2 g    DF .text	0000000000000023 .protected __fstatfs
-000000000003d376 g    DF .text	000000000000017a .protected getservbyport_r
-000000000028b43c g    DO .data	0000000000000004 optind
-0000000000053118 g    DF .text	0000000000000005 .protected wcstoumax
-000000000002542d g    DF .text	0000000000000015 .protected semop
-0000000000025eb4  w   DF .text	0000000000000003 .protected getutline
-000000000004b896  w   DF .text	0000000000000032 .protected _IO_ferror_unlocked
-0000000000025af6  w   DF .text	0000000000000014 .protected eaccess
-0000000000053323  w   DF .text	00000000000000b2 .protected mkostemps64
-000000000004a820 g    DF .text	0000000000000000 sigsetjmp
-00000000000598f7 g    DF .text	0000000000000032 .protected pwritev
-00000000000495d4 g    DF .text	0000000000000031 .protected pthread_getaffinity_np
-000000000004ff9b g    DF .text	00000000000009e8 .protected vfscanf
-000000000001bf60 g    DF .text	0000000000000041 .protected wcsrchr
-0000000000043296 g    DF .text	0000000000000011 .protected posix_spawnattr_setsigmask
-000000000001bd50 g    DF .text	0000000000000025 .protected wcslen
-000000000004bb45 g    DF .text	000000000000014e .protected fgets
-000000000028d250 g    DO .bss	0000000000000400 .protected __pthread_tsd_main
-0000000000051e29 g    DF .text	00000000000000ca .protected vsnprintf
-0000000000059897  w   DF .text	0000000000000032 .protected preadv64
-000000000004a658 g    DF .text	00000000000000da .protected sigset
-000000000004a86e g    DF .text	000000000000000b .protected __xstat
-0000000000024308  w   DF .text	0000000000000146 .protected scandir64
-0000000000053879 g    DF .text	0000000000000007 .protected cnd_wait
-00000000000551c4  w   DF .text	0000000000000014 .protected pthread_key_delete
-00000000000559b8 g    DF .text	0000000000000023 .protected __pthread_setcancelstate
-0000000000042bd5 g    DF .text	0000000000000086 .protected fork
-000000000004c86b  w   DF .text	000000000000008f .protected __isoc99_fscanf
-0000000000055247 g    DF .text	0000000000000053 .protected pthread_kill
-000000000005598b g    DF .text	0000000000000007 .protected pthread_rwlock_wrlock
-0000000000023aa5 g    DF .text	000000000000000c .protected isgraph
-000000000001ab60 g    DF .text	000000000000013f .protected strlcpy
-0000000000052cff  w   DF .text	000000000000001a .protected __strtof_l
-0000000000053a7a g    DF .text	000000000000000f .protected pthread_attr_getstacksize
-00000000000251fe g    DF .text	0000000000000000 .protected feclearexcept
-0000000000054f50  w   DF .text	0000000000000031 .protected thrd_detach
-00000000000591a4 g    DF .text	000000000000003b .protected close
-0000000000053a36 g    DF .text	0000000000000008 .protected pthread_attr_getinheritsched
-0000000000026a5d g    DF .text	000000000000002b .protected bind_textdomain_codeset
-00000000000560ee g    DF .text	00000000000000b3 .protected sem_timedwait
-0000000000038f69 g    DF .text	00000000000000ae .protected lockf
-00000000000547cf g    DF .text	0000000000000007 .protected pthread_cond_wait
-000000000001f9d9 g    DF .text	0000000000000001 .protected creal
-000000000005778e g    DF .text	0000000000000021 .protected __tzset
-00000000000595f2 g    DF .text	0000000000000015 .protected getgroups
-000000000004e242 g    DF .text	0000000000000086 .protected tmpnam
-00000000000559ae  w   DF .text	000000000000000a .protected thrd_current
-0000000000023a7b g    DF .text	0000000000000012 .protected __iscntrl_l
-000000000002702f g    DF .text	000000000000000f .protected dcgettext
-0000000000040e11  w   DF .text	000000000000002b .protected endgrent
-00000000000557b5 g    DF .text	000000000000001c .protected pthread_rwlock_init
-000000000004bc93  w   DF .text	000000000000011a .protected getwc_unlocked
-000000000003d5aa g    DF .text	0000000000000005 .protected htonl
-0000000000036493 g    DF .text	000000000000002a .protected significand
-00000000000250a6 g    DF .text	0000000000000067 .protected openat
-0000000000033af5 g    DF .text	0000000000000042 .protected nearbyintf
-0000000000024edf g    DF .text	000000000000000e .protected creat
-000000000004b527 g    DF .text	0000000000000005 .protected __toread_needs_stdio_exit
-00000000000247c8 g    DF .text	0000000000000002 .protected __stack_chk_fail
-000000000005c656 g    DF .text	0000000000000460 .protected dlopen
-0000000000058e64 g    DF .text	0000000000000018 .protected timespec_get
-0000000000059954 g    DF .text	000000000000000f .protected readlink
-0000000000023b0c g    DF .text	0000000000000015 .protected isspace
-0000000000024576  w   DF .text	0000000000000001 .protected _init
-000000000004084f g    DF .text	000000000000006f .protected fgetspent
-000000000002e9a5 g    DF .text	000000000000004e .protected fmaxf
-000000000001fe16 g    DF .text	00000000000003b4 .protected csinhf
-0000000000033b37 g    DF .text	000000000000003c .protected nearbyintl
-000000000003d5af g    DF .text	0000000000000005 .protected htons
-000000000002705b g    DF .text	0000000000000035 .protected __duplocale
-0000000000023f8c g    DF .text	0000000000000033 .protected wcswidth
-00000000000442c8  w   DF .text	000000000000021e .protected glob64
-0000000000023b60 g    DF .text	000000000000003f .protected iswalpha
-0000000000037f86 g    DF .text	0000000000000000 lrint
-0000000000055b6d  w   DF .text	0000000000000007 .protected pthread_testcancel
-000000000005977d g    DF .text	0000000000000019 .protected nice
-0000000000025eb1 g    DF .text	0000000000000003 .protected getutxid
-000000000003be4a g    DF .text	000000000000002c .protected gai_strerror
-0000000000039f92 g    DF .text	0000000000000045 .protected wordfree
-000000000002e9f3 g    DF .text	000000000000007f .protected fmaxl
-000000000003a5cb g    DF .text	000000000000002c .protected msync
-0000000000057b19 g    DF .text	0000000000000009 .protected difftime
-00000000000201ca g    DF .text	0000000000000040 .protected csinhl
-000000000002624f g    DF .text	0000000000000018 .protected klogctl
-000000000001b8f0 g    DF .text	000000000000024a .protected swab
-0000000000023ff5 g    DF .text	0000000000000019 .protected towctrans
-00000000000289b0 g    DF .text	000000000000009d .protected __cos
-00000000000590fd g    DF .text	0000000000000015 .protected wcsftime
-00000000000386c3 g    DF .text	0000000000000003 .protected gethostid
-0000000000025b0a g    DF .text	000000000000000a .protected ftw
-0000000000057a32  w   DF .text	0000000000000072 .protected clock_gettime
-000000000001c470 g    DF .text	000000000000012b .protected wmemcpy
-000000000005668f g    DF .text	0000000000000008 .protected __vm_lock
-0000000000038625 g    DF .text	000000000000003e .protected getauxval
-000000000004b4c1 g    DF .text	0000000000000066 .protected __toread
-000000000003976c g    DF .text	000000000000005a .protected __ptsname_r
-000000000002de33 g    DF .text	000000000000001b .protected finitef
-000000000001da94  w   DF .text	00000000000001c9 .protected aio_suspend64
-0000000000023c97 g    DF .text	000000000000000c .protected __iswdigit_l
-0000000000031616  w   DF .text	0000000000000716 .protected lgamma_r
-0000000000053174 g    DF .text	0000000000000000 .protected memset
-000000000003fe7e g    DF .text	000000000000007f .protected __res_msend
-0000000000038d7e g    DF .text	00000000000000b0 .protected getrlimit
-00000000000358d5  w   DF .text	0000000000000013 .protected drem
-0000000000025ebb  w   DF .text	0000000000000011 .protected utmpname
-0000000000054212 g    DF .text	0000000000000043 .protected pthread_cond_broadcast
-0000000000059a36 g    DF .text	0000000000000010 .protected setresgid
-00000000000191d0 g    DF .text	0000000000000609 .protected malloc
-00000000000557b2 g    DF .text	0000000000000003 .protected pthread_rwlock_destroy
-000000000001bb70 g    DF .text	0000000000000026 .protected wcpncpy
-000000000004248e g    DF .text	00000000000000b0 .protected initstate
-0000000000053c1b g    DF .text	00000000000003ab .protected pthread_barrier_wait
-000000000003f723  w   DF .text	0000000000000174 .protected res_mkquery
-000000000004316a g    DF .text	000000000000008a .protected posix_spawn_file_actions_addopen
-000000000004d5eb g    DF .text	000000000000011d .protected open_wmemstream
-00000000000311d2 g    DF .text	000000000000030a .protected jnf
-000000000003f601 g    DF .text	000000000000001e .protected getprotobynumber
-000000000004e348 g    DF .text	000000000000010c .protected ungetwc
-00000000000266eb g    DF .text	000000000000001b .protected timerfd_settime
-000000000003c607 g    DF .text	0000000000000021 .protected gethostbyname_r
-000000000005263b g    DF .text	0000000000000011 .protected llabs
-000000000001a4a0  w   DF .text	00000000000000c2 .protected stpcpy
-0000000000025eae g    DF .text	0000000000000003 .protected getutxent
-000000000004e1a9 g    DF .text	0000000000000099 .protected tmpfile
-0000000000024235 g    DF .text	0000000000000095 .protected readdir_r
-000000000002667c g    DF .text	0000000000000018 .protected sync_file_range
-000000000001f595 g    DF .text	000000000000000d .protected cimagf
-00000000000263dc  w   DF .text	000000000000001b .protected prlimit64
-0000000000058e7c g    DF .text	0000000000000043 .protected utime
-000000000005388c g    DF .text	000000000000000c .protected __acquire_ptc
-000000000001bd00 g    DF .text	0000000000000049 .protected wcsdup
-000000000004b864  w   DF .text	0000000000000032 .protected feof_unlocked
-0000000000041826 g    DF .text	0000000000000061 .protected getpwent
-000000000002682b g    DF .text	000000000000001b .protected fsetxattr
-0000000000023d45  w   DF .text	0000000000000005 .protected iswprint_l
-000000000004a4b1  w   DF .text	0000000000000058 .protected __sysv_signal
-000000000028b3d8 g    DO .data	000000000000000e .protected __seed48
-00000000000596df g    DF .text	0000000000000008 .protected getppid
-0000000000018310 g    DF .text	0000000000000033 .protected __shlim
-0000000000018700 g    DF .text	0000000000000008 .protected __brk
-000000000002f82d g    DF .text	0000000000000126 .protected j0
-00000000000303b9 g    DF .text	0000000000000102 .protected j1
-000000000001f8f5 g    DF .text	000000000000008f .protected cprojf
-000000000001f5a2 g    DF .text	0000000000000005 .protected cimagl
-000000000002486b g    DF .text	00000000000001e0 .protected __putenv
-000000000001e870 g    DF .text	000000000000007e .protected catanhf
-0000000000059768  w   DF .text	0000000000000015 .protected lseek64
-00000000000217ce g    DF .text	0000000000000261 .protected __do_des
-000000000001f283 g    DF .text	000000000000012d .protected cexp
-000000000004a3e3 g    DF .text	0000000000000044 .protected sigignore
-000000000002fde1 g    DF .text	000000000000011c .protected j0f
-000000000004ddb9 g    DF .text	0000000000000027 .protected setvbuf
-000000000004b733 g    DF .text	000000000000000c .protected __fwritable
-0000000000028800 g    DF .text	000000000000003c .protected __strxfrm_l
-000000000004c419  w   DF .text	00000000000000ec .protected putwc_unlocked
-000000000003808c g    DF .text	0000000000000061 .protected dirname
-00000000000539a4 g    DF .text	0000000000000077 .protected pthread_atfork
-0000000000024eed g    DF .text	0000000000000134 .protected fcntl
-000000000001e8ee g    DF .text	000000000000003e .protected catanhl
-000000000003700d g    DF .text	00000000000000fa .protected tanf
-000000000001f984 g    DF .text	0000000000000055 .protected cprojl
-0000000000037107 g    DF .text	00000000000000f7 .protected tanh
-0000000000054f81  w   DF .text	0000000000000009 .protected thrd_equal
-00000000000264ea g    DF .text	000000000000001b .protected remap_file_pages
-0000000000040dfc g    DF .text	0000000000000015 .protected getgrgid_r
-00000000000373cf g    DF .text	0000000000000096 .protected tanl
-000000000004d204 g    DF .text	000000000000000c .protected __ofl_unlock
-0000000000052408 g    DF .text	0000000000000074 .protected bsearch
-000000000004b578 g    DF .text	0000000000000036 .protected __uflow
-00000000000533e5 g    DF .text	0000000000000096 .protected mktemp
-0000000000031d38 g    DF .text	00000000000006d6 .protected __lgammaf_r
-000000000028de28  w   DO .bss	0000000000000008 .protected program_invocation_name
-0000000000028a4d g    DF .text	0000000000000051 .protected __cosdf
-0000000000026a8f g    DF .text	0000000000000005 .protected catopen
-00000000000530e3 g    DF .text	0000000000000009 .protected wcstoull
-000000000002687f g    DF .text	0000000000000005 .protected __lctrans
-000000000004bc93 g    DF .text	000000000000011a .protected __fgetwc_unlocked
-00000000000288e5 g    DF .text	0000000000000010 .protected ngettext
-0000000000049404 g    DF .text	000000000000002b .protected __tre_mem_new_impl
-0000000000052607 g    DF .text	0000000000000011 .protected imaxabs
-00000000000589bc g    DF .text	000000000000006b .protected timegm
-0000000000027ccd g    DF .text	0000000000000015 .protected __nl_langinfo
-000000000002856b g    DF .text	0000000000000005 .protected __strcoll_l
-0000000000042154 g    DF .text	000000000000012f .protected putspent
-00000000000264cb g    DF .text	000000000000001f .protected reboot
-000000000004ab1a g    DF .text	0000000000000012 .protected lstat
-000000000002b42a g    DF .text	00000000000000a4 .protected atanhf
-000000000004ab57 g    DF .text	000000000000000d .protected mkfifo
-000000000004ab1a  w   DF .text	0000000000000012 .protected lstat64
-000000000028e07c g    DO .bss	0000000000000004 .protected __block_new_threads
-0000000000055992 g    DF .text	0000000000000003 .protected pthread_rwlockattr_destroy
-000000000001be20 g    DF .text	0000000000000005 .protected wcsncasecmp_l
-00000000000239c8 g    DF .text	0000000000000023 .protected __ctype_get_mb_cur_max
-0000000000055522 g    DF .text	000000000000001a .protected __pthread_mutex_trylock
-00000000000467be g    DF .text	00000000000000f2 .protected regfree
-000000000004298f g    DF .text	0000000000000012 .protected execve
-000000000002400e g    DF .text	0000000000000005 .protected __wctrans_l
-000000000004e4c7 g    DF .text	0000000000000056 .protected vdprintf
-000000000004be72  w   DF .text	0000000000000024 .protected fileno_unlocked
-0000000000023b21  w   DF .text	0000000000000005 .protected isspace_l
-0000000000052d36  w   DF .text	000000000000000a .protected __strtold_l
-0000000000057335 g    DF .text	0000000000000459 .protected __secs_to_zone
-000000000003c0e2 g    DF .text	00000000000000a8 .protected gethostbyaddr
-0000000000087370 g    DO .rodata	0000000000000080 .protected _ns_flagdata
-000000000002b4ce g    DF .text	000000000000008c .protected atanhl
-0000000000023c81 g    DF .text	0000000000000005 .protected __iswctype_l
-0000000000026a8b g    DF .text	0000000000000004 .protected catgets
-0000000000023ab1 g    DF .text	000000000000000c .protected __isgraph_l
-0000000000053323 g    DF .text	00000000000000b2 .protected __mkostemps
-0000000000055b85 g    DF .text	000000000000002e .protected sem_init
-000000000004a761 g    DF .text	000000000000002d .protected sigsuspend
-000000000003b633 g    DF .text	000000000000002f .protected accept
-000000000002dd33 g    DF .text	0000000000000052 .protected fdim
-0000000000020248 g    DF .text	0000000000000205 .protected csqrt
-0000000000025b0a  w   DF .text	000000000000000a .protected ftw64
-0000000000059d04 g    DF .text	000000000000002e .protected write
-0000000000049870 g    DF .text	000000000000000c .protected hdestroy
-000000000004253e g    DF .text	0000000000000064 .protected setstate
-00000000000595ea g    DF .text	0000000000000008 .protected getgid
-0000000000030947 g    DF .text	0000000000000104 .protected j1f
-0000000000023d7f g    DF .text	0000000000000005 .protected __iswpunct_l
-000000000002d05f g    DF .text	00000000000001b2 .protected exp
-000000000004942f g    DF .text	0000000000000034 .protected __tre_mem_destroy
-0000000000042b7a g    DF .text	000000000000000f .protected execvp
-000000000028de00  w   DO .bss	0000000000000008 .protected ___environ
-00000000000533de g    DF .text	0000000000000007 .protected mkstemps
-000000000003b734 g    DF .text	0000000000000020 .protected bind
-000000000003c18a g    DF .text	00000000000001aa .protected gethostbyaddr_r
-000000000005966a g    DF .text	000000000000000c .protected getlogin
-0000000000055ffe g    DF .text	0000000000000079 .protected sem_close
-00000000000197e0 g    DF .text	0000000000000041 .protected __malloc0
-0000000000025ecc g    DF .text	000000000000000d .protected valloc
-000000000028e088  w   DO .bss	0000000000000004 daylight
-000000000002545a g    DF .text	0000000000000015 .protected shmat
-00000000000535aa g    DF .text	000000000000001b .protected __futex
-0000000000053b51 g    DF .text	000000000000002f .protected pthread_attr_setstack
-000000000005383a g    DF .text	0000000000000005 .protected call_once
-0000000000055b35 g    DF .text	0000000000000003 .protected pthread_spin_destroy
-000000000002f422 g    DF .text	0000000000000066 .protected ilogbf
-00000000000267da g    DF .text	000000000000000f .protected llistxattr
-000000000004ca1d  w   DF .text	0000000000000041 .protected ftello64
-0000000000024c41 g    DF .text	000000000000000e .protected __errno_location
-000000000003da56 g    DF .text	000000000000001b .protected inet_netof
-0000000000058de9 g    DF .text	0000000000000024 .protected timer_getoverrun
-00000000000523b1 g    DF .text	0000000000000057 .protected atoll
-000000000001d970  w   DF .text	000000000000010c .protected aio_cancel64
-0000000000043262 g    DF .text	0000000000000006 .protected posix_spawnattr_getschedparam
-0000000000026706 g    DF .text	0000000000000015 .protected timerfd_gettime
-0000000000024192 g    DF .text	0000000000000038 .protected opendir
-000000000004b6f3 g    DF .text	0000000000000007 .protected _flushlbf
-0000000000057b22 g    DF .text	0000000000000040 .protected ftime
-0000000000025ed9 g    DF .text	00000000000000b2 .protected adjtime
-00000000000547d9 g    DF .text	0000000000000009 .protected pthread_condattr_init
-000000000002f488 g    DF .text	000000000000006f .protected ilogbl
-0000000000055667 g    DF .text	000000000000000b .protected pthread_mutexattr_setprotocol
-000000000028b408 g    DO .data	0000000000000008 .protected __pthread_tsd_size
-0000000000055045 g    DF .text	0000000000000068 .protected pthread_getschedparam
-000000000003d8fd  w   DF .text	0000000000000107 .protected inet_aton
-00000000000497eb  w   DF .text	0000000000000054 .protected hcreate_r
-0000000000039e11 g    DF .text	0000000000000070 .protected __vsyslog
-0000000000024eb5 g    DF .text	0000000000000011 .protected atexit
-00000000000566eb g    DF .text	0000000000000000 .protected __unmapself
-000000000004d1ee g    DF .text	0000000000000016 .protected __ofl_lock
-00000000000551c4 g    DF .text	0000000000000014 .protected __pthread_key_delete
-000000000003842f g    DF .text	0000000000000175 .protected forkpty
-000000000004a60d g    DF .text	000000000000003f .protected sigrelse
-0000000000057dee g    DF .text	000000000000002b .protected nanosleep
-0000000000059a1d g    DF .text	0000000000000009 .protected setpgrp
-0000000000030bb5 g    DF .text	0000000000000403 .protected jn
-0000000000026279 g    DF .text	0000000000000014 .protected delete_module
-0000000000049faf g    DF .text	0000000000000000 __setjmp
-000000000002449b  w   DF .text	0000000000000013 .protected versionsort64
-0000000000023cc3  w   DF .text	0000000000000005 .protected iswgraph_l
-0000000000049463 g    DF .text	000000000000011a .protected __tre_mem_alloc_impl
-00000000000315fb g    DF .text	0000000000000005 .protected ldexp
-000000000003a448 g    DF .text	0000000000000012 .protected mlock
-000000000004c419 g    DF .text	00000000000000ec .protected __fputwc_unlocked
-0000000000058d8b g    DF .text	000000000000005e .protected timer_delete
-0000000000057c8f  w   DF .text	000000000000003e .protected gmtime_r
-000000000004abf5 g    DF .text	0000000000000093 .protected statvfs
-00000000000552e8 g    DF .text	000000000000001d .protected __pthread_mutex_lock
-000000000002510d g    DF .text	000000000000001c .protected posix_fadvise
-000000000004004d g    DF .text	00000000000003b0 .protected __get_resolv_conf
-000000000003a46f  w   DF .text	0000000000000095 .protected mmap64
-000000000004a819 g    DF .text	0000000000000000 .protected __restore_rt
-00000000000215d6 g    DF .text	00000000000001f8 .protected __des_setkey
-000000000003da12 g    DF .text	0000000000000022 .protected inet_makeaddr
-00000000000254c4 g    DF .text	0000000000000036 .protected dlerror
-0000000000042b89 g    DF .text	000000000000004c .protected fexecve
-000000000028ae20 g    DO .data.rel.ro	0000000000000008 stdin
-0000000000053579 g    DF .text	000000000000000e .protected tcsendbreak
-0000000000053aea g    DF .text	0000000000000010 .protected pthread_attr_setdetachstate
-000000000002640c g    DF .text	0000000000000015 .protected process_vm_readv
-000000000003ab1c g    DF .text	000000000000001b .protected mbrlen
-0000000000025fe5 g    DF .text	0000000000000012 .protected chroot
-00000000000595da g    DF .text	0000000000000008 .protected getegid
-0000000000018280 g    DF .text	000000000000008d .protected __procfdname
-000000000004ac88  w   DF .text	0000000000000093 .protected fstatvfs64
-0000000000025eae  w   DF .text	0000000000000003 .protected getutent
-000000000004abae g    DF .text	0000000000000024 .protected __statfs
-000000000003a538  w   DF .text	0000000000000093 .protected mremap
-000000000001e0bc g    DF .text	0000000000000005 .protected cabs
-00000000000417d3 g    DF .text	0000000000000013 .protected getpwnam_r
-000000000004b63d  w   DF .text	0000000000000027 .protected clearerr_unlocked
-0000000000039737 g    DF .text	0000000000000010 .protected posix_openpt
-00000000000405a6 g    DF .text	0000000000000003 .protected getservent
-000000000028e04c  w   DO .bss	0000000000000004 signgam
-0000000000056629 g    DF .text	0000000000000012 .protected tss_create
-000000000003a781 g    DF .text	0000000000000015 .protected mq_close
-000000000004a2d8 g    DF .text	0000000000000030 .protected sigaddset
-00000000000418b8 g    DF .text	000000000000002f .protected getpwnam
-000000000028e160 g    DO .bss	0000000000000008 .protected __stack_chk_guard
-000000000004987c  w   DF .text	00000000000000e1 .protected hsearch_r
-000000000002703e g    DF .text	000000000000000b .protected dngettext
-000000000003d50e g    DF .text	0000000000000021 .protected getsockopt
-0000000000049e8b g    DF .text	0000000000000034 .protected tsearch
-000000000005314f g    DF .text	0000000000000000 .protected memmove
-0000000000025c00 g    DF .text	0000000000000006 .protected getpagesize
-0000000000025896 g    DF .text	0000000000000015 .protected verr
-0000000000019c50 g    DF .text	000000000000000a .protected bzero
-00000000000395e5 g    DF .text	0000000000000128 .protected openpty
-000000000004a8a9 g    DF .text	0000000000000060 .protected fchmod
-000000000003b396 g    DF .text	0000000000000116 .protected wcsnrtombs
-0000000000055b6d g    DF .text	0000000000000007 .protected __pthread_testcancel
-000000000028dfc0  w   DO .bss	0000000000000008 timezone
-0000000000020d05 g    DF .text	000000000000000a .protected get_phys_pages
-00000000000241ca g    DF .text	000000000000006b .protected readdir
-0000000000038663 g    DF .text	0000000000000060 .protected getdomainname
-0000000000028028  w   DF .text	00000000000000ed .protected newlocale
-000000000003ab37 g    DF .text	00000000000000a8 .protected mbrtoc16
-000000000003d879 g    DF .text	0000000000000064 .protected if_nametoindex
-000000000002eacb g    DF .text	000000000000004f .protected fminf
-000000000002530e g    DF .text	0000000000000018 .protected msgctl
-00000000000239f3 g    DF .text	0000000000000008 .protected __ctype_toupper_loc
-000000000004dd98 g    DF .text	0000000000000013 .protected setbuffer
-00000000000597bf g    DF .text	0000000000000012 .protected pipe
-0000000000052259 g    DF .text	0000000000000094 .protected wscanf
-000000000003bdd1 g    DF .text	000000000000000c .protected ether_aton
-000000000002eb1a g    DF .text	000000000000007f .protected fminl
-00000000000258ab g    DF .text	0000000000000015 .protected verrx
-0000000000049faf g    DF .text	0000000000000000 _setjmp
-0000000000059112 g    DF .text	0000000000000006 .protected _exit
-00000000000261c5 g    DF .text	000000000000002a .protected inotify_init1
-000000000001f5a7 g    DF .text	000000000000005c .protected clog
-0000000000023ca3 g    DF .text	0000000000000020 .protected iswgraph
-00000000000247de g    DF .text	000000000000008d .protected getenv
-0000000000023dc0 g    DF .text	000000000000001c .protected iswxdigit
-0000000000026225 g    DF .text	0000000000000015 .protected ioperm
-0000000000059929 g    DF .text	000000000000002b .protected read
-0000000000023e02 g    DF .text	0000000000000006 .protected toascii
-000000000004a879 g    DF .text	000000000000000d .protected __xmknod
-00000000000598c9  w   DF .text	000000000000002e .protected pwrite64
-000000000005a24f  w   DF .text	0000000000000001 .protected _dl_debug_state
-000000000005351a g    DF .text	000000000000000e .protected tcflow
-0000000000024c8c g    DF .text	0000000000000015 .protected strerror
-000000000003397a g    DF .text	000000000000006e .protected modff
-0000000000023a3c g    DF .text	0000000000000009 .protected isascii
-00000000000533de  w   DF .text	0000000000000007 .protected mkstemps64
-0000000000023be0 g    DF .text	000000000000005f .protected iswctype
-0000000000020682 g    DF .text	000000000000003c .protected ctan
-000000000002ed20 g    DF .text	000000000000012b .protected fmodf
-000000000004c97c  w   DF .text	000000000000004d .protected fseeko64
-0000000000049f80 g    DF .text	0000000000000000 _longjmp
-0000000000023e17 g    DF .text	0000000000000005 .protected __tolower_l
-00000000000522ed g    DF .text	000000000000000c .protected abs
-000000000001e69d g    DF .text	0000000000000197 .protected catanf
-000000000005599f g    DF .text	000000000000000f .protected pthread_rwlockattr_setpshared
-00000000000339e8 g    DF .text	00000000000000b2 .protected modfl
-000000000001e834 g    DF .text	000000000000003c .protected catanh
-000000000002eed0 g    DF .text	000000000000006c .protected frexpf
-0000000000037f1d g    DF .text	0000000000000000 .protected fmodl
-00000000000423a7 g    DF .text	0000000000000037 .protected rand_r
-0000000000022732 g    DF .text	0000000000000051 .protected __crypt_r
-000000000001e92c g    DF .text	0000000000000163 .protected catanl
-00000000000496a2 g    DF .text	000000000000000f .protected sched_setscheduler
-000000000003bd69 g    DF .text	0000000000000068 .protected ether_aton_r
-00000000000239fb g    DF .text	000000000000001e .protected isalnum
-000000000002ef3c g    DF .text	0000000000000076 .protected frexpl
-000000000004b7ac g    DF .text	0000000000000005 .protected __freadptrinc
-0000000000023d45 g    DF .text	0000000000000005 .protected __iswprint_l
-000000000004c07e g    DF .text	0000000000000198 .protected fmemopen
-0000000000054146 g    DF .text	000000000000009f .protected pthread_cancel
-0000000000023d84 g    DF .text	0000000000000020 .protected iswspace
-000000000001a930 g    DF .text	00000000000000e7 .protected strcspn
-00000000000252d7 g    DF .text	0000000000000037 .protected ftok
-000000000003ab0a g    DF .text	0000000000000005 .protected c32rtomb
-0000000000038119 g    DF .text	0000000000000316 .protected fmtmsg
-00000000000240d0  w   DF .text	0000000000000015 .protected getdents
-00000000000599e4 g    DF .text	0000000000000011 .protected seteuid
-000000000005953d g    DF .text	000000000000002a .protected fsync
-000000000001a570  w   DF .text	00000000000000e9 .protected stpncpy
-0000000000059118 g    DF .text	0000000000000015 .protected access
-000000000005852d g    DF .text	000000000000046b .protected strptime
-000000000004a0f6 g    DF .text	0000000000000050 .protected raise
-000000000004cadb g    DF .text	00000000000000a5 .protected ftrylockfile
-000000000005bb2f g    DF .text	000000000000000c .protected __libc_start_init
-0000000000089cdb g    DO .rodata	0000000000000004 .protected __gmt
-0000000000053ab5 g    DF .text	000000000000000d .protected pthread_mutexattr_getpshared
-0000000000059a66 g    DF .text	0000000000000012 .protected setsid
-0000000000032a69 g    DF .text	000000000000019b .protected log
-00000000000538a4 g    DF .text	0000000000000001 .protected mtx_destroy
-000000000002f3b0 g    DF .text	0000000000000072 .protected ilogb
-000000000004b73f g    DF .text	000000000000000d .protected __flbf
-000000000001a800 g    DF .text	00000000000000df .protected __strchrnul
-0000000000026421 g    DF .text	000000000000007d .protected ptrace
-0000000000041e5c g    DF .text	0000000000000212 .protected __nscd_query
-000000000003f163 g    DF .text	0000000000000003 .protected getnetbyname
-0000000000053afa g    DF .text	0000000000000022 .protected pthread_attr_setguardsize
-0000000000051fdd g    DF .text	00000000000000ce .protected vswprintf
-0000000000027c0b g    DF .text	00000000000000c2 .protected __nl_langinfo_l
-0000000000025499 g    DF .text	0000000000000026 .protected shmget
-0000000000025f8b g    DF .text	0000000000000012 .protected adjtimex
-000000000003f5ce g    DF .text	0000000000000033 .protected getprotobyname
-000000000003be41 g    DF .text	0000000000000004 .protected ether_hostton
-0000000000038d6c g    DF .text	0000000000000012 .protected getresuid
-0000000000043117 g    DF .text	0000000000000053 .protected posix_spawn_file_actions_adddup2
-000000000001d962  w   DF .text	0000000000000005 .protected aio_return64
-0000000000033e14 g    DF .text	0000000000000118 .protected nexttoward
-000000000004e1a9  w   DF .text	0000000000000099 .protected tmpfile64
-0000000000036f89 g    DF .text	0000000000000084 .protected tan
-000000000003bac6 g    DF .text	0000000000000101 .protected __dn_expand
-0000000000053aa2 g    DF .text	000000000000000a .protected pthread_condattr_getpshared
-000000000004327a g    DF .text	0000000000000008 .protected posix_spawnattr_setflags
-0000000000043241 g    DF .text	0000000000000017 .protected posix_spawnattr_getsigmask
-0000000000025487 g    DF .text	0000000000000012 .protected shmdt
-0000000000023e2b g    DF .text	0000000000000005 .protected __toupper_l
-0000000000049f80 g    DF .text	0000000000000000 .protected longjmp
-000000000004995d g    DF .text	000000000000001f .protected hsearch
-0000000000025129  w   DF .text	0000000000000018 .protected posix_fallocate64
-000000000004b52c g    DF .text	0000000000000047 .protected __towrite
-0000000000059b20 g    DF .text	000000000000002e .protected sleep
-0000000000055bb3 g    DF .text	000000000000044b .protected sem_open
-000000000003abdf g    DF .text	0000000000000051 .protected mbrtoc32
-000000000003bddd g    DF .text	0000000000000050 .protected ether_ntoa_r
-0000000000054f8a g    DF .text	00000000000000a7 .protected pthread_getattr_np
-00000000000422e3 g    DF .text	0000000000000039 .protected erand48
-0000000000037f31 g    DF .text	0000000000000000 llrint
-000000000003d537 g    DF .text	0000000000000047 .protected herror
-0000000000053a4e g    DF .text	0000000000000009 .protected pthread_attr_getscope
-0000000000023a99 g    DF .text	000000000000000c .protected __isdigit_l
-000000000003c3e0 g    DF .text	0000000000000227 .protected gethostbyname2_r
-0000000000038e2e g    DF .text	0000000000000015 .protected getrusage
-000000000004c97c  w   DF .text	000000000000004d .protected fseeko
-00000000000552ca g    DF .text	0000000000000006 .protected pthread_mutex_getprioceiling
-00000000000267fb g    DF .text	0000000000000018 .protected setxattr
-000000000003bbf9 g    DF .text	000000000000016b .protected __dns_parse
-000000000004db7b g    DF .text	000000000000000f .protected putchar
-0000000000038d1f g    DF .text	0000000000000008 .protected getopt_long
-000000000003974a g    DF .text	0000000000000022 .protected unlockpt
-000000000004c749  w   DF .text	0000000000000122 .protected freopen64
-000000000001da7c g    DF .text	0000000000000018 .protected __aio_close
-000000000003a46f g    DF .text	0000000000000095 .protected __mmap
-0000000000028c22 g    DF .text	0000000000000020 .protected __p1evll
-0000000000023a19 g    DF .text	0000000000000005 .protected __isalnum_l
-000000000004a38d g    DF .text	000000000000000a .protected sigemptyset
-000000000003be3d g    DF .text	0000000000000004 .protected ether_ntohost
-000000000003da34 g    DF .text	0000000000000022 .protected inet_lnaof
-0000000000043258 g    DF .text	000000000000000a .protected posix_spawnattr_init
-00000000000265ae g    DF .text	0000000000000069 .protected signalfd
-000000000003bbc7 g    DF .text	0000000000000032 .protected dn_skipname
-000000000001ae80 g    DF .text	0000000000000058 .protected strncat
-000000000004081e g    DF .text	0000000000000031 .protected fgetpwent
-000000000001f702 g    DF .text	0000000000000044 .protected conjf
-0000000000054ab7 g    DF .text	0000000000000015 .protected __do_cleanup_pop
-000000000004ae22 g    DF .text	0000000000000006 .protected __fclose_ca
-0000000000053587 g    DF .text	0000000000000023 .protected tcsetattr
-0000000000055034 g    DF .text	0000000000000011 .protected pthread_getcpuclockid
-0000000000043cc0 g    DF .text	000000000000011b .protected fnmatch
-000000000004a579 g    DF .text	0000000000000094 .protected sigqueue
-000000000004997c g    DF .text	000000000000002f .protected insque
-0000000000019dd0 g    DF .text	00000000000000f5 .protected memchr
-0000000000036d12 g    DF .text	00000000000000c9 .protected sinhf
-000000000004cf14 g    DF .text	000000000000000f .protected getchar
-0000000000052d19  w   DF .text	000000000000001d .protected strtod_l
-000000000001f746 g    DF .text	000000000000000b .protected conjl
-000000000001ee7d g    DF .text	00000000000003af .protected ccoshf
-000000000004da10 g    DF .text	00000000000000a1 .protected printf
-000000000004ab9c  w   DF .text	0000000000000012 .protected stat64
-000000000004ca92 g    DF .text	0000000000000049 .protected __unlist_locked_file
-000000000004b5ae g    DF .text	000000000000008f .protected asprintf
-0000000000036ddb g    DF .text	00000000000000c8 .protected sinhl
-000000000003da71 g    DF .text	0000000000000046 .protected inet_ntoa
-0000000000052632 g    DF .text	0000000000000009 .protected ldiv
-000000000001f22c g    DF .text	0000000000000040 .protected ccoshl
-0000000000059963 g    DF .text	0000000000000015 .protected readlinkat
-000000000003f61f g    DF .text	000000000000000b .protected recv
-0000000000053ae0 g    DF .text	000000000000000a .protected pthread_attr_init
-0000000000056640 g    DF .text	0000000000000028 .protected tss_set
-00000000000251c6 g    DF .text	0000000000000011 .protected fesetround
-0000000000019c60 g    DF .text	0000000000000005 .protected index
-0000000000023c97  w   DF .text	000000000000000c .protected iswdigit_l
-00000000000226d9 g    DF .text	0000000000000059 .protected __crypt_md5
-0000000000053fc6 g    DF .text	0000000000000003 .protected pthread_barrierattr_destroy
-000000000005782e g    DF .text	000000000000010a .protected __year_to_secs
-000000000004a812 g    DF .text	0000000000000007 .protected sigwaitinfo
-00000000000444e6  w   DF .text	0000000000000042 .protected globfree64
-000000000004a55f g    DF .text	000000000000001a .protected sigprocmask
-00000000000562a6 g    DF .text	000000000000030a .protected __synccall
-0000000000026858 g    DF .text	0000000000000012 .protected lremovexattr
-000000000003d763 g    DF .text	0000000000000116 .protected if_nameindex
-0000000000037fbb g    DF .text	0000000000000000 .protected sqrt
-000000000005bb3b g    DF .text	0000000000000001 .protected __init_tls
-00000000000430cd g    DF .text	000000000000004a .protected posix_spawn_file_actions_addclose
-000000000003dab7 g    DF .text	00000000000002a9 .protected inet_ntop
-000000000005778e  w   DF .text	0000000000000021 .protected tzset
-0000000000027c0b  w   DF .text	00000000000000c2 .protected nl_langinfo_l
-0000000000026120 g    DF .text	0000000000000019 .protected eventfd_read
-000000000028e050 g    DO .bss	0000000000000004 __optreset
-0000000000051302 g    DF .text	00000000000000e0 .protected vfwprintf
-0000000000040001 g    DF .text	0000000000000044 .protected __res_send
-000000000028b428 g    DO .data	0000000000000008 .protected _dl_debug_addr
-0000000000027ce2 g    DF .text	0000000000000027 .protected __lctrans_impl
-000000000005213c  w   DF .text	000000000000005f .protected __isoc99_vswscanf
-0000000000023aed g    DF .text	000000000000001a .protected ispunct
-000000000003f566 g    DF .text	000000000000000b .protected setprotoent
-0000000000023ac9  w   DF .text	000000000000000c .protected islower_l
-00000000000410fe g    DF .text	00000000000002fd .protected getgrouplist
-000000000003b297 g    DF .text	00000000000000ff .protected wcrtomb
-000000000003b621 g    DF .text	0000000000000012 .protected wctomb
-000000000003bd64  w   DF .text	0000000000000001 .protected setnetent
-000000000004b44d g    DF .text	0000000000000074 .protected __string_read
-0000000000049e15 g    DF .text	0000000000000037 .protected tdelete
-000000000004ae28  w   DF .text	000000000000016a .protected fdopen
-00000000000406e2 g    DF .text	00000000000000f5 .protected socketpair
-00000000000239c0 g    DF .text	0000000000000008 .protected __ctype_b_loc
-0000000000024edf  w   DF .text	000000000000000e .protected creat64
-000000000028b3f8 g    DO .data	0000000000000008 .protected __stdin_used
-0000000000027090 g    DF .text	0000000000000018 .protected freelocale
-000000000003f259 g    DF .text	00000000000000d7 .protected ns_initparse
-0000000000024d87 g    DF .text	000000000000007e .protected __funcs_on_exit
-0000000000055b41 g    DF .text	0000000000000016 .protected pthread_spin_lock
-000000000001aa20 g    DF .text	0000000000000041 .protected __strdup
-000000000004db8a g    DF .text	0000000000000036 .protected putchar_unlocked
-0000000000023b07 g    DF .text	0000000000000005 .protected __ispunct_l
-000000000002649e g    DF .text	000000000000001b .protected quotactl
-0000000000029d61 g    DF .text	0000000000000089 .protected __tandf
-00000000000271d5 g    DF .text	0000000000000003 .protected iconv_close
-0000000000057f03  w   DF .text	00000000000001f8 .protected strftime_l
-0000000000040e11 g    DF .text	000000000000002b .protected setgrent
-0000000000024120 g    DF .text	0000000000000072 .protected fdopendir
-0000000000043268 g    DF .text	0000000000000006 .protected posix_spawnattr_setschedparam
-000000000002d211  w   DF .text	0000000000000093 .protected pow10
-0000000000053852 g    DF .text	000000000000000a .protected cnd_signal
-000000000003d204 g    DF .text	0000000000000039 .protected getservbyname
-000000000003be2d g    DF .text	000000000000000c .protected ether_ntoa
-000000000004a35b g    DF .text	0000000000000032 .protected sigdelset
-000000000004bdad g    DF .text	000000000000003f .protected fgetwc
-000000000001a7b0 g    DF .text	0000000000000027 .protected strcat
-0000000000055a1f g    DF .text	0000000000000063 .protected pthread_setschedparam
-000000000004aa9c g    DF .text	000000000000006a .protected __futimesat
-000000000001bb40 g    DF .text	0000000000000025 .protected wcpcpy
-0000000000059ba4 g    DF .text	000000000000001e .protected tcsetpgrp
-000000000003d52f g    DF .text	0000000000000008 .protected __h_errno_location
-000000000005385c g    DF .text	000000000000001d .protected cnd_timedwait
-0000000000053898 g    DF .text	000000000000000c .protected __release_ptc
-0000000000055b74 g    DF .text	0000000000000003 .protected sem_destroy
-000000000003a796 g    DF .text	000000000000000a .protected mq_getattr
-0000000000059704 g    DF .text	000000000000001e .protected isatty
-000000000003f571 g    DF .text	000000000000005d .protected getprotoent
-00000000000261ad g    DF .text	0000000000000018 .protected flock
-000000000004211a g    DF .text	000000000000003a .protected putpwent
-0000000000039904 g    DF .text	000000000000003f .protected __setrlimit
-00000000000397c6 g    DF .text	0000000000000112 .protected realpath
-0000000000033f2c g    DF .text	00000000000000f8 .protected nexttowardf
-000000000002893f g    DF .text	000000000000005c .protected __wcsxfrm_l
-000000000004e012  w   DF .text	000000000000008f .protected __isoc99_swscanf
-0000000000057d3f g    DF .text	00000000000000af .protected mktime
-0000000000039074 g    DF .text	0000000000000018 .protected endmntent
-0000000000025ebb g    DF .text	0000000000000011 .protected __utmpxname
-0000000000057b62 g    DF .text	00000000000000e9 .protected getdate
-000000000004c216  w   DF .text	00000000000000a4 .protected fopen64
-0000000000053536 g    DF .text	000000000000001c .protected tcgetattr
-0000000000034024 g    DF .text	0000000000000005 .protected nexttowardl
-000000000004bdec g    DF .text	0000000000000086 .protected fgetws
-0000000000049636 g    DF .text	0000000000000015 .protected sched_get_priority_max
-0000000000025eb4 g    DF .text	0000000000000003 .protected getutxline
-0000000000023b32  w   DF .text	000000000000000c .protected isupper_l
-000000000001eaa7 g    DF .text	0000000000000045 .protected ccosf
-00000000000429a1 g    DF .text	00000000000001d9 .protected __execvpe
-000000000001e520 g    DF .text	000000000000017d .protected catan
-0000000000052dea  w   DF .text	0000000000000009 .protected __strtoull_internal
-000000000001bc90 g    DF .text	0000000000000070 .protected wcscspn
-000000000001eaec g    DF .text	0000000000000391 .protected ccosh
-000000000001f6f6 g    DF .text	000000000000000c .protected conj
-000000000004b751 g    DF .text	0000000000000013 .protected __fpending
-000000000003fefd  w   DF .text	000000000000005c .protected res_search
-0000000000057acd g    DF .text	0000000000000015 .protected clock_settime
-000000000003ed05 g    DF .text	00000000000002f9 .protected __lookup_serv
-000000000004b798 g    DF .text	0000000000000014 .protected __freadptr
-000000000001f26c g    DF .text	0000000000000017 .protected ccosl
-0000000000054acc  w   DF .text	0000000000000484 .protected pthread_create
-000000000003a504 g    DF .text	0000000000000034 .protected __mprotect
-0000000000059a78 g    DF .text	0000000000000010 .protected setuid
-000000000001b030 g    DF .text	000000000000004c .protected strsep
-0000000000053ac2 g    DF .text	000000000000000d .protected pthread_mutexattr_getrobust
-0000000000028851 g    DF .text	0000000000000016 .protected __gettextdomain
-0000000000031d2c g    DF .text	000000000000000c .protected lgammaf
-000000000004bb2b  w   DF .text	000000000000001a .protected fgetpos64
-000000000002651e g    DF .text	0000000000000018 .protected sendfile
-00000000000398d8 g    DF .text	0000000000000012 .protected setdomainname
-000000000004b229  w   DF .text	0000000000000035 .protected __stdio_exit_needed
-00000000000252ad g    DF .text	0000000000000000 .protected fetestexcept
-0000000000032a2a g    DF .text	000000000000000d .protected llroundf
-000000000003b5d3 g    DF .text	000000000000001a .protected wcstombs
-000000000004c3e4  w   DF .text	0000000000000035 .protected fputs_unlocked
-00000000000525eb g    DF .text	000000000000001c .protected gcvt
-0000000000032a11 g    DF .text	000000000000000c .protected lgammal
-000000000001a460  w   DF .text	000000000000002a .protected memrchr
-000000000004dde0 g    DF .text	000000000000008a .protected snprintf
-000000000002666a g    DF .text	0000000000000012 .protected swapoff
-0000000000049fdb g    DF .text	000000000000001a .protected __block_all_sigs
-0000000000059b4e g    DF .text	0000000000000012 .protected symlink
-0000000000055a82 g    DF .text	0000000000000058 .protected pthread_setschedprio
-000000000005957c g    DF .text	000000000000005e .protected getcwd
-0000000000032a37 g    DF .text	0000000000000032 .protected llroundl
-0000000000024ec6  w   DF .text	0000000000000001 .protected _fini
-000000000001d934  w   DF .text	000000000000002e .protected aio_fsync64
-000000000003be45 g    DF .text	0000000000000005 .protected freeaddrinfo
-000000000001d967 g    DF .text	0000000000000009 .protected aio_error
-0000000000023a2d  w   DF .text	000000000000000f .protected isalpha_l
-0000000000025d35 g    DF .text	0000000000000050 .protected setusershell
-0000000000054805 g    DF .text	000000000000001b .protected pthread_condattr_setpshared
-00000000000579d6 g    DF .text	0000000000000015 .protected clock_getres
-0000000000023dfd  w   DF .text	0000000000000005 .protected isxdigit_l
-00000000000239eb g    DF .text	0000000000000008 .protected __ctype_tolower_loc
-00000000000266bb g    DF .text	0000000000000018 .protected tee
-0000000000057aa4 g    DF .text	0000000000000029 .protected clock_nanosleep
-0000000000025a6f g    DF .text	0000000000000087 .protected errx
-0000000000025b14 g    DF .text	0000000000000040 .protected futimes
-00000000000244ae g    DF .text	000000000000004f .protected __init_tp
-00000000000417e6 g    DF .text	0000000000000015 .protected getpwuid_r
-0000000000032c04 g    DF .text	0000000000000203 .protected log10
-000000000003b662 g    DF .text	00000000000000d2 .protected accept4
-0000000000026a88 g    DF .text	0000000000000003 .protected catclose
-0000000000023a57  w   DF .text	0000000000000012 .protected isblank_l
-000000000005cae7 g    DF .text	000000000000014c .protected dladdr
-0000000000057ae2 g    DF .text	000000000000000f .protected ctime
-00000000000391ca g    DF .text	0000000000000018 .protected getmntent
-00000000000405a4 g    DF .text	0000000000000001 .protected endservent
-0000000000049ff5 g    DF .text	000000000000001a .protected __block_app_sigs
-0000000000042328 g    DF .text	0000000000000014 .protected lcong48
-0000000000026694 g    DF .text	0000000000000015 .protected syncfs
-000000000003dfd2 g    DF .text	0000000000000181 .protected __lookup_ipliteral
-000000000003c334 g    DF .text	000000000000000a .protected gethostbyname
-000000000003fefd  w   DF .text	000000000000005c .protected res_query
-0000000000053acf g    DF .text	000000000000000a .protected pthread_mutexattr_gettype
-000000000002ae38 g    DF .text	00000000000001db .protected atan2
-000000000004a2b0  w   DF .text	0000000000000028 .protected sigaction
-000000000004e2c8 g    DF .text	0000000000000080 .protected ungetc
-000000000004b864 g    DF .text	0000000000000032 .protected feof
-000000000005363e g    DF .text	000000000000010b .protected __timedwait_cp
-0000000000023fbf g    DF .text	0000000000000036 .protected wctrans
-000000000001bbb0 g    DF .text	0000000000000005 .protected wcscasecmp_l
-000000000004a895 g    DF .text	0000000000000014 .protected chmod
-000000000002e306 g    DF .text	0000000000000149 .protected fmaf
-00000000000552e8  w   DF .text	000000000000001d .protected pthread_mutex_lock
-0000000000059796 g    DF .text	0000000000000029 .protected pause
-000000000003f659 g    DF .text	0000000000000053 .protected recvmmsg
-0000000000053928 g    DF .text	000000000000007c .protected __fork_handler
-0000000000023b3e g    DF .text	000000000000001d .protected iswalnum
-0000000000026267 g    DF .text	0000000000000012 .protected init_module
-000000000003a46f  w   DF .text	0000000000000095 .protected mmap
-000000000005213c g    DF .text	000000000000005f .protected vswscanf
-000000000028aca0 g    DO .data.rel.ro	0000000000000028 .protected __c_dot_utf8
-0000000000047c17 g    DF .text	0000000000000062 .protected regerror
-000000000002e44f g    DF .text	00000000000004ee .protected fmal
-0000000000059b7d g    DF .text	0000000000000027 .protected tcgetpgrp
-000000000002686a g    DF .text	0000000000000015 .protected fremovexattr
-0000000000028a9e g    DF .text	0000000000000069 .protected __cosl
-000000000001be30 g    DF .text	0000000000000046 .protected wcsncat
-0000000000040eb8 g    DF .text	000000000000004c .protected getgrgid
-0000000000052cff  w   DF .text	000000000000001a .protected strtof_l
-000000000004ce8d g    DF .text	000000000000006c .protected getc
-00000000000543a1  w   DF .text	0000000000000358 .protected pthread_cond_timedwait
-000000000004c505 g    DF .text	000000000000004c .protected fputwc
-0000000000026582 g    DF .text	0000000000000018 .protected setns
-0000000000025021 g    DF .text	0000000000000085 .protected open
-000000000028e180 g    DO .bss	0000000000000004 .protected __aio_fut
-0000000000025ead g    DF .text	0000000000000001 .protected setutxent
-000000000001a4a0 g    DF .text	00000000000000c2 .protected __stpcpy
-000000000004322d g    DF .text	0000000000000014 .protected posix_spawnattr_getsigdefault
-0000000000053238 g    DF .text	0000000000000056 .protected __randname
-00000000000561e1 g    DF .text	0000000000000007 .protected sem_wait
-0000000000042386 g    DF .text	0000000000000021 .protected rand
-000000000002892c  w   DF .text	0000000000000005 .protected wcscoll_l
-0000000000028c08 g    DF .text	000000000000001a .protected __polevll
-000000000004b764 g    DF .text	000000000000002b .protected __fpurge
-0000000000027049 g    DF .text	0000000000000012 .protected dgettext
-00000000000266a9  w   DF .text	0000000000000012 .protected sysinfo
-000000000002e93d g    DF .text	0000000000000068 .protected fmax
-0000000000035edb g    DF .text	000000000000005d .protected rintf
-0000000000058e5c g    DF .text	0000000000000008 .protected times
-0000000000023ae1 g    DF .text	000000000000000c .protected __isprint_l
-000000000004b011 g    DF .text	00000000000000a7 .protected __fopen_rb_ca
-00000000000521b0  w   DF .text	0000000000000015 .protected __isoc99_vwscanf
-00000000000391e2 g    DF .text	000000000000005a .protected addmntent
-0000000000049592 g    DF .text	000000000000000e .protected pthread_setaffinity_np
-000000000002b013 g    DF .text	00000000000001c8 .protected atan2f
-000000000003a421  w   DF .text	0000000000000015 .protected madvise
-0000000000059768 g    DF .text	0000000000000015 .protected lseek
-0000000000037fb4 g    DF .text	0000000000000000 .protected rintl
-000000000004ce8d  w   DF .text	000000000000006c .protected _IO_getc
-0000000000027ccd  w   DF .text	0000000000000015 .protected nl_langinfo
-0000000000038d27 g    DF .text	000000000000000b .protected getopt_long_only
-0000000000031616 g    DF .text	0000000000000716 .protected __lgamma_r
-0000000000037d16 g    DF .text	0000000000000000 .protected atan2l
-000000000028d6b0  w   DO .bss	0000000000000010 tzname
-00000000000288db g    DF .text	000000000000000a .protected gettext
-000000000004d167 g    DF .text	0000000000000045 .protected gets
-000000000004967e g    DF .text	0000000000000015 .protected sched_rr_get_interval
-000000000004c551 g    DF .text	00000000000000ea .protected fputws
-000000000004966f g    DF .text	000000000000000f .protected sched_getscheduler
-000000000001bbc0 g    DF .text	0000000000000027 .protected wcscat
-000000000004c86b g    DF .text	000000000000008f .protected fscanf
-0000000000053749 g    DF .text	0000000000000054 .protected __timedwait
-00000000000534b5  w   DF .text	0000000000000029 .protected cfsetspeed
-000000000002523f g    DF .text	0000000000000000 .protected __fesetround
-000000000004d1ac g    DF .text	000000000000002e .protected getw
-000000000001f9ec g    DF .text	000000000000003c .protected csin
-000000000004cf48  w   DF .text	0000000000000212 .protected __getdelim
-000000000001e27f g    DF .text	000000000000001f .protected cargf
-0000000000016200 g    DF .text	0000000000000024 .protected exit
-0000000000049ec6 g    DF .text	000000000000002c .protected poll
-0000000000026813 g    DF .text	0000000000000018 .protected lsetxattr
-00000000000537c0 g    DF .text	000000000000007a .protected __wait
-0000000000055b02 g    DF .text	0000000000000033 .protected pthread_sigmask
-000000000004e0a1 g    DF .text	0000000000000108 .protected tempnam
-000000000001e29e g    DF .text	0000000000000015 .protected cargl
-0000000000049660 g    DF .text	000000000000000f .protected sched_getparam
-0000000000049f50 g    DF .text	0000000000000030 .protected select
-00000000000260eb g    DF .text	0000000000000008 .protected epoll_wait
-00000000000547e2 g    DF .text	0000000000000023 .protected pthread_condattr_setclock
-000000000003d1e6 g    DF .text	000000000000001e .protected getpeername
-000000000004a427 g    DF .text	0000000000000054 .protected siginterrupt
-0000000000052d36 g    DF .text	000000000000000a .protected strtold
-00000000000283c4 g    DF .text	0000000000000034 .protected __pleval
-0000000000053a26 g    DF .text	0000000000000010 .protected pthread_attr_getguardsize
-000000000002651e  w   DF .text	0000000000000018 .protected sendfile64
-000000000002876d g    DF .text	0000000000000093 .protected strfmon
-000000000004e012 g    DF .text	000000000000008f .protected swscanf
-000000000002b1db g    DF .text	0000000000000196 .protected atanf
-0000000000024496 g    DF .text	0000000000000005 .protected telldir
-000000000002b371 g    DF .text	00000000000000b9 .protected atanh
-0000000000053ad9 g    DF .text	0000000000000007 .protected pthread_rwlockattr_getpshared
-00000000000550c4  w   DF .text	0000000000000086 .protected pthread_join
-0000000000057938 g    DF .text	000000000000000c .protected asctime
-0000000000052df3 g    DF .text	000000000000000f .protected strtoll
-0000000000059231 g    DF .text	0000000000000078 .protected __dup3
-0000000000032f87 g    DF .text	00000000000001eb .protected log1p
-0000000000037f37 g    DF .text	0000000000000000 llrintf
-0000000000037d21 g    DF .text	0000000000000000 atanl
-000000000004aa78 g    DF .text	0000000000000018 .protected fstatat
-000000000003aa8e g    DF .text	000000000000007c .protected c16rtomb
-0000000000027090  w   DF .text	0000000000000018 .protected __freelocale
-0000000000019ed0 g    DF .text	0000000000000047 .protected memcmp
-000000000028ae30 g    DO .data.rel.ro	0000000000000030 .protected __c_dot_utf8_locale
-0000000000039e81 g    DF .text	000000000000008f .protected syslog
-0000000000037f3d g    DF .text	0000000000000000 llrintl
-000000000002628d g    DF .text	0000000000000015 .protected mount
-0000000000025eb7 g    DF .text	0000000000000003 .protected pututxline
-0000000000023a7b  w   DF .text	0000000000000012 .protected iscntrl_l
-00000000000550c4 g    DF .text	0000000000000086 .protected __pthread_join
-000000000002efff g    DF .text	000000000000014f .protected hypot
-000000000004cbb6 g    DF .text	0000000000000087 .protected fwide
-0000000000057f03 g    DF .text	00000000000001f8 .protected __strftime_l
-000000000004237a g    DF .text	000000000000000c .protected srand
-000000000001f751 g    DF .text	000000000000003d .protected cpow
-0000000000026505 g    DF .text	0000000000000019 .protected sbrk
-000000000028e17c g    DO .bss	0000000000000004 optopt
-00000000000599d3 g    DF .text	0000000000000011 .protected setegid
-00000000000542e8 g    DF .text	0000000000000043 .protected pthread_cond_signal
-00000000000566db g    DF .text	0000000000000000 .protected __set_thread_area
-000000000003f551 g    DF .text	0000000000000005 .protected ntohl
-000000000004d15a g    DF .text	000000000000000d .protected getline
-00000000000364e5 g    DF .text	00000000000000b4 .protected sin
-000000000002705b  w   DF .text	0000000000000035 .protected duplocale
-000000000003b754 g    DF .text	000000000000002e .protected connect
-0000000000019ac0  w   DF .text	0000000000000129 .protected memalign
-000000000004dc73  w   DF .text	000000000000000f .protected putwchar_unlocked
-000000000004db4c g    DF .text	000000000000002f .protected putc_unlocked
-000000000003a756 g    DF .text	000000000000002b .protected shm_unlink
-00000000000418e7 g    DF .text	0000000000000176 .protected __getpwent_a
-00000000000267cb g    DF .text	000000000000000f .protected listxattr
-0000000000025eac  w   DF .text	0000000000000001 .protected endutent
-0000000000025401 g    DF .text	000000000000002c .protected semget
-000000000003f556 g    DF .text	0000000000000005 .protected ntohs
-00000000000338a3 g    DF .text	000000000000000d .protected lroundf
-00000000000538a5 g    DF .text	0000000000000012 .protected mtx_init
-00000000000334fb g    DF .text	0000000000000168 .protected log2f
-0000000000036599 g    DF .text	0000000000000145 .protected sincos
-0000000000040e3c g    DF .text	000000000000007c .protected getgrent
-00000000000597d1 g    DF .text	0000000000000093 .protected pipe2
-0000000000023da4  w   DF .text	0000000000000005 .protected iswspace_l
-00000000000557a3  w   DF .text	000000000000000f .protected pthread_once
-0000000000038d5a g    DF .text	0000000000000012 .protected getresgid
-000000000004233c g    DF .text	0000000000000013 .protected nrand48
-000000000002dd85 g    DF .text	0000000000000041 .protected fdimf
-000000000003a436 g    DF .text	0000000000000012 .protected mincore
-00000000000254bf g    DF .text	0000000000000005 .protected dlclose
-00000000000598f7  w   DF .text	0000000000000032 .protected pwritev64
-000000000003240e g    DF .text	0000000000000603 .protected __lgammal_r
-000000000002522b g    DF .text	0000000000000000 .protected feraiseexcept
-0000000000025d0a g    DF .text	000000000000002b .protected endusershell
-000000000004bb45  w   DF .text	000000000000014e .protected fgets_unlocked
-00000000000338b0 g    DF .text	0000000000000032 .protected lroundl
-00000000000288f5 g    DF .text	0000000000000037 .protected __uselocale
-00000000000557d8 g    DF .text	0000000000000081 .protected pthread_rwlock_timedrdlock
-0000000000037f74 g    DF .text	0000000000000000 log2l
-000000000005530b  w   DF .text	00000000000000e9 .protected pthread_mutex_timedlock
-0000000000053a46 g    DF .text	0000000000000008 .protected pthread_attr_getschedpolicy
-000000000003976c  w   DF .text	000000000000005a .protected ptsname_r
-00000000000240e5  w   DF .text	0000000000000013 .protected alphasort64
-000000000002ddc6 g    DF .text	0000000000000041 .protected fdiml
-0000000000024781 g    DF .text	0000000000000047 .protected __init_ssp
-0000000000039551 g    DF .text	0000000000000094 .protected nftw
-000000000004db4c  w   DF .text	000000000000002f .protected _IO_putc_unlocked
-0000000000056a5e g    DF .text	000000000000008b .protected __tm_to_secs
-000000000004af92 g    DF .text	000000000000007f .protected __fmodeflags
-00000000000557a3 g    DF .text	000000000000000f .protected __pthread_once
-000000000001f3b0 g    DF .text	00000000000001a0 .protected cexpf
-0000000000059869 g    DF .text	000000000000002e .protected pread
-0000000000038e43 g    DF .text	000000000000009f .protected getsubopt
-000000000001afe0 g    DF .text	0000000000000017 .protected strpbrk
-0000000000051ef3 g    DF .text	0000000000000010 .protected vsprintf
-0000000000023d4a g    DF .text	0000000000000035 .protected iswpunct
-000000000002620d g    DF .text	0000000000000018 .protected inotify_rm_watch
-000000000004a308 g    DF .text	0000000000000047 .protected sigaltstack
-0000000000024577 g    DF .text	000000000000015f .protected __init_libc
-000000000001f550 g    DF .text	0000000000000040 .protected cexpl
-000000000004a509 g    DF .text	000000000000000c .protected sigorset
-0000000000026162  w   DF .text	000000000000001b .protected fallocate64
-0000000000025eba g    DF .text	0000000000000001 .protected updwtmpx
-0000000000023f87  w   DF .text	0000000000000005 .protected towlower_l
-00000000000244fd g    DF .text	0000000000000079 .protected __copy_tls
-0000000000025278 g    DF .text	0000000000000000 .protected fegetenv
-00000000000543a1 g    DF .text	0000000000000358 .protected __pthread_cond_timedwait
-0000000000032e07 g    DF .text	0000000000000180 .protected log10f
-000000000028e088 g    DO .bss	0000000000000004 __daylight
-000000000003a538 g    DF .text	0000000000000093 .protected __mremap
-000000000002097c g    DF .text	000000000000026e .protected ctanhf
-00000000000403fd g    DF .text	000000000000000b .protected send
-0000000000033ab3 g    DF .text	0000000000000042 .protected nearbyint
-0000000000034029 g    DF .text	000000000000085f .protected pow
-0000000000023b9f g    DF .text	0000000000000005 .protected __iswalpha_l
-000000000005331a g    DF .text	0000000000000009 .protected mkostemp
-0000000000037f4b g    DF .text	0000000000000000 log10l
-0000000000028028 g    DF .text	00000000000000ed .protected __newlocale
-0000000000020bea g    DF .text	0000000000000040 .protected ctanhl
-0000000000059513 g    DF .text	000000000000002a .protected fdatasync
-0000000000040045 g    DF .text	0000000000000008 .protected __res_state
-000000000002444e g    DF .text	0000000000000048 .protected seekdir
-00000000000565b0 g    DF .text	0000000000000026 .protected thrd_create
-000000000003d57e g    DF .text	000000000000002c .protected hstrerror
-00000000000263f7 g    DF .text	0000000000000015 .protected process_vm_writev
-0000000000028b07 g    DF .text	0000000000000020 .protected __expo2
-0000000000023dfd g    DF .text	0000000000000005 .protected __isxdigit_l
-000000000002546f g    DF .text	0000000000000018 .protected shmctl
-00000000000579ae g    DF .text	0000000000000028 .protected clock_getcpuclockid
-0000000000028800  w   DF .text	000000000000003c .protected strxfrm_l
-000000000028de00  w   DO .bss	0000000000000008 .protected _environ
-0000000000023f71 g    DF .text	0000000000000007 .protected towupper
-0000000000058e31 g    DF .text	000000000000002b .protected timer_settime
-000000000002bd4f g    DF .text	000000000000009f .protected coshf
-000000000005264c g    DF .text	0000000000000009 .protected lldiv
-000000000002b98e g    DF .text	0000000000000090 .protected ceilf
-000000000004b302 g    DF .text	0000000000000016 .protected __stdio_seek
-000000000002411d g    DF .text	0000000000000003 .protected dirfd
-0000000000054f81  w   DF .text	0000000000000009 .protected pthread_equal
-00000000000521b0 g    DF .text	0000000000000015 .protected vwscanf
-0000000000057c8f g    DF .text	000000000000003e .protected __gmtime_r
-000000000004a497 g    DF .text	0000000000000014 .protected sigismember
-0000000000039fd7 g    DF .text	000000000000044a .protected wordexp
-000000000002ba1e g    DF .text	000000000000003f .protected copysign
-000000000028b3f0 g    DO .data	0000000000000008 .protected __stderr_used
-000000000002bdee g    DF .text	00000000000000bf .protected coshl
-000000000004b74c g    DF .text	0000000000000005 .protected __fbufsize
-00000000000431f4 g    DF .text	000000000000001b .protected posix_spawn_file_actions_destroy
-0000000000037f0d g    DF .text	0000000000000000 ceill
-0000000000053b34 g    DF .text	0000000000000006 .protected pthread_attr_setschedpolicy
-000000000002bb5f g    DF .text	0000000000000140 .protected cosf
-000000000002d2a4 g    DF .text	0000000000000090 .protected exp10f
-0000000000031d38  w   DF .text	00000000000006d6 .protected lgammaf_r
-0000000000041a5e g    DF .text	0000000000000001 .protected endspent
-000000000002ac3e g    DF .text	00000000000001fa .protected atan
-000000000004d210 g    DF .text	0000000000000029 .protected __ofl_add
-0000000000025dec g    DF .text	0000000000000048 .protected lutimes
-000000000002bc9f g    DF .text	00000000000000b0 .protected cosh
-0000000000052259  w   DF .text	0000000000000094 .protected __isoc99_wscanf
-000000000004b25e g    DF .text	00000000000000a4 .protected __stdio_read
-000000000003ab0f g    DF .text	000000000000000d .protected mblen
-000000000004b664 g    DF .text	000000000000008f .protected dprintf
-000000000005251a g    DF .text	00000000000000d1 .protected fcvt
-000000000002856b  w   DF .text	0000000000000005 .protected strcoll_l
-000000000005529a g    DF .text	000000000000002d .protected pthread_mutex_consistent
-00000000000591df g    DF .text	0000000000000019 .protected ctermid
-000000000004def9 g    DF .text	000000000000008f .protected sscanf
-0000000000025442 g    DF .text	0000000000000018 .protected semtimedop
-000000000002533e g    DF .text	000000000000002f .protected msgrcv
-000000000002d334 g    DF .text	00000000000000df .protected exp10l
-000000000002bead g    DF .text	00000000000000ce .protected cosl
-000000000003ac30 g    DF .text	000000000000012e .protected mbrtowc
-0000000000023de1 g    DF .text	000000000000001c .protected isxdigit
-0000000000023e1c g    DF .text	000000000000000f .protected toupper
-0000000000059cd2 g    DF .text	0000000000000032 .protected usleep
-0000000000059432 g    DF .text	0000000000000056 .protected fchdir
-0000000000056077 g    DF .text	0000000000000073 .protected sem_post
-000000000004de6a g    DF .text	000000000000008f .protected sprintf
-0000000000023f82  w   DF .text	0000000000000005 .protected towupper_l
-000000000003cb69 g    DF .text	000000000000067d .protected getnameinfo
-0000000000023b26 g    DF .text	000000000000000c .protected isupper
-000000000004a78e g    DF .text	000000000000005c .protected sigtimedwait
-000000000004d1da g    DF .text	0000000000000005 .protected getwc
-000000000002400e  w   DF .text	0000000000000005 .protected wctrans_l
-0000000000039f10 g    DF .text	0000000000000012 .protected uname
-0000000000052d36  w   DF .text	000000000000000a .protected strtold_l
-0000000000041e56 g    DF .text	0000000000000003 .protected lckpwdf
-0000000000024b2a g    DF .text	0000000000000117 .protected unsetenv
-00000000000434b9 g    DF .text	000000000000002d .protected waitid
-0000000000028b47 g    DF .text	0000000000000040 .protected __fpclassify
-000000000004a4b1  w   DF .text	0000000000000058 .protected bsd_signal
-000000000028dfc0 g    DO .bss	0000000000000008 __timezone
-0000000000023ab1  w   DF .text	000000000000000c .protected isgraph_l
-0000000000053323  w   DF .text	00000000000000b2 .protected mkostemps
-0000000000057af1 g    DF .text	0000000000000028 .protected ctime_r
-0000000000052618 g    DF .text	0000000000000009 .protected imaxdiv
-000000000001f898 g    DF .text	000000000000005d .protected cproj
-0000000000026617 g    DF .text	000000000000001b .protected splice
-000000000001a490 g    DF .text	0000000000000005 .protected rindex
-00000000000434e6 g    DF .text	000000000000002f .protected waitpid
-000000000004a00f g    DF .text	0000000000000018 .protected __restore_sigs
-000000000004a849  w   DF .text	000000000000000a .protected __fxstat64
-0000000000033172 g    DF .text	000000000000019e .protected log1pf
-000000000028de00  w   DO .bss	0000000000000008 environ
-0000000000052e1a g    DF .text	0000000000000005 .protected strtoimax
-0000000000051de1 g    DF .text	0000000000000015 .protected vscanf
-0000000000059bc2 g    DF .text	0000000000000012 .protected truncate
-000000000002044d g    DF .text	00000000000001f5 .protected csqrtf
-000000000004b896  w   DF .text	0000000000000032 .protected ferror_unlocked
-0000000000023a45 g    DF .text	0000000000000012 .protected isblank
-0000000000058998 g    DF .text	0000000000000024 .protected time
-0000000000025fc1 g    DF .text	0000000000000012 .protected capset
-0000000000037f54 g    DF .text	0000000000000000 .protected log1pl
-0000000000026767 g    DF .text	0000000000000010 .protected wait3
-0000000000041c4a g    DF .text	000000000000020c .protected getspnam_r
-000000000001d923  w   DF .text	0000000000000007 .protected aio_read64
-0000000000026777 g    DF .text	000000000000001b .protected wait4
-0000000000036114 g    DF .text	00000000000000d1 .protected scalb
-0000000000020642 g    DF .text	0000000000000040 .protected csqrtl
-0000000000025129 g    DF .text	0000000000000018 .protected posix_fallocate
-000000000004aa78  w   DF .text	0000000000000018 .protected fstatat64
-0000000000024c4f  w   DF .text	000000000000003d .protected strerror_l
-00000000000434ac g    DF .text	000000000000000d .protected wait
-000000000005530b g    DF .text	00000000000000e9 .protected __pthread_mutex_timedlock
-0000000000040f04 g    DF .text	000000000000004a .protected getgrnam
-000000000004984b  w   DF .text	0000000000000025 .protected hdestroy_r
-000000000004dca4 g    DF .text	0000000000000012 .protected rename
-0000000000052f95 g    DF .text	000000000000000a .protected wcstold
-000000000005311d g    DF .text	0000000000000000 .protected memcpy
-000000000001e2b3 g    DF .text	0000000000000064 .protected casin
-000000000001aa70 g    DF .text	0000000000000083 .protected strerror_r
-0000000000057949 g    DF .text	0000000000000065 .protected clock
-000000000002883c g    DF .text	0000000000000015 .protected strxfrm
-00000000000559db g    DF .text	0000000000000030 .protected pthread_setcanceltype
-000000000003f62a g    DF .text	000000000000002f .protected recvfrom
-0000000000059676 g    DF .text	0000000000000042 .protected getlogin_r
-00000000000530ec g    DF .text	000000000000000f .protected wcstoll
-00000000000260f3 g    DF .text	000000000000002d .protected eventfd
-000000000001fa28 g    DF .text	000000000000007e .protected csinf
-0000000000024cce g    DF .text	0000000000000031 .protected __assert_fail
-000000000001a7e0 g    DF .text	0000000000000015 .protected strchr
-000000000005920d g    DF .text	0000000000000024 .protected dup2
-00000000000250a6  w   DF .text	0000000000000067 .protected openat64
-000000000003aeb5 g    DF .text	00000000000002b0 .protected mbsrtowcs
-0000000000059231  w   DF .text	0000000000000078 .protected dup3
-0000000000038046 g    DF .text	0000000000000046 .protected basename
-000000000002623a g    DF .text	0000000000000015 .protected iopl
-000000000001faa6 g    DF .text	0000000000000370 .protected csinh
-00000000000538d3 g    DF .text	000000000000001d .protected mtx_timedlock
-000000000004cef9 g    DF .text	000000000000001b .protected getc_unlocked
-0000000000058ebf g    DF .text	000000000000023e .protected __wcsftime_l
-000000000001bd80 g    DF .text	0000000000000095 .protected wcsncasecmp
-000000000004aa1a g    DF .text	000000000000005e .protected fstat
-0000000000025d85 g    DF .text	0000000000000055 .protected getusershell
-0000000000058e0d g    DF .text	0000000000000024 .protected timer_gettime
-000000000003a64a g    DF .text	0000000000000015 .protected posix_madvise
-0000000000038f62 g    DF .text	0000000000000007 .protected issetugid
-000000000002020a g    DF .text	000000000000003e .protected csinl
-000000000003a45a g    DF .text	0000000000000015 .protected mlockall
-000000000001c5a0 g    DF .text	0000000000000102 .protected wmemmove
-0000000000043288 g    DF .text	000000000000000e .protected posix_spawnattr_setsigdefault
-000000000003160a g    DF .text	000000000000000c .protected lgamma
-0000000000038f23 g    DF .text	000000000000003f .protected ioctl
-000000000004be96 g    DF .text	000000000000003d .protected flockfile
-00000000000599f5 g    DF .text	0000000000000010 .protected setgid
-000000000001a660 g    DF .text	000000000000007e .protected strcasecmp
-000000000001ab00 g    DF .text	000000000000005e .protected strlcat
-000000000001d92a  w   DF .text	000000000000000a .protected aio_write64
-000000000004df88 g    DF .text	000000000000008a .protected swprintf
-0000000000020d21 g    DF .text	0000000000000158 .protected sysconf
-000000000004cef9  w   DF .text	000000000000001b .protected _IO_getc_unlocked
-000000000004d36a g    DF .text	000000000000011a .protected open_memstream
-000000000001aa70  w   DF .text	0000000000000083 .protected __xpg_strerror_r
-000000000005514b  w   DF .text	0000000000000079 .protected pthread_key_create
-00000000000499c8 g    DF .text	000000000000008e .protected lsearch
-000000000005ba8c g    DF .text	00000000000000a3 .protected __libc_exit_fini
-000000000002517c g    DF .text	0000000000000012 .protected fegetexceptflag
-00000000000267b6 g    DF .text	0000000000000015 .protected fgetxattr
-000000000028de30  w   DO .bss	0000000000000008 .protected program_invocation_short_name
-000000000004ab06 g    DF .text	0000000000000014 .protected lchmod
-00000000000380fd g    DF .text	000000000000000e .protected ffsl
-000000000004dcf1  w   DF .text	0000000000000094 .protected __isoc99_scanf
-0000000000037fcc g    DF .text	000000000000004a .protected a64l
-0000000000059488 g    DF .text	000000000000006e .protected fchown
-000000000003bd64 g    DF .text	0000000000000001 .protected sethostent
-0000000000026752 g    DF .text	0000000000000015 .protected vmsplice
-00000000000432c7 g    DF .text	00000000000001e5 .protected system
-000000000002d413 g    DF .text	0000000000000169 .protected exp2
-000000000004b3fb g    DF .text	0000000000000052 .protected __stdout_write
-00000000000430ad g    DF .text	0000000000000020 .protected posix_spawn
-0000000000051dcc g    DF .text	0000000000000015 .protected vprintf
-0000000000026632 g    DF .text	0000000000000023 .protected stime
-0000000000023da4 g    DF .text	0000000000000005 .protected __iswspace_l
-0000000000029b79 g    DF .text	00000000000001e8 .protected __tan
-000000000004b896 g    DF .text	0000000000000032 .protected ferror
-000000000004a853  w   DF .text	0000000000000010 .protected __fxstatat64
-000000000004ca1d g    DF .text	0000000000000041 .protected __ftello
-0000000000049ef2 g    DF .text	000000000000005e .protected pselect
-0000000000033b73 g    DF .text	00000000000000dc .protected nextafter
-000000000001bf40 g    DF .text	0000000000000019 .protected wcspbrk
-000000000004dc6e g    DF .text	0000000000000005 .protected putwc
-0000000000018710 g    DF .text	0000000000000005 .protected aligned_alloc
-0000000000026139 g    DF .text	0000000000000029 .protected eventfd_write
-000000000028ae60 g    DO .data.rel.ro	0000000000000008 .protected __realloc_dep
-000000000001dd63  w   DF .text	00000000000001a0 .protected lio_listio64
-000000000002ee4b g    DF .text	0000000000000085 .protected frexp
-00000000000338e2 g    DF .text	0000000000000098 .protected modf
-000000000002f953 g    DF .text	000000000000016e .protected y0
-000000000003f0dc g    DF .text	0000000000000084 .protected __rtnetlink_enumerate
-0000000000037f8c g    DF .text	0000000000000000 lrintf
-000000000004964b g    DF .text	0000000000000015 .protected sched_get_priority_min
-00000000000304bb g    DF .text	0000000000000175 .protected y1
-000000000001add0 g    DF .text	00000000000000a6 .protected __strncasecmp_l
-000000000004abae  w   DF .text	0000000000000024 .protected statfs64
-0000000000054129 g    DF .text	000000000000001d .protected __testcancel
-000000000002671b g    DF .text	0000000000000015 .protected unshare
-0000000000037f92 g    DF .text	0000000000000000 lrintl
-000000000003f166 g    DF .text	000000000000000d .protected ns_get16
-000000000004abd2  w   DF .text	0000000000000023 .protected fstatfs
-0000000000059864 g    DF .text	0000000000000005 .protected posix_close
-00000000000599a6 g    DF .text	000000000000001b .protected renameat
-0000000000029af9 g    DF .text	0000000000000080 .protected __sinl
-0000000000025c06 g    DF .text	0000000000000104 .protected getpass
-0000000000023e17  w   DF .text	0000000000000005 .protected tolower_l
-0000000000020cc4 g    DF .text	0000000000000027 .protected fpathconf
-0000000000023f87 g    DF .text	0000000000000005 .protected __towlower_l
-000000000001c3e0 g    DF .text	0000000000000005 .protected wcswcs
-000000000003a9b6 g    DF .text	0000000000000015 .protected mq_setattr
-0000000000054255 g    DF .text	0000000000000067 .protected pthread_cond_destroy
-00000000000596b8 g    DF .text	0000000000000015 .protected getpgid
-000000000004dcf1 g    DF .text	0000000000000094 .protected scanf
-000000000003cae1 g    DF .text	0000000000000059 .protected getifaddrs
-000000000001dd63 g    DF .text	00000000000001a0 .protected lio_listio
-00000000000299cb g    DF .text	0000000000000010 .protected __signbit
-000000000004b8c8  w   DF .text	000000000000006a .protected fflush_unlocked
-00000000000565df g    DF .text	0000000000000026 .protected thrd_join
-0000000000059b75 g    DF .text	0000000000000008 .protected sync
-000000000001f78e g    DF .text	000000000000009c .protected cpowf
-0000000000058518 g    DF .text	0000000000000015 .protected strftime
-000000000001e100 g    DF .text	0000000000000083 .protected cacosf
-0000000000024e05 g    DF .text	0000000000000001 .protected __cxa_finalize
-0000000000039d13 g    DF .text	0000000000000050 .protected closelog
-000000000001e183 g    DF .text	000000000000001b .protected cacosh
-0000000000035fe6 g    DF .text	000000000000009a .protected roundf
-000000000001b080 g    DF .text	0000000000000032 .protected strsignal
-00000000000413fb g    DF .text	00000000000002d7 .protected __getpw_a
-000000000001f82a g    DF .text	000000000000006e .protected cpowl
-0000000000047e3b g    DF .text	00000000000015c9 .protected regexec
-000000000001e237 g    DF .text	0000000000000037 .protected cacosl
-000000000005247c g    DF .text	000000000000000f .protected div
-0000000000025eb1  w   DF .text	0000000000000003 .protected getutid
-00000000000385a4 g    DF .text	0000000000000081 .protected get_current_dir_name
-0000000000040de9 g    DF .text	0000000000000013 .protected getgrnam_r
-0000000000036080 g    DF .text	0000000000000094 .protected roundl
-000000000005912d g    DF .text	0000000000000012 .protected acct
-00000000000550ad  w   DF .text	0000000000000017 .protected tss_get
-0000000000040572 g    DF .text	0000000000000032 .protected sendto
-0000000000059bd4 g    DF .text	000000000000002a .protected ttyname
-000000000005331a  w   DF .text	0000000000000009 .protected mkostemp64
-0000000000020cf8 g    DF .text	000000000000000d .protected get_nprocs
-0000000000035afa g    DF .text	00000000000001ad .protected remquof
-000000000004a146 g    DF .text	0000000000000015 .protected setitimer
-000000000028e04c g    DO .bss	0000000000000004 __signgam
-0000000000053a57 g    DF .text	0000000000000023 .protected pthread_attr_getstack
-00000000000408be g    DF .text	00000000000003df .protected __getgr_a
-000000000001a800  w   DF .text	00000000000000df .protected strchrnul
-000000000001c6b0 g    DF .text	0000000000000128 .protected wmemset
-0000000000024e06 g    DF .text	00000000000000af .protected __cxa_atexit
-000000000004cc3d g    DF .text	000000000000008f .protected fwprintf
-000000000002b8f7 g    DF .text	0000000000000097 .protected ceil
-000000000004a4b1 g    DF .text	0000000000000058 .protected signal
-0000000000025021  w   DF .text	0000000000000085 .protected open64
-00000000000366de g    DF .text	00000000000002da .protected sincosf
-000000000002d697 g    DF .text	0000000000000147 .protected expf
-0000000000035ca7 g    DF .text	00000000000001ca .protected remquol
-00000000000380ed g    DF .text	0000000000000010 .protected ffs
-000000000004a863  w   DF .text	000000000000000b .protected __lxstat64
-000000000003b17f g    DF .text	0000000000000118 .protected mbtowc
-00000000000442c8 g    DF .text	000000000000021e .protected glob
-00000000000407d7 g    DF .text	0000000000000047 .protected fgetgrent
-0000000000024a52 g    DF .text	00000000000000d8 .protected setenv
-0000000000023cda  w   DF .text	0000000000000005 .protected iswlower_l
-0000000000059897 g    DF .text	0000000000000032 .protected preadv
-00000000000240e5 g    DF .text	0000000000000013 .protected alphasort
-0000000000056697 g    DF .text	0000000000000044 .protected __vm_unlock
-000000000003bac6  w   DF .text	0000000000000101 .protected dn_expand
-0000000000059cba g    DF .text	0000000000000018 .protected unlinkat
-00000000000369b8 g    DF .text	0000000000000126 .protected sincosl
-0000000000025f9d g    DF .text	0000000000000015 .protected arch_prctl
-0000000000037df9 g    DF .text	0000000000000000 .protected expl
-0000000000023e2b  w   DF .text	0000000000000005 .protected toupper_l
-000000000004c349 g    DF .text	000000000000009b .protected fputc
-0000000000023f82 g    DF .text	0000000000000005 .protected __towupper_l
-0000000000055305 g    DF .text	0000000000000006 .protected pthread_mutex_setprioceiling
-000000000001bbf0 g    DF .text	000000000000003b .protected wcschr
-00000000000444e6 g    DF .text	0000000000000042 .protected globfree
-000000000001b7e0 g    DF .text	0000000000000110 .protected strverscmp
-000000000002470f g    DF .text	0000000000000072 .protected __reset_tls
-000000000028b400 g    DO .data	0000000000000008 .protected __stdout_used
-000000000004ab6e g    DF .text	0000000000000014 .protected mknod
-000000000004234f g    DF .text	000000000000000c .protected lrand48
-0000000000043515 g    DF .text	0000000000000000 __vfork
-00000000000496b1 g    DF .text	0000000000000012 .protected sched_yield
-0000000000025b54 g    DF .text	000000000000002a .protected getdtablesize
-000000000002654a g    DF .text	0000000000000014 .protected setfsuid
-0000000000023a99  w   DF .text	000000000000000c .protected isdigit_l
-0000000000025ff7 g    DF .text	0000000000000015 .protected clock_adjtime
-000000000004db4c  w   DF .text	000000000000002f .protected fputc_unlocked
-000000000003bd68  w   DF .text	0000000000000001 .protected endnetent
-0000000000055913 g    DF .text	0000000000000078 .protected pthread_rwlock_unlock
-0000000000026740 g    DF .text	0000000000000012 .protected vhangup
-000000000002ea72 g    DF .text	0000000000000059 .protected fmin
-00000000000556a3 g    DF .text	0000000000000016 .protected pthread_mutexattr_settype
-0000000000030fb8 g    DF .text	000000000000021a .protected yn
-00000000000566fc g    DF .text	0000000000000000 .protected __clone
-000000000001add0  w   DF .text	00000000000000a6 .protected strncasecmp_l
-000000000004c3e4 g    DF .text	0000000000000035 .protected fputs
-00000000000596d7 g    DF .text	0000000000000008 .protected getpid
-000000000028e050  w   DO .bss	0000000000000004 optreset
-0000000000026c55 g    DF .text	00000000000003da .protected dcngettext
-000000000005248b g    DF .text	000000000000008f .protected ecvt
-000000000004321a g    DF .text	0000000000000003 .protected posix_spawnattr_destroy
-0000000000023a19  w   DF .text	0000000000000005 .protected isalnum_l
-000000000028ae28 g    DO .data.rel.ro	0000000000000008 stdout
-000000000004d74b g    DF .text	00000000000000bf .protected perror
-000000000003dfaf g    DF .text	0000000000000023 .protected listen
-00000000000170e0 g    DF .text	0000000000000c01 .protected __floatscan
-0000000000023c86  w   DF .text	0000000000000005 .protected wctype_l
-000000000004d80a g    DF .text	0000000000000206 .protected popen
-000000000004a820 g    DF .text	0000000000000000 __sigsetjmp
-0000000000052dea g    DF .text	0000000000000009 .protected strtoull
-000000000003f173 g    DF .text	000000000000001f .protected ns_get32
-00000000000257e7 g    DF .text	000000000000005c .protected vwarn
-000000000003b165 g    DF .text	000000000000001a .protected mbstowcs
-000000000001aee0 g    DF .text	0000000000000074 .protected strncmp
-0000000000026730 g    DF .text	0000000000000010 .protected utimes
-000000000003a9cb g    DF .text	000000000000002f .protected mq_timedreceive
-000000000003f34b g    DF .text	0000000000000206 .protected ns_parserr
-000000000005379d g    DF .text	0000000000000023 .protected __tls_get_addr
-0000000000024308 g    DF .text	0000000000000146 .protected scandir
-0000000000055b57 g    DF .text	000000000000000c .protected pthread_spin_trylock
-0000000000024c4f g    DF .text	000000000000003d .protected __strerror_l
-00000000000468b0 g    DF .text	0000000000001367 .protected regcomp
-000000000002899b g    DF .text	0000000000000015 .protected wcsxfrm
-000000000005483a  w   DF .text	00000000000001ba .protected pthread_exit
-0000000000053484 g    DF .text	0000000000000009 .protected cfgetispeed
-000000000003f192 g    DF .text	000000000000000c .protected ns_put16
-000000000004984b g    DF .text	0000000000000025 .protected __hdestroy_r
-0000000000025eb7  w   DF .text	0000000000000003 .protected pututline
-0000000000039ce0 g    DF .text	0000000000000033 .protected setlogmask
-0000000000023f78 g    DF .text	000000000000000a .protected towlower
-000000000003e6e7 g    DF .text	000000000000061e .protected __lookup_name
-000000000005663b g    DF .text	0000000000000005 .protected tss_delete
-00000000000533d5  w   DF .text	0000000000000009 .protected mkstemp64
-0000000000023dbb  w   DF .text	0000000000000005 .protected iswupper_l
-00000000000559ae  w   DF .text	000000000000000a .protected pthread_self
-000000000002d7de g    DF .text	00000000000002da .protected expm1
-000000000001f603 g    DF .text	00000000000000a9 .protected clogf
-000000000004dd85 g    DF .text	0000000000000013 .protected setbuf
-000000000001a570 g    DF .text	00000000000000e9 .protected __stpncpy
-000000000028e168 g    DO .bss	0000000000000008 .protected __env_map
-00000000000561a1 g    DF .text	000000000000003b .protected sem_trywait
-000000000004a64c g    DF .text	0000000000000006 .protected __libc_current_sigrtmax
-0000000000020e79 g    DF .text	000000000000000c .protected crypt
-000000000005483a g    DF .text	00000000000001ba .protected __pthread_exit
-000000000001bba0 g    DF .text	000000000000000c .protected wcscasecmp
-00000000000238b5 g    DF .text	000000000000010b .protected encrypt
-000000000001f6ac g    DF .text	000000000000004a .protected clogl
-0000000000043225 g    DF .text	0000000000000008 .protected posix_spawnattr_getpgroup
-0000000000040469 g    DF .text	0000000000000109 .protected sendmsg
-0000000000023a8d g    DF .text	000000000000000c .protected isdigit
-0000000000049aaf g    DF .text	000000000000003c .protected tdestroy
-0000000000019830 g    DF .text	000000000000026f .protected realloc
-0000000000023da9 g    DF .text	0000000000000012 .protected iswupper
-0000000000039551  w   DF .text	0000000000000094 .protected nftw64
-0000000000059d60 g    D  .text	0000000000000000 _dlstart
-00000000000262ef g    DF .text	0000000000000048 .protected ppoll
-00000000000358e8 g    DF .text	0000000000000013 .protected remainderf
-000000000002518e g    DF .text	0000000000000014 .protected feholdexcept
-000000000003a61b  w   DF .text	000000000000002f .protected munmap
-000000000002385f g    DF .text	0000000000000056 .protected setkey
-000000000001b750 g    DF .text	0000000000000087 .protected strtok_r
-000000000003bd65  w   DF .text	0000000000000003 .protected getnetent
-0000000000023e08 g    DF .text	000000000000000f .protected tolower
-0000000000025b7e g    DF .text	0000000000000082 .protected getloadavg
-0000000000037fa0 g    DF .text	0000000000000000 remainderl
-0000000000028b27 g    DF .text	0000000000000020 .protected __expo2f
-0000000000025e34 g    DF .text	0000000000000078 .protected ulimit
-000000000001e26e g    DF .text	0000000000000011 .protected carg
-00000000000362c7 g    DF .text	0000000000000022 .protected scalblnf
-00000000000286e5 g    DF .text	0000000000000088 .protected strfmon_l
-000000000004206e g    DF .text	00000000000000ac .protected putgrent
-0000000000023abd g    DF .text	000000000000000c .protected islower
-000000000003a609 g    DF .text	0000000000000012 .protected munlockall
-0000000000037ed6 g    DF .text	0000000000000000 .protected fabsf
-000000000002b6af g    DF .text	00000000000000e0 .protected cbrtf
-000000000002655e g    DF .text	0000000000000012 .protected setgroups
-000000000001a760 g    DF .text	000000000000004f .protected strcasestr
-0000000000023b9f  w   DF .text	0000000000000005 .protected iswalpha_l
-000000000005514b g    DF .text	0000000000000079 .protected __pthread_key_create
-0000000000025141 g    DF .text	000000000000003b .protected __flt_rounds
-0000000000024013 g    DF .text	0000000000000005 .protected __towctrans_l
-00000000000362e9 g    DF .text	0000000000000022 .protected scalblnl
-00000000000371fe g    DF .text	00000000000000f3 .protected tanhf
-000000000028e184 g    DO .bss	0000000000000004 h_errno
-0000000000023ba4 g    DF .text	0000000000000005 .protected iswblank
-0000000000037ee4 g    DF .text	0000000000000000 .protected fabsl
-000000000002b78f g    DF .text	0000000000000168 .protected cbrtl
-0000000000023ba9  w   DF .text	0000000000000005 .protected iswblank_l
-00000000000262a2 g    DF .text	0000000000000014 .protected umount
-000000000005565e g    DF .text	0000000000000009 .protected pthread_mutexattr_init
-0000000000053a1b g    DF .text	0000000000000003 .protected pthread_attr_destroy
-000000000004c63b  w   DF .text	000000000000010e .protected fread_unlocked
-0000000000058bbf g    DF .text	00000000000001cc .protected timer_create
-00000000000372f1 g    DF .text	00000000000000de .protected tanhl
-000000000003a504  w   DF .text	0000000000000034 .protected mprotect
-000000000001e3fd g    DF .text	000000000000007e .protected casinhf
-0000000000023ddc g    DF .text	0000000000000005 .protected __iswxdigit_l
-000000000002c96c g    DF .text	0000000000000150 .protected erfcf
-000000000005917c g    DF .text	0000000000000012 .protected chdir
-00000000000358e8  w   DF .text	0000000000000013 .protected dremf
-0000000000023b07  w   DF .text	0000000000000005 .protected ispunct_l
-0000000000057cd9 g    DF .text	0000000000000066 .protected __localtime_r
-0000000000059567 g    DF .text	0000000000000015 .protected ftruncate
-000000000004ad2f g    DF .text	00000000000000f3 .protected utimensat
-0000000000026846 g    DF .text	0000000000000012 .protected removexattr
-000000000001b0c0 g    DF .text	00000000000000e6 .protected strspn
-00000000000541f1 g    DF .text	0000000000000021 .protected _pthread_cleanup_pop
-000000000002539d g    DF .text	0000000000000064 .protected semctl
-000000000002a63d g    DF .text	0000000000000194 .protected asin
-0000000000055b77 g    DF .text	000000000000000e .protected sem_getvalue
-000000000002cf27 g    DF .text	0000000000000138 .protected erfcl
-000000000001e47b g    DF .text	000000000000003e .protected casinhl
-0000000000059ca8 g    DF .text	0000000000000012 .protected unlink
-0000000000023a69 g    DF .text	0000000000000012 .protected iscntrl
-000000000005347b g    DF .text	0000000000000009 .protected cfgetospeed
-000000000028d6b0 g    DO .bss	0000000000000010 __tzname
-000000000004aa9c  w   DF .text	000000000000006a .protected futimesat
-000000000001a8e0 g    DF .text	0000000000000035 .protected strcmp
-0000000000051f08  w   DF .text	000000000000004e .protected __isoc99_vsscanf
-000000000004c749 g    DF .text	0000000000000122 .protected freopen
-00000000000262cb g    DF .text	0000000000000012 .protected personality
-00000000000529af g    DF .text	00000000000002c3 .protected qsort
-0000000000024ec7 g    DF .text	0000000000000018 .protected quick_exit
-000000000003810b g    DF .text	000000000000000e .protected ffsll
-0000000000036ade g    DF .text	000000000000015c .protected sinf
-00000000000417fb  w   DF .text	000000000000002b .protected endpwent
-0000000000036c3a g    DF .text	00000000000000d8 .protected sinh
-000000000028e170 g    DO .bss	0000000000000008 optarg
-000000000004b229 g    DF .text	0000000000000035 .protected __stdio_exit
-000000000001ea8f g    DF .text	0000000000000018 .protected ccos
-000000000005913f g    DF .text	000000000000003d .protected alarm
-000000000003da04 g    DF .text	000000000000000e .protected inet_network
-0000000000038046  w   DF .text	0000000000000046 .protected __xpg_basename
-0000000000036ea3 g    DF .text	00000000000000e6 .protected sinl
-0000000000037ca1 g    DF .text	000000000000004b .protected truncf
-000000000003995f g    DF .text	0000000000000041 .protected setrlimit
-0000000000025ead  w   DF .text	0000000000000001 .protected setutent
-000000000002893f  w   DF .text	000000000000005c .protected wcsxfrm_l
-0000000000052d19 g    DF .text	000000000000001d .protected strtod
-000000000004321d g    DF .text	0000000000000008 .protected posix_spawnattr_getflags
-0000000000025ebb  w   DF .text	0000000000000011 .protected utmpxname
-0000000000052cff g    DF .text	000000000000001a .protected strtof
-0000000000059738 g    DF .text	0000000000000012 .protected link
-00000000000399a0 g    DF .text	00000000000000ab .protected syscall
-0000000000037f15 g    DF .text	0000000000000000 truncl
-000000000002aa48 g    DF .text	000000000000010f .protected asinhf
-0000000000026162 g    DF .text	000000000000001b .protected fallocate
-0000000000052e02 g    DF .text	0000000000000009 .protected strtoul
-000000000004a515 g    DF .text	0000000000000033 .protected sigpause
-000000000004ddab g    DF .text	000000000000000e .protected setlinebuf
-000000000001b6b0 g    DF .text	0000000000000094 .protected strtok
-000000000002de4e g    DF .text	0000000000000092 .protected floor
-000000000003f19e g    DF .text	0000000000000022 .protected ns_put32
-0000000000052e0b g    DF .text	000000000000000f .protected strtol
-000000000003f8cc g    DF .text	00000000000005b2 .protected __res_msend_rc
-0000000000026087 g    DF .text	000000000000001e .protected epoll_ctl
-000000000004a849 g    DF .text	000000000000000a .protected __fxstat
-00000000000283f8 g    DF .text	0000000000000173 .protected setlocale
-000000000002ab57 g    DF .text	00000000000000e7 .protected asinhl
-000000000004be72 g    DF .text	0000000000000024 .protected fileno
-0000000000019bf0 g    DF .text	0000000000000035 .protected posix_memalign
-00000000000580fb g    DF .text	000000000000041d .protected __strftime_fmt_1
-00000000000241ca  w   DF .text	000000000000006b .protected readdir64
-00000000000577af g    DF .text	000000000000007f .protected __tm_to_tzname
-000000000003970d g    DF .text	000000000000002a .protected ptsname
-0000000000026655 g    DF .text	0000000000000015 .protected swapon
-00000000000425a2 g    DF .text	0000000000000086 .protected random
-000000000004dcb6 g    DF .text	000000000000003b .protected rewind
-0000000000026792 g    DF .text	0000000000000012 .protected getxattr
-0000000000033c4f g    DF .text	00000000000000b4 .protected nextafterf
-000000000004b573 g    DF .text	0000000000000005 .protected __towrite_needs_stdio_exit
-00000000000251a2 g    DF .text	0000000000000024 .protected fesetexceptflag
-00000000000242ca g    DF .text	000000000000003e .protected rewinddir
-0000000000025eac g    DF .text	0000000000000001 .protected endutxent
-000000000001a6e0  w   DF .text	000000000000007e .protected strcasecmp_l
-0000000000039e11  w   DF .text	0000000000000070 .protected vsyslog
-00000000000299db g    DF .text	000000000000000e .protected __signbitf
-0000000000033d03 g    DF .text	0000000000000111 .protected nextafterl
-000000000003908c g    DF .text	000000000000013e .protected getmntent_r
-000000000004c9d8 g    DF .text	0000000000000045 .protected __ftello_unlocked
-0000000000054a9b g    DF .text	000000000000001c .protected __do_cleanup_push
-0000000000025680 g    DF .text	0000000000000000 dlsym
-0000000000035f38 g    DF .text	00000000000000ae .protected round
-0000000000041e59 g    DF .text	0000000000000003 .protected ulckpwdf
-000000000001d962 g    DF .text	0000000000000005 .protected aio_return
-0000000000037fc0 g    DF .text	0000000000000000 .protected sqrtf
-00000000000299e9 g    DF .text	0000000000000014 .protected __signbitl
-000000000001d92a g    DF .text	000000000000000a .protected aio_write
-000000000001a220 g    DF .text	0000000000000229 .protected memmem
-000000000001a6e0 g    DF .text	000000000000007e .protected __strcasecmp_l
-000000000005974a g    DF .text	000000000000001e .protected linkat
-000000000001dfeb g    DF .text	00000000000000d1 .protected __ldexp_cexpf
-0000000000026193 g    DF .text	000000000000001a .protected fanotify_mark
-00000000000538f0 g    DF .text	0000000000000033 .protected mtx_trylock
-0000000000038f69  w   DF .text	00000000000000ae .protected lockf64
-0000000000040617 g    DF .text	00000000000000cb .protected socket
-000000000004cef9  w   DF .text	000000000000001b .protected fgetc_unlocked
-000000000003a9a6 g    DF .text	0000000000000008 .protected mq_receive
-0000000000056605 g    DF .text	000000000000001c .protected thrd_sleep
-0000000000037fc5 g    DF .text	0000000000000000 .protected sqrtl
-000000000002bab6 g    DF .text	00000000000000a9 .protected cos
-000000000002d211 g    DF .text	0000000000000093 .protected exp10
-0000000000059978 g    DF .text	000000000000002e .protected readv
-00000000000262b6 g    DF .text	0000000000000015 .protected umount2
-000000000003ad72 g    DF .text	0000000000000143 .protected mbsnrtowcs
-000000000003d5b9 g    DF .text	0000000000000066 .protected if_indextoname
-000000000003b5ed g    DF .text	0000000000000034 .protected wctob
-000000000028de28 g    DO .bss	0000000000000008 __progname_full
-000000000004b712 g    DF .text	0000000000000015 .protected __freading
-0000000000053113 g    DF .text	0000000000000005 .protected wcstoimax
-0000000000037ec4 g    DF .text	0000000000000000 .protected fabs
-0000000000023cda g    DF .text	0000000000000005 .protected __iswlower_l
-000000000002b55a g    DF .text	0000000000000155 .protected cbrt
-000000000003f55b g    DF .text	000000000000000b .protected endprotoent
-0000000000018350 g    DF .text	00000000000000b2 .protected __shgetc
-0000000000023b21 g    DF .text	0000000000000005 .protected __isspace_l
-00000000000268a2 g    DF .text	00000000000001bb .protected __mo_lookup
-000000000002718a g    DF .text	000000000000004b .protected iconv_open
-0000000000025269 g    DF .text	0000000000000000 .protected fegetround
-00000000000552c7 g    DF .text	0000000000000003 .protected pthread_mutex_destroy
-0000000000020d19 g    DF .text	0000000000000008 .protected pathconf
-000000000004dc82 g    DF .text	0000000000000022 .protected remove
-000000000001af60 g    DF .text	000000000000000e .protected strncpy
-000000000005918e g    DF .text	0000000000000016 .protected chown
-000000000004cf48 g    DF .text	0000000000000212 .protected getdelim
-0000000000022f2a g    DF .text	000000000000005f .protected __crypt_sha256
-0000000000057ccd g    DF .text	000000000000000c .protected localtime
-0000000000058ebf  w   DF .text	000000000000023e .protected wcsftime_l
-000000000004abd2  w   DF .text	0000000000000023 .protected fstatfs64
-0000000000025731 g    DF .text	00000000000000b6 .protected daemon
-000000000001d923 g    DF .text	0000000000000007 .protected aio_read
-0000000000041a5d g    DF .text	0000000000000001 .protected setspent
-0000000000023bdb  w   DF .text	0000000000000005 .protected iswcntrl_l
-0000000000034888 g    DF .text	0000000000000735 .protected powf
-0000000000049605 g    DF .text	0000000000000031 .protected __sched_cpucount
-0000000000023b5b g    DF .text	0000000000000005 .protected __iswalnum_l
-00000000000267e9 g    DF .text	0000000000000012 .protected flistxattr
-000000000003aa5c g    DF .text	0000000000000032 .protected btowc
-0000000000025eba  w   DF .text	0000000000000001 .protected updwtmp
-000000000002dee0 g    DF .text	000000000000008b .protected floorf
-0000000000052e0b  w   DF .text	000000000000000f .protected __strtol_internal
-000000000028e178 g    DO .bss	0000000000000004 .protected __optpos
-000000000002617d g    DF .text	0000000000000016 .protected fanotify_init
-000000000004a863 g    DF .text	000000000000000b .protected __lxstat
-0000000000034fbd g    DF .text	0000000000000918 .protected powl
-0000000000027d09 g    DF .text	00000000000002f2 .protected __get_locale
-0000000000053528 g    DF .text	000000000000000e .protected tcflush
-000000000001be80 g    DF .text	000000000000004e .protected wcsncmp
-00000000000261ef g    DF .text	0000000000000007 .protected inotify_init
-0000000000018450 g    DF .text	0000000000000296 .protected __vdsosym
-00000000000262dd g    DF .text	0000000000000012 .protected pivot_root
-0000000000037eeb g    DF .text	0000000000000000 .protected floorl
-000000000004b764  w   DF .text	000000000000002b .protected fpurge
-0000000000019ac0 g    DF .text	0000000000000129 .protected __memalign
-0000000000032a1d g    DF .text	000000000000000d .protected llround
-00000000000264b9 g    DF .text	0000000000000012 .protected readahead
-00000000000541e5 g    DF .text	000000000000000c .protected _pthread_cleanup_push
-0000000000059567  w   DF .text	0000000000000015 .protected ftruncate64
-00000000000271d8 g    DF .text	0000000000000a33 .protected iconv
-0000000000033310 g    DF .text	00000000000001eb .protected log2
-000000000001f9da g    DF .text	000000000000000d .protected crealf
-000000000003f720 g    DF .text	0000000000000003 .protected res_init
-0000000000025fb2 g    DF .text	000000000000000f .protected brk
-0000000000053b2c g    DF .text	0000000000000008 .protected pthread_attr_setschedparam
-000000000003ff59 g    DF .text	00000000000000a8 .protected res_querydomain
-0000000000049a56 g    DF .text	0000000000000059 .protected lfind
-00000000000299fd g    DF .text	00000000000000a7 .protected __sin
-000000000004b153 g    DF .text	000000000000006c .protected __overflow
-0000000000019c70 g    DF .text	0000000000000154 .protected memccpy
-000000000005219b g    DF .text	0000000000000015 .protected vwprintf
-000000000003a5f7 g    DF .text	0000000000000012 .protected munlock
-000000000004326e g    DF .text	0000000000000006 .protected posix_spawnattr_getschedpolicy
-000000000002f14e g    DF .text	00000000000000fe .protected hypotf
-000000000005348d g    DF .text	0000000000000028 .protected cfmakeraw
-000000000001f9e7 g    DF .text	0000000000000005 .protected creall
-0000000000023ae1  w   DF .text	000000000000000c .protected isprint_l
-0000000000054acc g    DF .text	0000000000000484 .protected __pthread_create
-000000000003a65f g    DF .text	0000000000000094 .protected __shm_mapname
-000000000003d8fd g    DF .text	0000000000000107 .protected __inet_aton
-000000000004a0b4 g    DF .text	0000000000000042 .protected psignal
-0000000000042689 g    DF .text	0000000000000100 .protected execl
-0000000000053848 g    DF .text	000000000000000a .protected cnd_init
-00000000000497eb g    DF .text	0000000000000054 .protected __hcreate_r
-000000000004a397 g    DF .text	0000000000000010 .protected sigfillset
-000000000001bfb0 g    DF .text	0000000000000042 .protected wcsspn
-000000000003bd65 g    DF .text	0000000000000003 .protected gethostent
-0000000000023dbb g    DF .text	0000000000000005 .protected __iswupper_l
-000000000004b864  w   DF .text	0000000000000032 .protected _IO_feof_unlocked
-0000000000019c30 g    DF .text	0000000000000005 .protected bcmp
-000000000002f24c g    DF .text	0000000000000164 .protected hypotl
-0000000000022732  w   DF .text	0000000000000051 .protected crypt_r
-0000000000039d63 g    DF .text	00000000000000ae .protected openlog
-000000000001bc30 g    DF .text	0000000000000029 .protected wcscmp
-0000000000018d50 g    DF .text	0000000000000480 .protected free
-00000000000261f6 g    DF .text	0000000000000017 .protected inotify_add_watch
-0000000000051447  w   DF .text	0000000000000985 .protected __isoc99_vfwscanf
-000000000001f590 g    DF .text	0000000000000005 .protected cimag
-0000000000053b3a g    DF .text	0000000000000017 .protected pthread_attr_setscope
-0000000000042980 g    DF .text	000000000000000f .protected execv
-000000000004dc73 g    DF .text	000000000000000f .protected putwchar
-00000000000251d7 g    DF .text	0000000000000027 .protected feupdateenv
-00000000000542bc g    DF .text	000000000000002c .protected pthread_cond_init
-000000000001a460 g    DF .text	000000000000002a .protected __memrchr
-0000000000024ca1 g    DF .text	0000000000000016 .protected _Exit
-000000000004a03c g    DF .text	0000000000000018 .protected kill
-0000000000023800 g    DF .text	000000000000005f .protected __crypt_sha512
-0000000000051f08 g    DF .text	000000000000004e .protected vsscanf
-0000000000052f78 g    DF .text	000000000000001d .protected wcstod
-000000000004bc93  w   DF .text	000000000000011a .protected fgetwc_unlocked
-0000000000052f5e g    DF .text	000000000000001a .protected wcstof
-0000000000053923 g    DF .text	0000000000000005 .protected mtx_unlock
-00000000000551d8 g    DF .text	000000000000006f .protected __pthread_tsd_run_dtors
-0000000000059a56 g    DF .text	0000000000000010 .protected setreuid
-0000000000040408 g    DF .text	0000000000000061 .protected sendmmsg
-0000000000052e1f g    DF .text	0000000000000005 .protected strtoumax
-000000000001c350 g    DF .text	000000000000008f .protected wcstok
-0000000000059bfe g    DF .text	000000000000006a .protected ttyname_r
-0000000000053104 g    DF .text	000000000000000f .protected wcstol
-0000000000042628 g    DF .text	0000000000000039 .protected seed48
-000000000004def9  w   DF .text	000000000000008f .protected __isoc99_sscanf
-000000000003f723 g    DF .text	0000000000000174 .protected __res_mkquery
-0000000000023ad5 g    DF .text	000000000000000c .protected isprint
-0000000000053fd2 g    DF .text	0000000000000011 .protected pthread_barrierattr_setpshared
-0000000000053a1e g    DF .text	0000000000000008 .protected pthread_attr_getdetachstate
-000000000004987c g    DF .text	00000000000000e1 .protected __hsearch_r
-0000000000024a4b g    DF .text	0000000000000007 .protected putenv
-0000000000055ada g    DF .text	0000000000000028 .protected pthread_setspecific
-000000000001a920 g    DF .text	000000000000000e .protected strcpy
-0000000000026080 g    DF .text	0000000000000007 .protected epoll_create
-0000000000052e1a  w   DF .text	0000000000000005 .protected __strtoimax_internal
-0000000000024018 g    DF .text	00000000000000b8 .protected wcwidth
-000000000001e317 g    DF .text	00000000000000aa .protected casinf
-000000000004b1bf g    DF .text	000000000000001d .protected __stdio_close
-0000000000038758  w   DF .text	000000000000026b .protected __posix_getopt
-0000000000042789 g    DF .text	00000000000000f7 .protected execle
-0000000000057c4b g    DF .text	0000000000000038 .protected gettimeofday
-000000000001e3c1 g    DF .text	000000000000003c .protected casinh
-0000000000023ba9 g    DF .text	0000000000000005 .protected __iswblank_l
-000000000004235b g    DF .text	0000000000000013 .protected jrand48
-0000000000059ad5 g    DF .text	000000000000004b .protected __setxid
-000000000004a34f g    DF .text	000000000000000c .protected sigandset
-0000000000053847 g    DF .text	0000000000000001 .protected cnd_destroy
-000000000001c3f0 g    DF .text	000000000000002b .protected wmemchr
-00000000000596e7 g    DF .text	0000000000000015 .protected getsid
-000000000002a1fa g    DF .text	00000000000001ab .protected acosf
-0000000000057c83 g    DF .text	000000000000000c .protected gmtime
-000000000001e4b9 g    DF .text	0000000000000067 .protected casinl
-00000000000296b1 g    DF .text	00000000000000e3 .protected __rem_pio2f
-00000000000263dc g    DF .text	000000000000001b .protected prlimit
-000000000002a3a5 g    DF .text	00000000000000bc .protected acosh
-0000000000043274 g    DF .text	0000000000000006 .protected posix_spawnattr_setschedpolicy
-00000000000258c0 g    DF .text	0000000000000094 .protected warn
-000000000004a7ea g    DF .text	0000000000000028 .protected sigwait
-000000000004b6fa g    DF .text	0000000000000003 .protected __fsetlocking
-0000000000033663 g    DF .text	0000000000000060 .protected logb
-00000000000521c5 g    DF .text	0000000000000094 .protected wprintf
-00000000000361e5 g    DF .text	00000000000000c0 .protected scalbf
-000000000028e188 g    DO .bss	0000000000000004 getdate_err
-0000000000037cec g    DF .text	0000000000000000 acosl
-000000000004cdfe  w   DF .text	000000000000008f .protected __isoc99_fwscanf
-0000000000042880 g    DF .text	0000000000000100 .protected execlp
-0000000000029794 g    DF .text	0000000000000237 .protected __rem_pio2l
-000000000003cacc g    DF .text	0000000000000015 .protected freeifaddrs
-0000000000033761 g    DF .text	0000000000000135 .protected logf
-000000000004c9c9 g    DF .text	0000000000000005 .protected fseek
-000000000002eb99 g    DF .text	0000000000000187 .protected fmod
-0000000000041887 g    DF .text	0000000000000031 .protected getpwuid
-000000000002d57c g    DF .text	000000000000011b .protected exp2f
-0000000000051de1  w   DF .text	0000000000000015 .protected __isoc99_vscanf
-0000000000053beb g    DF .text	0000000000000030 .protected pthread_barrier_init
-000000000003630b g    DF .text	000000000000008c .protected scalbn
-0000000000037f7d g    DF .text	0000000000000000 .protected logl
-0000000000038758 g    DF .text	000000000000026b .protected getopt
-000000000004a86e  w   DF .text	000000000000000b .protected __xstat64
-000000000001b530 g    DF .text	0000000000000179 .protected strstr
-000000000002dfc4 g    DF .text	0000000000000342 .protected fma
-0000000000037c47 g    DF .text	000000000000005a .protected trunc
-000000000001d934 g    DF .text	000000000000002e .protected aio_fsync
-0000000000053fc9 g    DF .text	0000000000000009 .protected pthread_barrierattr_init
-00000000000565d6 g    DF .text	0000000000000009 .protected thrd_exit
-0000000000023c8b g    DF .text	000000000000000c .protected iswdigit
-000000000003a946 g    DF .text	0000000000000060 .protected mq_open
-00000000000550ad  w   DF .text	0000000000000017 .protected pthread_getspecific
-0000000000057944 g    DF .text	0000000000000005 .protected asctime_r
-0000000000037d62 g    DF .text	0000000000000000 .protected exp2l
-00000000000530fb g    DF .text	0000000000000009 .protected wcstoul
-00000000000386c6 g    DF .text	0000000000000092 .protected __getopt_msg
-000000000004d1df  w   DF .text	000000000000000f .protected getwchar_unlocked
-0000000000024d3d g    DF .text	0000000000000048 .protected at_quick_exit
-000000000004c63b g    DF .text	000000000000010e .protected fread
-000000000003a421 g    DF .text	0000000000000015 .protected __madvise
-000000000003240e  w   DF .text	0000000000000603 .protected lgammal_r
-000000000001e0dd g    DF .text	0000000000000023 .protected cacos
-000000000003aa2a g    DF .text	0000000000000032 .protected mq_unlink
-00000000000499ab g    DF .text	000000000000001d .protected remque
-000000000004a3a7 g    DF .text	000000000000003c .protected sighold
-00000000000288f5  w   DF .text	0000000000000037 .protected uselocale
-0000000000025843 g    DF .text	0000000000000053 .protected vwarnx
-0000000000055859 g    DF .text	0000000000000071 .protected pthread_rwlock_timedwrlock
-000000000003f330 g    DF .text	000000000000001b .protected ns_name_uncompress
-0000000000020d0f g    DF .text	000000000000000a .protected get_avphys_pages
-0000000000023cc8 g    DF .text	0000000000000012 .protected iswlower
-000000000002de07 g    DF .text	000000000000002c .protected finite
-0000000000025640 g    DF .text	0000000000000040 .protected dlinfo
-000000000004bdec  w   DF .text	0000000000000086 .protected fgetws_unlocked
-000000000003923c g    DF .text	0000000000000009 .protected hasmntopt
-00000000000558ca g    DF .text	0000000000000033 .protected pthread_rwlock_tryrdlock
-000000000004c419  w   DF .text	00000000000000ec .protected fputwc_unlocked
-00000000000358fb g    DF .text	00000000000001ff .protected remquo
-0000000000026536 g    DF .text	0000000000000014 .protected setfsgid
-0000000000059bc2  w   DF .text	0000000000000012 .protected truncate64
-000000000001df03 g    DF .text	00000000000000e8 .protected __ldexp_cexp
-0000000000025fd3 g    DF .text	0000000000000012 .protected capget
-000000000004ad1b g    DF .text	0000000000000014 .protected umask
-0000000000053aac g    DF .text	0000000000000009 .protected pthread_mutexattr_getprotocol
-00000000000247ca g    DF .text	0000000000000014 .protected clearenv
-000000000003f1c0 g    DF .text	0000000000000099 .protected ns_skiprr
-0000000000026884 g    DF .text	0000000000000019 .protected __lctrans_cur
-0000000000053b80 g    DF .text	0000000000000030 .protected pthread_attr_setstacksize
-000000000004b7b5 g    DF .text	00000000000000af .protected fclose
-000000000004cd76  w   DF .text	0000000000000088 .protected fwrite_unlocked
-0000000000028003 g    DF .text	0000000000000025 .protected __loc_is_allocated
-0000000000059b60 g    DF .text	0000000000000015 .protected symlinkat
-000000000003ad5e g    DF .text	0000000000000014 .protected mbsinit
-000000000004cb80 g    DF .text	0000000000000036 .protected funlockfile
-0000000000035e71 g    DF .text	000000000000006a .protected rint
-0000000000023bae g    DF .text	000000000000002d .protected iswcntrl
-000000000004957d g    DF .text	0000000000000015 .protected sched_setaffinity
-000000000003b782  w   DF .text	0000000000000344 .protected dn_comp
-0000000000056768 g    DF .text	000000000000009c .protected __asctime
-0000000000059a05 g    DF .text	0000000000000018 .protected setpgid
-000000000004abf5  w   DF .text	0000000000000093 .protected statvfs64
-0000000000039017 g    DF .text	0000000000000058 .protected login_tty
-0000000000055995 g    DF .text	000000000000000a .protected pthread_rwlockattr_init
-00000000000568a5 g    DF .text	00000000000001b9 .protected __secs_to_tm
-0000000000049faf g    DF .text	0000000000000000 .protected setjmp
-000000000004c8fa g    DF .text	0000000000000082 .protected __fseeko_unlocked
-0000000000053bb0 g    DF .text	000000000000003b .protected pthread_barrier_destroy
-000000000028de30 g    DO .bss	0000000000000008 __progname
-0000000000028570 g    DF .text	000000000000000e .protected strcoll
-0000000000059a46 g    DF .text	0000000000000010 .protected setresuid
-000000000004aa90 g    DF .text	000000000000000c .protected futimens
-0000000000051447 g    DF .text	0000000000000985 .protected vfwscanf
-0000000000059d32 g    DF .text	000000000000002e .protected writev
-000000000003d23d g    DF .text	0000000000000100 .protected getservbyname_r
-000000000001bed0 g    DF .text	000000000000003b .protected wcsncpy
-000000000004b78f g    DF .text	0000000000000009 .protected __freadahead
-0000000000024cff g    DF .text	000000000000003e .protected __funcs_on_quick_exit
-0000000000052df3  w   DF .text	000000000000000f .protected __strtoll_internal
-000000000002d2a4  w   DF .text	0000000000000090 .protected pow10f
-000000000004a054 g    DF .text	000000000000001c .protected killpg
-000000000004b6fd g    DF .text	0000000000000015 .protected __fwriting
-0000000000021e48 g    DF .text	000000000000008e .protected __crypt_des
-0000000000043515  w   DF .text	0000000000000000 vfork
-00000000000538b7 g    DF .text	000000000000001c .protected mtx_lock
-0000000000049e4c g    DF .text	000000000000003f .protected tfind
-0000000000040f4e g    DF .text	00000000000001b0 .protected __getgrent_a
-000000000004abae  w   DF .text	0000000000000024 .protected statfs
-000000000004236e g    DF .text	000000000000000c .protected mrand48
-000000000002d334  w   DF .text	00000000000000df .protected pow10l
-000000000003b4ac g    DF .text	0000000000000127 .protected wcsrtombs
-00000000000267a4 g    DF .text	0000000000000012 .protected lgetxattr
-00000000000240d0 g    DF .text	0000000000000015 .protected __getdents
-0000000000023bdb g    DF .text	0000000000000005 .protected __iswcntrl_l
-0000000000053a96 g    DF .text	000000000000000c .protected pthread_condattr_getclock
-0000000000038ee2 g    DF .text	0000000000000041 .protected initgroups
-000000000002600c g    DF .text	0000000000000045 .protected clone
-0000000000052621 g    DF .text	0000000000000011 .protected labs
-000000000004c9ce  w   DF .text	000000000000000a .protected fsetpos64
-000000000004c97c g    DF .text	000000000000004d .protected __fseeko
-00000000000495a0 g    DF .text	0000000000000034 .protected sched_getaffinity
-0000000000024235  w   DF .text	0000000000000095 .protected readdir64_r
-0000000000055b38 g    DF .text	0000000000000009 .protected pthread_spin_init
-00000000000432a7 g    DF .text	0000000000000020 .protected posix_spawnp
-000000000001bc60 g    DF .text	0000000000000024 .protected wcscpy
-0000000000026570 g    DF .text	0000000000000012 .protected sethostname
-000000000004ab2c g    DF .text	0000000000000014 .protected mkdir
-000000000004d1df g    DF .text	000000000000000f .protected getwchar
-000000000004983f g    DF .text	000000000000000c .protected hcreate
-0000000000025281 g    DF .text	0000000000000000 .protected fesetenv
-0000000000055031 g    DF .text	0000000000000003 .protected pthread_getconcurrency
-000000000004b7b1 g    DF .text	0000000000000004 .protected __fseterr
-0000000000028c42 g    DF .text	000000000000042c .protected __rem_pio2
-000000000004c551  w   DF .text	00000000000000ea .protected fputws_unlocked
-0000000000041a5f g    DF .text	0000000000000003 .protected getspent
-000000000001e0c1 g    DF .text	0000000000000017 .protected cabsf
-000000000002536d g    DF .text	0000000000000030 .protected msgsnd
-000000000004bb2b g    DF .text	000000000000001a .protected fgetpos
-000000000003d4f0 g    DF .text	000000000000001e .protected getsockname
-00000000000596cd g    DF .text	000000000000000a .protected getpgrp
-0000000000053b1c g    DF .text	0000000000000010 .protected pthread_attr_setinheritsched
-00000000000558fd g    DF .text	0000000000000016 .protected pthread_rwlock_trywrlock
-000000000004b318 g    DF .text	00000000000000e3 .protected __stdio_write
-000000000001afb0 g    DF .text	000000000000002d .protected strnlen
-000000000004cf23 g    DF .text	0000000000000025 .protected getchar_unlocked
-000000000001e0d8 g    DF .text	0000000000000005 .protected cabsl
-0000000000029aa4 g    DF .text	0000000000000055 .protected __sindf
-00000000000429a1  w   DF .text	00000000000001d9 .protected execvpe
-000000000002dab8 g    DF .text	000000000000027b .protected expm1f
-0000000000023a1e g    DF .text	000000000000000f .protected isalpha
-000000000004ca5e g    DF .text	0000000000000005 .protected ftell
-000000000001e19e g    DF .text	000000000000006c .protected cacoshf
-0000000000042f0a g    DF .text	00000000000001a3 .protected __posix_spawnx
-0000000000033a9a g    DF .text	0000000000000009 .protected nan
-00000000000546f9 g    DF .text	00000000000000d6 .protected __private_cond_signal
-0000000000054f50  w   DF .text	0000000000000031 .protected pthread_detach
-0000000000025954 g    DF .text	0000000000000094 .protected warnx
-000000000001a450 g    DF .text	000000000000000e .protected mempcpy
-0000000000056668 g    DF .text	0000000000000027 .protected __vm_wait
-0000000000064900 g    DO .rodata	0000000000000030 .protected __c_locale
-0000000000037d2a g    DF .text	0000000000000000 .protected expm1l
-0000000000031600 g    DF .text	0000000000000005 .protected ldexpf
-000000000004a652 g    DF .text	0000000000000006 .protected __libc_current_sigrtmin
-000000000003d8dd g    DF .text	0000000000000020 .protected inet_addr
-000000000002449b g    DF .text	0000000000000013 .protected versionsort
-000000000004cdfe g    DF .text	000000000000008f .protected fwscanf
-000000000001e20a g    DF .text	000000000000002d .protected cacoshl
-000000000001c000 g    DF .text	000000000000034e .protected wcsstr
-00000000000266d3 g    DF .text	0000000000000018 .protected timerfd_create
-000000000003a9ae g    DF .text	0000000000000008 .protected mq_send
-0000000000059607 g    DF .text	0000000000000063 .protected gethostname
-000000000004a548 g    DF .text	0000000000000017 .protected sigpending
-0000000000031605 g    DF .text	0000000000000005 .protected ldexpl
-00000000000599c1 g    DF .text	0000000000000012 .protected rmdir
-000000000001b000 g    DF .text	0000000000000024 .protected strrchr
-00000000000547d6 g    DF .text	0000000000000003 .protected pthread_condattr_destroy
-00000000000362a5 g    DF .text	0000000000000022 .protected scalbln
-000000000004ab9c g    DF .text	0000000000000012 .protected stat
-00000000000246d6 g    DF .text	0000000000000039 .protected __libc_start_main
-0000000000033896 g    DF .text	000000000000000d .protected lround
-0000000000059869  w   DF .text	000000000000002e .protected pread64
-0000000000020c68 g    DF .text	000000000000005c .protected confstr
-0000000000023ac9 g    DF .text	000000000000000c .protected __islower_l
-0000000000055522  w   DF .text	000000000000001a .protected pthread_mutex_trylock
-00000000000596fc g    DF .text	0000000000000008 .protected getuid
-000000000004d708 g    DF .text	0000000000000043 .protected pclose
-0000000000049ebf g    DF .text	0000000000000007 .protected twalk
-000000000002a461 g    DF .text	00000000000000b2 .protected acoshf
-0000000000052d19  w   DF .text	000000000000001d .protected __strtod_l
-0000000000055a0b g    DF .text	0000000000000014 .protected pthread_setconcurrency
-000000000004ab82 g    DF .text	000000000000001a .protected mknodat
-000000000004a15b g    DF .text	0000000000000011 .protected __get_handler_set
-00000000000314dc g    DF .text	000000000000011f .protected ynf
-00000000000398ea g    DF .text	000000000000001a .protected setpriority
-000000000004ae28 g    DF .text	000000000000016a .protected __fdopen
-000000000002a513 g    DF .text	00000000000000a1 .protected acoshl
-0000000000053552 g    DF .text	0000000000000027 .protected tcgetsid
-000000000002c27d g    DF .text	0000000000000154 .protected erf
-0000000000024cb7 g    DF .text	0000000000000017 .protected abort
-00000000000522f9 g    DF .text	0000000000000007 .protected atof
-000000000003c33e g    DF .text	00000000000000a2 .protected gethostbyname2
-000000000004ff9b  w   DF .text	00000000000009e8 .protected __isoc99_vfscanf
-00000000000534ea g    DF .text	0000000000000030 .protected tcdrain
-0000000000052300 g    DF .text	000000000000005a .protected atoi
-0000000000059322 g    DF .text	0000000000000110 .protected faccessat
-000000000028b438 g    DO .data	0000000000000004 opterr
-00000000000594f6 g    DF .text	000000000000001d .protected fchownat
-0000000000053a3e g    DF .text	0000000000000008 .protected pthread_attr_getschedparam
-000000000005235a g    DF .text	0000000000000057 .protected atol
-0000000000059722 g    DF .text	0000000000000016 .protected lchown
-000000000003995f  w   DF .text	0000000000000041 .protected setrlimit64
-00000000000556e6 g    DF .text	00000000000000bd .protected __pthread_once_full
-0000000000025326 g    DF .text	0000000000000018 .protected msgget
-0000000000037465 g    DF .text	00000000000003cc .protected tgamma
-000000000004ca1d  w   DF .text	0000000000000041 .protected ftello
-000000000004cd76 g    DF .text	0000000000000088 .protected fwrite
-000000000004a4ab g    DF .text	0000000000000006 .protected siglongjmp
-00000000000259e8 g    DF .text	0000000000000087 .protected err
-000000000003f6ac g    DF .text	0000000000000074 .protected recvmsg
-
-
+y0f
+strlen
+ctanf
+vfprintf
+mkdirat
+srandom
+sched_setparam
+in6addr_any
+ctanh
+__fpclassifyf
+epoll_create1
+__lsysinfo
+settimeofday
+__restore
+grantpt
+pthread_mutex_init
+strncasecmp
+cfsetispeed
+pthread_mutex_unlock
+sem_unlink
+__environ
+pthread_setcancelstate
+ctanl
+__iswgraph_l
+__fpclassifyl
+__fxstatat
+vasprintf
+__isupper_l
+getpriority
+__rand48_step
+ether_line
+erfc
+__inhibit_ptc
+thrd_yield
+geteuid
+ualarm
+strndup
+erff
+__crypt_blowfish
+mkstemp
+prctl
+significandf
+iswprint
+setpwent
+dl_iterate_phdr
+__dn_comp
+__map_file
+posix_fadvise64
+wctype
+endhostent
+posix_spawnattr_setpgroup
+towctrans_l
+__month_to_secs
+iswalnum_l
+__freadable
+get_nprocs_conf
+pthread_mutexattr_destroy
+__strtoumax_internal
+erfl
+setservent
+getrlimit64
+malloc_usable_size
+fstatvfs
+__wctype_l
+nanf
+wmemcmp
+__munmap
+aio_error64
+closedir
+setsockopt
+iswxdigit_l
+scalbnf
+pthread_mutexattr_setrobust
+mkfifoat
+res_send
+tgammaf
+nanl
+getspnam
+l64a
+clearerr
+localtime_r
+aio_suspend
+fgetln
+sigisemptyset
+scalbnl
+y1f
+psiginfo
+copysignf
+tgammal
+__pthread_mutex_unlock
+__isalpha_l
+fsetpos
+wcscoll
+getaddrinfo
+__isblank_l
+fflush
+dup
+stderr
+isastream
+shm_open
+copysignl
+getitimer
+logbf
+mq_notify
+pthread_rwlock_rdlock
+sockatmark
+fprintf
+fstat64
+logbl
+__res_query
+acos
+__libc_sigaction
+getservbyport
+__sigaction
+getnetbyaddr
+setmntent
+pthread_spin_unlock
+__do_orphaned_stdio_locks
+__tanl
+bcopy
+putc
+epoll_pwait
+localeconv
+__parsespent
+shutdown
+cfsetospeed
+aio_cancel
+fchmodat
+if_freenameindex
+cuserid
+__expand_heap
+inet_pton
+in6addr_loopback
+mq_timedsend
+textdomain
+drand48
+euidaccess
+posix_spawn_file_actions_init
+__rem_pio2_large
+_IO_putc
+calloc
+iswctype_l
+remainder
+setregid
+srand48
+bindtextdomain
+puts
+wcsnlen
+strdup
+__wcscoll_l
+__pthread_mutex_trylock_owner
+cnd_broadcast
+__intscan
+__dl_thread_cleanup
+getdents64
+iswpunct_l
+putw
+pthread_barrierattr_getpshared
+__clock_gettime
+__dls3
+asinf
+__strtoul_internal
+__fwritex
+fgetc
+pwrite
+asinh
+fopen
+pthread_mutexattr_setpshared
+mkdtemp
+__xmknodat
+asinl
+__fstatfs
+getservbyport_r
+optind
+wcstoumax
+semop
+getutline
+_IO_ferror_unlocked
+eaccess
+mkostemps64
+sigsetjmp
+pwritev
+pthread_getaffinity_np
+vfscanf
+wcsrchr
+posix_spawnattr_setsigmask
+wcslen
+fgets
+__pthread_tsd_main
+vsnprintf
+preadv64
+sigset
+__xstat
+scandir64
+cnd_wait
+pthread_key_delete
+__pthread_setcancelstate
+fork
+__isoc99_fscanf
+pthread_kill
+pthread_rwlock_wrlock
+isgraph
+strlcpy
+__strtof_l
+pthread_attr_getstacksize
+feclearexcept
+thrd_detach
+close
+pthread_attr_getinheritsched
+bind_textdomain_codeset
+sem_timedwait
+lockf
+pthread_cond_wait
+creal
+__tzset
+getgroups
+tmpnam
+thrd_current
+__iscntrl_l
+dcgettext
+endgrent
+pthread_rwlock_init
+getwc_unlocked
+htonl
+significand
+openat
+nearbyintf
+creat
+__toread_needs_stdio_exit
+__stack_chk_fail
+dlopen
+timespec_get
+readlink
+isspace
+_init
+fgetspent
+fmaxf
+csinhf
+nearbyintl
+htons
+__duplocale
+wcswidth
+glob64
+iswalpha
+lrint
+pthread_testcancel
+nice
+getutxid
+gai_strerror
+wordfree
+fmaxl
+msync
+difftime
+csinhl
+klogctl
+swab
+towctrans
+__cos
+wcsftime
+gethostid
+ftw
+clock_gettime
+wmemcpy
+__vm_lock
+getauxval
+__toread
+__ptsname_r
+finitef
+aio_suspend64
+__iswdigit_l
+lgamma_r
+memset
+__res_msend
+getrlimit
+drem
+utmpname
+pthread_cond_broadcast
+setresgid
+malloc
+pthread_rwlock_destroy
+wcpncpy
+initstate
+pthread_barrier_wait
+res_mkquery
+posix_spawn_file_actions_addopen
+open_wmemstream
+jnf
+getprotobynumber
+ungetwc
+timerfd_settime
+gethostbyname_r
+llabs
+stpcpy
+getutxent
+tmpfile
+readdir_r
+sync_file_range
+cimagf
+prlimit64
+utime
+__acquire_ptc
+wcsdup
+feof_unlocked
+getpwent
+fsetxattr
+iswprint_l
+__sysv_signal
+__seed48
+getppid
+__shlim
+__brk
+j0
+j1
+cprojf
+cimagl
+__putenv
+catanhf
+lseek64
+__do_des
+cexp
+sigignore
+j0f
+setvbuf
+__fwritable
+__strxfrm_l
+putwc_unlocked
+dirname
+pthread_atfork
+fcntl
+catanhl
+tanf
+cprojl
+tanh
+thrd_equal
+remap_file_pages
+getgrgid_r
+tanl
+__ofl_unlock
+bsearch
+__uflow
+mktemp
+__lgammaf_r
+program_invocation_name
+__cosdf
+catopen
+wcstoull
+__lctrans
+__fgetwc_unlocked
+ngettext
+__tre_mem_new_impl
+imaxabs
+timegm
+__nl_langinfo
+__strcoll_l
+putspent
+reboot
+lstat
+atanhf
+mkfifo
+lstat64
+__block_new_threads
+pthread_rwlockattr_destroy
+wcsncasecmp_l
+__ctype_get_mb_cur_max
+__pthread_mutex_trylock
+regfree
+execve
+__wctrans_l
+vdprintf
+fileno_unlocked
+isspace_l
+__strtold_l
+__secs_to_zone
+gethostbyaddr
+_ns_flagdata
+atanhl
+__iswctype_l
+catgets
+__isgraph_l
+__mkostemps
+sem_init
+sigsuspend
+accept
+fdim
+csqrt
+ftw64
+write
+hdestroy
+setstate
+getgid
+j1f
+__iswpunct_l
+exp
+__tre_mem_destroy
+execvp
+___environ
+mkstemps
+bind
+gethostbyaddr_r
+getlogin
+sem_close
+__malloc0
+valloc
+daylight
+shmat
+__futex
+pthread_attr_setstack
+call_once
+pthread_spin_destroy
+ilogbf
+llistxattr
+ftello64
+__errno_location
+inet_netof
+timer_getoverrun
+atoll
+aio_cancel64
+posix_spawnattr_getschedparam
+timerfd_gettime
+opendir
+_flushlbf
+ftime
+adjtime
+pthread_condattr_init
+ilogbl
+pthread_mutexattr_setprotocol
+__pthread_tsd_size
+pthread_getschedparam
+inet_aton
+hcreate_r
+__vsyslog
+atexit
+__unmapself
+__ofl_lock
+__pthread_key_delete
+forkpty
+sigrelse
+nanosleep
+setpgrp
+jn
+delete_module
+__setjmp
+versionsort64
+iswgraph_l
+__tre_mem_alloc_impl
+ldexp
+mlock
+__fputwc_unlocked
+timer_delete
+gmtime_r
+statvfs
+__pthread_mutex_lock
+posix_fadvise
+__get_resolv_conf
+mmap64
+__restore_rt
+__des_setkey
+inet_makeaddr
+dlerror
+fexecve
+stdin
+tcsendbreak
+pthread_attr_setdetachstate
+process_vm_readv
+mbrlen
+chroot
+getegid
+__procfdname
+fstatvfs64
+getutent
+__statfs
+mremap
+cabs
+getpwnam_r
+clearerr_unlocked
+posix_openpt
+getservent
+signgam
+tss_create
+mq_close
+sigaddset
+getpwnam
+__stack_chk_guard
+hsearch_r
+dngettext
+getsockopt
+tsearch
+memmove
+getpagesize
+verr
+bzero
+openpty
+fchmod
+wcsnrtombs
+__pthread_testcancel
+timezone
+get_phys_pages
+readdir
+getdomainname
+newlocale
+mbrtoc16
+if_nametoindex
+fminf
+msgctl
+__ctype_toupper_loc
+setbuffer
+pipe
+wscanf
+ether_aton
+fminl
+verrx
+_setjmp
+_exit
+inotify_init1
+clog
+iswgraph
+getenv
+iswxdigit
+ioperm
+read
+toascii
+__xmknod
+pwrite64
+_dl_debug_state
+tcflow
+strerror
+modff
+isascii
+mkstemps64
+iswctype
+ctan
+fmodf
+fseeko64
+_longjmp
+__tolower_l
+abs
+catanf
+pthread_rwlockattr_setpshared
+modfl
+catanh
+frexpf
+fmodl
+rand_r
+__crypt_r
+catanl
+sched_setscheduler
+ether_aton_r
+isalnum
+frexpl
+__freadptrinc
+__iswprint_l
+fmemopen
+pthread_cancel
+iswspace
+strcspn
+ftok
+c32rtomb
+fmtmsg
+getdents
+seteuid
+fsync
+stpncpy
+access
+strptime
+raise
+ftrylockfile
+__libc_start_init
+__gmt
+pthread_mutexattr_getpshared
+setsid
+log
+mtx_destroy
+ilogb
+__flbf
+__strchrnul
+ptrace
+__nscd_query
+getnetbyname
+pthread_attr_setguardsize
+vswprintf
+__nl_langinfo_l
+shmget
+adjtimex
+getprotobyname
+ether_hostton
+getresuid
+posix_spawn_file_actions_adddup2
+aio_return64
+nexttoward
+tmpfile64
+tan
+__dn_expand
+pthread_condattr_getpshared
+posix_spawnattr_setflags
+posix_spawnattr_getsigmask
+shmdt
+__toupper_l
+longjmp
+hsearch
+posix_fallocate64
+__towrite
+sleep
+sem_open
+mbrtoc32
+ether_ntoa_r
+pthread_getattr_np
+erand48
+llrint
+herror
+pthread_attr_getscope
+__isdigit_l
+gethostbyname2_r
+getrusage
+fseeko
+pthread_mutex_getprioceiling
+setxattr
+__dns_parse
+putchar
+getopt_long
+unlockpt
+freopen64
+__aio_close
+__mmap
+__p1evll
+__isalnum_l
+sigemptyset
+ether_ntohost
+inet_lnaof
+posix_spawnattr_init
+signalfd
+dn_skipname
+strncat
+fgetpwent
+conjf
+__do_cleanup_pop
+__fclose_ca
+tcsetattr
+pthread_getcpuclockid
+fnmatch
+sigqueue
+insque
+memchr
+sinhf
+getchar
+strtod_l
+conjl
+ccoshf
+printf
+stat64
+__unlist_locked_file
+asprintf
+sinhl
+inet_ntoa
+ldiv
+ccoshl
+readlinkat
+recv
+pthread_attr_init
+tss_set
+fesetround
+index
+iswdigit_l
+__crypt_md5
+pthread_barrierattr_destroy
+__year_to_secs
+sigwaitinfo
+globfree64
+sigprocmask
+__synccall
+lremovexattr
+if_nameindex
+sqrt
+__init_tls
+posix_spawn_file_actions_addclose
+inet_ntop
+tzset
+nl_langinfo_l
+eventfd_read
+__optreset
+vfwprintf
+__res_send
+_dl_debug_addr
+__lctrans_impl
+__isoc99_vswscanf
+ispunct
+setprotoent
+islower_l
+getgrouplist
+wcrtomb
+wctomb
+setnetent
+__string_read
+tdelete
+fdopen
+socketpair
+__ctype_b_loc
+creat64
+__stdin_used
+freelocale
+ns_initparse
+__funcs_on_exit
+pthread_spin_lock
+__strdup
+putchar_unlocked
+__ispunct_l
+quotactl
+__tandf
+iconv_close
+strftime_l
+setgrent
+fdopendir
+posix_spawnattr_setschedparam
+pow10
+cnd_signal
+getservbyname
+ether_ntoa
+sigdelset
+fgetwc
+strcat
+pthread_setschedparam
+__futimesat
+wcpcpy
+tcsetpgrp
+__h_errno_location
+cnd_timedwait
+__release_ptc
+sem_destroy
+mq_getattr
+isatty
+getprotoent
+flock
+putpwent
+__setrlimit
+realpath
+nexttowardf
+__wcsxfrm_l
+__isoc99_swscanf
+mktime
+endmntent
+__utmpxname
+getdate
+fopen64
+tcgetattr
+nexttowardl
+fgetws
+sched_get_priority_max
+getutxline
+isupper_l
+ccosf
+__execvpe
+catan
+__strtoull_internal
+wcscspn
+ccosh
+conj
+__fpending
+res_search
+clock_settime
+__lookup_serv
+__freadptr
+ccosl
+pthread_create
+__mprotect
+setuid
+strsep
+pthread_mutexattr_getrobust
+__gettextdomain
+lgammaf
+fgetpos64
+sendfile
+setdomainname
+__stdio_exit_needed
+fetestexcept
+llroundf
+wcstombs
+fputs_unlocked
+gcvt
+lgammal
+memrchr
+snprintf
+swapoff
+__block_all_sigs
+symlink
+pthread_setschedprio
+getcwd
+llroundl
+_fini
+aio_fsync64
+freeaddrinfo
+aio_error
+isalpha_l
+setusershell
+pthread_condattr_setpshared
+clock_getres
+isxdigit_l
+__ctype_tolower_loc
+tee
+clock_nanosleep
+errx
+futimes
+__init_tp
+getpwuid_r
+log10
+accept4
+catclose
+isblank_l
+dladdr
+ctime
+getmntent
+endservent
+__block_app_sigs
+lcong48
+syncfs
+__lookup_ipliteral
+gethostbyname
+res_query
+pthread_mutexattr_gettype
+atan2
+sigaction
+ungetc
+feof
+__timedwait_cp
+wctrans
+wcscasecmp_l
+chmod
+fmaf
+pthread_mutex_lock
+pause
+recvmmsg
+__fork_handler
+iswalnum
+init_module
+mmap
+vswscanf
+__c_dot_utf8
+regerror
+fmal
+tcgetpgrp
+fremovexattr
+__cosl
+wcsncat
+getgrgid
+strtof_l
+getc
+pthread_cond_timedwait
+fputwc
+setns
+open
+__aio_fut
+setutxent
+__stpcpy
+posix_spawnattr_getsigdefault
+__randname
+sem_wait
+rand
+wcscoll_l
+__polevll
+__fpurge
+dgettext
+sysinfo
+fmax
+rintf
+times
+__isprint_l
+__fopen_rb_ca
+__isoc99_vwscanf
+addmntent
+pthread_setaffinity_np
+atan2f
+madvise
+lseek
+rintl
+_IO_getc
+nl_langinfo
+getopt_long_only
+__lgamma_r
+atan2l
+tzname
+gettext
+gets
+sched_rr_get_interval
+fputws
+sched_getscheduler
+wcscat
+fscanf
+__timedwait
+cfsetspeed
+__fesetround
+getw
+csin
+__getdelim
+cargf
+exit
+poll
+lsetxattr
+__wait
+pthread_sigmask
+tempnam
+cargl
+sched_getparam
+select
+epoll_wait
+pthread_condattr_setclock
+getpeername
+siginterrupt
+strtold
+__pleval
+pthread_attr_getguardsize
+sendfile64
+strfmon
+swscanf
+atanf
+telldir
+atanh
+pthread_rwlockattr_getpshared
+pthread_join
+asctime
+strtoll
+__dup3
+log1p
+llrintf
+atanl
+fstatat
+c16rtomb
+__freelocale
+memcmp
+__c_dot_utf8_locale
+syslog
+llrintl
+mount
+pututxline
+iscntrl_l
+__pthread_join
+hypot
+fwide
+__strftime_l
+srand
+cpow
+sbrk
+optopt
+setegid
+pthread_cond_signal
+__set_thread_area
+ntohl
+getline
+sin
+duplocale
+connect
+memalign
+putwchar_unlocked
+putc_unlocked
+shm_unlink
+__getpwent_a
+listxattr
+endutent
+semget
+ntohs
+lroundf
+mtx_init
+log2f
+sincos
+getgrent
+pipe2
+iswspace_l
+pthread_once
+getresgid
+nrand48
+fdimf
+mincore
+dlclose
+pwritev64
+__lgammal_r
+feraiseexcept
+endusershell
+fgets_unlocked
+lroundl
+__uselocale
+pthread_rwlock_timedrdlock
+log2l
+pthread_mutex_timedlock
+pthread_attr_getschedpolicy
+ptsname_r
+alphasort64
+fdiml
+__init_ssp
+nftw
+_IO_putc_unlocked
+__tm_to_secs
+__fmodeflags
+__pthread_once
+cexpf
+pread
+getsubopt
+strpbrk
+vsprintf
+iswpunct
+inotify_rm_watch
+sigaltstack
+__init_libc
+cexpl
+sigorset
+fallocate64
+updwtmpx
+towlower_l
+__copy_tls
+fegetenv
+__pthread_cond_timedwait
+log10f
+__daylight
+__mremap
+ctanhf
+send
+nearbyint
+pow
+__iswalpha_l
+mkostemp
+log10l
+__newlocale
+ctanhl
+fdatasync
+__res_state
+seekdir
+thrd_create
+hstrerror
+process_vm_writev
+__expo2
+__isxdigit_l
+shmctl
+clock_getcpuclockid
+strxfrm_l
+_environ
+towupper
+timer_settime
+coshf
+lldiv
+ceilf
+__stdio_seek
+dirfd
+pthread_equal
+vwscanf
+__gmtime_r
+sigismember
+wordexp
+copysign
+__stderr_used
+coshl
+__fbufsize
+posix_spawn_file_actions_destroy
+ceill
+pthread_attr_setschedpolicy
+cosf
+exp10f
+lgammaf_r
+endspent
+atan
+__ofl_add
+lutimes
+cosh
+__isoc99_wscanf
+__stdio_read
+mblen
+dprintf
+fcvt
+strcoll_l
+pthread_mutex_consistent
+ctermid
+sscanf
+semtimedop
+msgrcv
+exp10l
+cosl
+mbrtowc
+isxdigit
+toupper
+usleep
+fchdir
+sem_post
+sprintf
+towupper_l
+getnameinfo
+isupper
+sigtimedwait
+getwc
+wctrans_l
+uname
+strtold_l
+lckpwdf
+unsetenv
+waitid
+__fpclassify
+bsd_signal
+__timezone
+isgraph_l
+mkostemps
+ctime_r
+imaxdiv
+cproj
+splice
+rindex
+waitpid
+__restore_sigs
+__fxstat64
+log1pf
+environ
+strtoimax
+vscanf
+truncate
+csqrtf
+ferror_unlocked
+isblank
+time
+capset
+log1pl
+wait3
+getspnam_r
+aio_read64
+wait4
+scalb
+csqrtl
+posix_fallocate
+fstatat64
+strerror_l
+wait
+__pthread_mutex_timedlock
+getgrnam
+hdestroy_r
+rename
+wcstold
+memcpy
+casin
+strerror_r
+clock
+strxfrm
+pthread_setcanceltype
+recvfrom
+getlogin_r
+wcstoll
+eventfd
+csinf
+__assert_fail
+strchr
+dup2
+openat64
+mbsrtowcs
+dup3
+basename
+iopl
+csinh
+mtx_timedlock
+getc_unlocked
+__wcsftime_l
+wcsncasecmp
+fstat
+getusershell
+timer_gettime
+posix_madvise
+issetugid
+csinl
+mlockall
+wmemmove
+posix_spawnattr_setsigdefault
+lgamma
+ioctl
+flockfile
+setgid
+strcasecmp
+strlcat
+aio_write64
+swprintf
+sysconf
+_IO_getc_unlocked
+open_memstream
+__xpg_strerror_r
+pthread_key_create
+lsearch
+__libc_exit_fini
+fegetexceptflag
+fgetxattr
+program_invocation_short_name
+lchmod
+ffsl
+__isoc99_scanf
+a64l
+fchown
+sethostent
+vmsplice
+system
+exp2
+__stdout_write
+posix_spawn
+vprintf
+stime
+__iswspace_l
+__tan
+ferror
+__fxstatat64
+__ftello
+pselect
+nextafter
+wcspbrk
+putwc
+aligned_alloc
+eventfd_write
+__realloc_dep
+lio_listio64
+frexp
+modf
+y0
+__rtnetlink_enumerate
+lrintf
+sched_get_priority_min
+y1
+__strncasecmp_l
+statfs64
+__testcancel
+unshare
+lrintl
+ns_get16
+fstatfs
+posix_close
+renameat
+__sinl
+getpass
+tolower_l
+fpathconf
+__towlower_l
+wcswcs
+mq_setattr
+pthread_cond_destroy
+getpgid
+scanf
+getifaddrs
+lio_listio
+__signbit
+fflush_unlocked
+thrd_join
+sync
+cpowf
+strftime
+cacosf
+__cxa_finalize
+closelog
+cacosh
+roundf
+strsignal
+__getpw_a
+cpowl
+regexec
+cacosl
+div
+getutid
+get_current_dir_name
+getgrnam_r
+roundl
+acct
+tss_get
+sendto
+ttyname
+mkostemp64
+get_nprocs
+remquof
+setitimer
+__signgam
+pthread_attr_getstack
+__getgr_a
+strchrnul
+wmemset
+__cxa_atexit
+fwprintf
+ceil
+signal
+open64
+sincosf
+expf
+remquol
+ffs
+__lxstat64
+mbtowc
+glob
+fgetgrent
+setenv
+iswlower_l
+preadv
+alphasort
+__vm_unlock
+dn_expand
+unlinkat
+sincosl
+arch_prctl
+expl
+toupper_l
+fputc
+__towupper_l
+pthread_mutex_setprioceiling
+wcschr
+globfree
+strverscmp
+__reset_tls
+__stdout_used
+mknod
+lrand48
+__vfork
+sched_yield
+getdtablesize
+setfsuid
+isdigit_l
+clock_adjtime
+fputc_unlocked
+endnetent
+pthread_rwlock_unlock
+vhangup
+fmin
+pthread_mutexattr_settype
+yn
+__clone
+strncasecmp_l
+fputs
+getpid
+optreset
+dcngettext
+ecvt
+posix_spawnattr_destroy
+isalnum_l
+stdout
+perror
+listen
+__floatscan
+wctype_l
+popen
+__sigsetjmp
+strtoull
+ns_get32
+vwarn
+mbstowcs
+strncmp
+utimes
+mq_timedreceive
+ns_parserr
+__tls_get_addr
+scandir
+pthread_spin_trylock
+__strerror_l
+regcomp
+wcsxfrm
+pthread_exit
+cfgetispeed
+ns_put16
+__hdestroy_r
+pututline
+setlogmask
+towlower
+__lookup_name
+tss_delete
+mkstemp64
+iswupper_l
+pthread_self
+expm1
+clogf
+setbuf
+__stpncpy
+__env_map
+sem_trywait
+__libc_current_sigrtmax
+crypt
+__pthread_exit
+wcscasecmp
+encrypt
+clogl
+posix_spawnattr_getpgroup
+sendmsg
+isdigit
+tdestroy
+realloc
+iswupper
+nftw64
+_dlstart
+ppoll
+remainderf
+feholdexcept
+munmap
+setkey
+strtok_r
+getnetent
+tolower
+getloadavg
+remainderl
+__expo2f
+ulimit
+carg
+scalblnf
+strfmon_l
+putgrent
+islower
+munlockall
+fabsf
+cbrtf
+setgroups
+strcasestr
+iswalpha_l
+__pthread_key_create
+__flt_rounds
+__towctrans_l
+scalblnl
+tanhf
+h_errno
+iswblank
+fabsl
+cbrtl
+iswblank_l
+umount
+pthread_mutexattr_init
+pthread_attr_destroy
+fread_unlocked
+timer_create
+tanhl
+mprotect
+casinhf
+__iswxdigit_l
+erfcf
+chdir
+dremf
+ispunct_l
+__localtime_r
+ftruncate
+utimensat
+removexattr
+strspn
+_pthread_cleanup_pop
+semctl
+asin
+sem_getvalue
+erfcl
+casinhl
+unlink
+iscntrl
+cfgetospeed
+__tzname
+futimesat
+strcmp
+__isoc99_vsscanf
+freopen
+personality
+qsort
+quick_exit
+ffsll
+sinf
+endpwent
+sinh
+optarg
+__stdio_exit
+ccos
+alarm
+inet_network
+__xpg_basename
+sinl
+truncf
+setrlimit
+setutent
+wcsxfrm_l
+strtod
+posix_spawnattr_getflags
+utmpxname
+strtof
+link
+syscall
+truncl
+asinhf
+fallocate
+strtoul
+sigpause
+setlinebuf
+strtok
+floor
+ns_put32
+strtol
+__res_msend_rc
+epoll_ctl
+__fxstat
+setlocale
+asinhl
+fileno
+posix_memalign
+__strftime_fmt_1
+readdir64
+__tm_to_tzname
+ptsname
+swapon
+random
+rewind
+getxattr
+nextafterf
+__towrite_needs_stdio_exit
+fesetexceptflag
+rewinddir
+endutxent
+strcasecmp_l
+vsyslog
+__signbitf
+nextafterl
+getmntent_r
+__ftello_unlocked
+__do_cleanup_push
+dlsym
+round
+ulckpwdf
+aio_return
+sqrtf
+__signbitl
+aio_write
+memmem
+__strcasecmp_l
+linkat
+__ldexp_cexpf
+fanotify_mark
+mtx_trylock
+lockf64
+socket
+fgetc_unlocked
+mq_receive
+thrd_sleep
+sqrtl
+cos
+exp10
+readv
+umount2
+mbsnrtowcs
+if_indextoname
+wctob
+__progname_full
+__freading
+wcstoimax
+fabs
+__iswlower_l
+cbrt
+endprotoent
+__shgetc
+__isspace_l
+__mo_lookup
+iconv_open
+fegetround
+pthread_mutex_destroy
+pathconf
+remove
+strncpy
+chown
+getdelim
+__crypt_sha256
+localtime
+wcsftime_l
+fstatfs64
+daemon
+aio_read
+setspent
+iswcntrl_l
+powf
+__sched_cpucount
+__iswalnum_l
+flistxattr
+btowc
+updwtmp
+floorf
+__strtol_internal
+__optpos
+fanotify_init
+__lxstat
+powl
+__get_locale
+tcflush
+wcsncmp
+inotify_init
+__vdsosym
+pivot_root
+floorl
+fpurge
+__memalign
+llround
+readahead
+_pthread_cleanup_push
+ftruncate64
+iconv
+log2
+crealf
+res_init
+brk
+pthread_attr_setschedparam
+res_querydomain
+lfind
+__sin
+__overflow
+memccpy
+vwprintf
+munlock
+posix_spawnattr_getschedpolicy
+hypotf
+cfmakeraw
+creall
+isprint_l
+__pthread_create
+__shm_mapname
+__inet_aton
+psignal
+execl
+cnd_init
+__hcreate_r
+sigfillset
+wcsspn
+gethostent
+__iswupper_l
+_IO_feof_unlocked
+bcmp
+hypotl
+crypt_r
+openlog
+wcscmp
+free
+inotify_add_watch
+__isoc99_vfwscanf
+cimag
+pthread_attr_setscope
+execv
+putwchar
+feupdateenv
+pthread_cond_init
+__memrchr
+_Exit
+kill
+__crypt_sha512
+vsscanf
+wcstod
+fgetwc_unlocked
+wcstof
+mtx_unlock
+__pthread_tsd_run_dtors
+setreuid
+sendmmsg
+strtoumax
+wcstok
+ttyname_r
+wcstol
+seed48
+__isoc99_sscanf
+__res_mkquery
+isprint
+pthread_barrierattr_setpshared
+pthread_attr_getdetachstate
+__hsearch_r
+putenv
+pthread_setspecific
+strcpy
+epoll_create
+__strtoimax_internal
+wcwidth
+casinf
+__stdio_close
+__posix_getopt
+execle
+gettimeofday
+casinh
+__iswblank_l
+jrand48
+__setxid
+sigandset
+cnd_destroy
+wmemchr
+getsid
+acosf
+gmtime
+casinl
+__rem_pio2f
+prlimit
+acosh
+posix_spawnattr_setschedpolicy
+warn
+sigwait
+__fsetlocking
+logb
+wprintf
+scalbf
+getdate_err
+acosl
+__isoc99_fwscanf
+execlp
+__rem_pio2l
+freeifaddrs
+logf
+fseek
+fmod
+getpwuid
+exp2f
+__isoc99_vscanf
+pthread_barrier_init
+scalbn
+logl
+getopt
+__xstat64
+strstr
+fma
+trunc
+aio_fsync
+pthread_barrierattr_init
+thrd_exit
+iswdigit
+mq_open
+pthread_getspecific
+asctime_r
+exp2l
+wcstoul
+__getopt_msg
+getwchar_unlocked
+at_quick_exit
+fread
+__madvise
+lgammal_r
+cacos
+mq_unlink
+remque
+sighold
+uselocale
+vwarnx
+pthread_rwlock_timedwrlock
+ns_name_uncompress
+get_avphys_pages
+iswlower
+finite
+dlinfo
+fgetws_unlocked
+hasmntopt
+pthread_rwlock_tryrdlock
+fputwc_unlocked
+remquo
+setfsgid
+truncate64
+__ldexp_cexp
+capget
+umask
+pthread_mutexattr_getprotocol
+clearenv
+ns_skiprr
+__lctrans_cur
+pthread_attr_setstacksize
+fclose
+fwrite_unlocked
+__loc_is_allocated
+symlinkat
+mbsinit
+funlockfile
+rint
+iswcntrl
+sched_setaffinity
+dn_comp
+__asctime
+setpgid
+statvfs64
+login_tty
+pthread_rwlockattr_init
+__secs_to_tm
+setjmp
+__fseeko_unlocked
+pthread_barrier_destroy
+__progname
+strcoll
+setresuid
+futimens
+vfwscanf
+writev
+getservbyname_r
+wcsncpy
+__freadahead
+__funcs_on_quick_exit
+__strtoll_internal
+pow10f
+killpg
+__fwriting
+__crypt_des
+vfork
+mtx_lock
+tfind
+__getgrent_a
+statfs
+mrand48
+pow10l
+wcsrtombs
+lgetxattr
+__getdents
+__iswcntrl_l
+pthread_condattr_getclock
+initgroups
+clone
+labs
+fsetpos64
+__fseeko
+sched_getaffinity
+readdir64_r
+pthread_spin_init
+posix_spawnp
+wcscpy
+sethostname
+mkdir
+getwchar
+hcreate
+fesetenv
+pthread_getconcurrency
+__fseterr
+__rem_pio2
+fputws_unlocked
+getspent
+cabsf
+msgsnd
+fgetpos
+getsockname
+getpgrp
+pthread_attr_setinheritsched
+pthread_rwlock_trywrlock
+__stdio_write
+strnlen
+getchar_unlocked
+cabsl
+__sindf
+execvpe
+expm1f
+isalpha
+ftell
+cacoshf
+__posix_spawnx
+nan
+__private_cond_signal
+pthread_detach
+warnx
+mempcpy
+__vm_wait
+__c_locale
+expm1l
+ldexpf
+__libc_current_sigrtmin
+inet_addr
+versionsort
+fwscanf
+cacoshl
+wcsstr
+timerfd_create
+mq_send
+gethostname
+sigpending
+ldexpl
+rmdir
+strrchr
+pthread_condattr_destroy
+scalbln
+stat
+__libc_start_main
+lround
+pread64
+confstr
+__islower_l
+pthread_mutex_trylock
+getuid
+pclose
+twalk
+acoshf
+__strtod_l
+pthread_setconcurrency
+mknodat
+__get_handler_set
+ynf
+setpriority
+__fdopen
+acoshl
+tcgetsid
+erf
+abort
+atof
+gethostbyname2
+__isoc99_vfscanf
+tcdrain
+atoi
+faccessat
+opterr
+fchownat
+pthread_attr_getschedparam
+atol
+lchown
+setrlimit64
+__pthread_once_full
+msgget
+tgamma
+ftello
+fwrite
+siglongjmp
+err
+recvmsg

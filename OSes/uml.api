@@ -2,9 +2,9 @@ read
 write
 open
 close
-newstat
-newfstat
-newlstat
+stat
+fstat
+lstat
 poll
 lseek
 mmap
@@ -61,7 +61,7 @@ execve
 exit
 wait4
 kill
-newuname
+uname
 semget
 semop
 semctl

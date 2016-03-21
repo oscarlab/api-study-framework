@@ -1857,5 +1857,14 @@ VALUES ('uclibc', 4449, '{
 "login",
 "__bss_start",
 "openpty",
-"forkpty"
+"forkpty",
+"dngettext",
+"gettext",
+"dgettext",
+"bind_textdomain_codeset",
+"dcgettext",
+"ngettext",
+"dcngettext",
+"textdomain",
+"bindtextdomain"
 }');

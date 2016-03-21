@@ -35,4 +35,8 @@ CREATE OR REPLACE VIEW package_call_array AS
    JOIN libc_symbol
    ON   package_call.dep_bin_id = libc_symbol.bin_id
    AND  package_call.call = libc_symbol.func_addr
+  WHERE EXISTS (
+   SELECT * FROM libc_real_symbol WHERE
+   libc_real_symbol.symbol_name = libc_symbol.symbol_name
+  )
   GROUP BY package_call.pkg_id, package_call.dep_bin_id;
