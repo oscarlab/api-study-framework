@@ -4,8 +4,9 @@ BEGIN
 	call := regexp_replace(call, '__(.+)_chk', '\1');
 	call := regexp_replace(call, '__assert(_fail)?', 'assert');
 	call := regexp_replace(call, '__isoc99_(.+)', '\1');
-	call := replace(call, '__open_2', 'open');
-	call := replace(call, '__openat_2', 'openat');
+	call := regexp_replace(call, '__res_(.+)', 'res_\1');
+	call := regexp_replace(call, '__(.+)_2', '\1');
+	call := regexp_replace(call, '__(.+)_internal', '\1');
 	call := replace(call, '__ctype_get_mb_cur_max', 'MB_CUR_MAX');
 	call := replace(call, '_stdlib_mb_cur_max', 'MB_CUR_MAX');
 	RETURN call;

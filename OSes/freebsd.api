@@ -15,8 +15,9 @@ rt_sigaction
 rt_sigprocmask
 rt_sigreturn
 ioctl
-pread
-pwrite
+pread64
+pwrite64
+ptrace
 readv
 writev
 access
