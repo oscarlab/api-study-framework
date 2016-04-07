@@ -86,3 +86,12 @@ PackagePopularity = Task(
 		func=package_popularity_run,
 		arg_defs=[],
 		job_name=package_popularity_job_name)
+
+def get_packages_by_ranks(sql, min, max):
+	sql.connect_table(package_popularity_table)
+	results = sql.search_record(package_popularity_table,
+			'rank >= ' + Table.stringify(min) + ' AND rank <= ' + Table.stringify(max),
+			['package_name'])
+	if results:
+		for r in results:
+			yield r[0]

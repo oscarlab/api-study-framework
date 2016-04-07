@@ -1,12 +1,6 @@
 #!/usr/bin/python
 
-from task import Task
-import package
-from sql import Table
 import syscall
-from symbol import get_symbols
-from id import get_path_id, get_path, get_pkgname_id, get_pkgname, get_pkgnames_by_prefix
-from package_popularity import get_packages_by_ranks
 import main
 
 import os
@@ -16,6 +10,7 @@ import subprocess
 import struct
 import string
 from sets import Set
+import traceback
 
 sys.path.append('pybfd/lib/python')
 from pybfd import opcodes, bfd
@@ -69,6 +64,9 @@ class Register:
 			mask = mask * mask
 			size = size + size
 
+	def __str__(self):
+		return self.names[0]
+
 	def index_reg(self, regname):
 		i = 0
 		while i < len(self.names):
@@ -101,9 +99,9 @@ class Inst:
 		self.dism = dism
 
 class InstCall(Inst):
-	def __init__(self, bb, addr, dism, targets):
+	def __init__(self, bb, addr, dism, target):
 		Inst.__init__(self, bb, addr, dism)
-		self.targets = targets
+		self.target = target
 
 class InstSyscall(Inst):
 	def __init__(self, bb, addr, dism):
@@ -155,7 +153,10 @@ class Func:
 
 class Op:
 	def __init__(self, val=None):
-		self.val = None
+		self.val = val
+
+	def __str__(self):
+		return str(self.val)
 
 	def get_val(self, regval):
 		return self.val
@@ -165,6 +166,9 @@ class OpReg(Op):
 		Op.__init__(self)
 		self.reg = reg
 		self.mask = mask
+
+	def __str__(self):
+		return str(self.reg)
 
 	def get_val(self, regval):
 		if isinstance(regval[self.reg], (int, long)):
@@ -184,17 +188,28 @@ class OpArith(Op):
 		self.op2 = op2
 		self.arith = arith
 
+	def __str__(self):
+		if self.arith == self.ADD:
+			return "(" + str(self.op1) + "+" + str(self.op2) + ")"
+		if self.arith == self.SUB:
+			return "(" + str(self.op1) + "-" + str(self.op2) + ")"
+		if self.arith == self.MUL:
+			return "(" + str(self.op1) + "*" + str(self.op2) + ")"
+		if self.arith == self.DIV:
+			return "(" + str(self.op1) + "/" + str(self.op2) + ")"
+		return "unknown"
+
 	def get_val(self, regval):
 		val1 = self.op1.get_val(regval)
 		val2 = self.op2.get_val(regval)
 		if val1 and val2:
-			if self.arith == ADD:
+			if self.arith == self.ADD:
 				return val1 + val2
-			elif self.arith == SUB:
+			if self.arith == self.SUB:
 				return val1 - val2
-			elif self.arith == MUL:
+			if self.arith == self.MUL:
 				return val1 * val2
-			elif self.arith == DIV:
+			if self.arith == self.DIV:
 				return val1 / val2
 		return None
 
@@ -301,177 +316,180 @@ def get_callgraph(binary_name):
 		def process_instructions(self, address, size, branch_delay_insn,
 			insn_type, target, target2, disassembly):
 
-			regex = r'^(?P<repz>repz )?(?P<insn>\S+)(\s+(?P<arg1>[^,]+)(,(?P<arg2>[^#]+)(#(?P<comm>.+))?)?)?$'
-			m = re.match(regex, disassembly)
+			try:
+				regex = r'^(?P<repz>repz )?(?P<insn>\S+)(\s+(?P<arg1>[^,]+)(,(?P<arg2>[^#]+)(#(?P<comm>.+))?)?)?$'
+				m = re.match(regex, disassembly)
 
-			if not m:
-				return opcodes.PYBFD_DISASM_CONTINUE
+				if not m:
+					return opcodes.PYBFD_DISASM_CONTINUE
 
-			repz = (m.group('repz') is not None)
-			insn = m.group('insn')
-			arg1 = m.group('arg1')
-			arg2 = m.group('arg2')
-			comm = m.group('comm')
+				repz = (m.group('repz') is not None)
+				insn = m.group('insn')
+				arg1 = m.group('arg1')
+				arg2 = m.group('arg2')
+				comm = m.group('comm')
 
-			def match_addr(arg):
-				regex = r'^(?P<load>(?P<size>QWORD|DWORD|WORD|BYTE) PTR )?\[(?P<addr>[^\]]+)\]$'
-				m = re.match(regex, arg)
-				if m:
-					addr = m.group('addr')
-					if m.group('load'):
-						size = m.group('size')
-						if size == 'QWORD':
-							return (addr, 8)
-						elif size == 'DWORD':
-							return (addr, 4)
-						elif size == 'WORD':
-							return (addr, 2)
+				def match_addr(arg):
+					regex = r'^(?P<load>(?P<size>QWORD|DWORD|WORD|BYTE) PTR )?\[(?P<addr>[^\]]+)\]$'
+					m = re.match(regex, arg)
+					if m:
+						addr = m.group('addr')
+						if m.group('load'):
+							size = m.group('size')
+							if size == 'QWORD':
+								return (addr, 8)
+							elif size == 'DWORD':
+								return (addr, 4)
+							elif size == 'WORD':
+								return (addr, 2)
+							else:
+								return (addr, 1)
 						else:
-							return (addr, 1)
+							return (addr, None)
 					else:
-						return (addr, None)
-				else:
-					return (None, None)
+						return (None, None)
 
-			def match_rip(arg, addr, size):
-				regex = r'^rip\+(?P<offset>0x[0-9a-f]+)$'
-				m = re.match(regex, arg)
-				if m:
-					return addr + size + hex2int(m.group('offset'))
-				return None
+				def match_rip(arg, addr, size):
+					regex = r'^rip\+(?P<offset>0x[0-9a-f]+)$'
+					m = re.match(regex, arg)
+					if m:
+						return addr + size + hex2int(m.group('offset'))
+					return None
 
-			def match_fmt(arg, regset):
-				regex = r'^(?P<base>[a-z0-9]+(?=(\+|-|$)))?(\+(?=[a-z0-9]))?((?P<reg>[a-z0-9]+)\*(?P<scale>1|2|4|8))?((?P<arith>\+|-)(?P<off>0x[0-9a-f]+))?$'
-				op = None
-				m = re.match(regex, arg)
-				if m:
-					base  = m.group('base')
-					reg   = m.group('reg')
-					scale = m.group('scale')
-					arith = m.group('arith')
-					off   = m.group('off')
+				def match_fmt(arg, regset):
+					regex = r'^(?P<base>[a-z0-9]+(?=(\+|-|$)))?(\+(?=[a-z0-9]))?((?P<reg>[a-z0-9]+)\*(?P<scale>1|2|4|8))?((?P<arith>\+|-)(?P<off>0x[0-9a-f]+))?$'
+					op = None
+					m = re.match(regex, arg)
+					if m:
+						base  = m.group('base')
+						reg   = m.group('reg')
+						scale = m.group('scale')
+						arith = m.group('arith')
+						off   = m.group('off')
 
-					if reg:
-						(r, _, mask) = regset.index_reg(reg)
-						if not r:
-							return None
-						op = OpReg(r, mask)
-						if scale:
-							scale = int(scale)
-							op = OpArith(op, Op(scale), OpArith.MUL)
-					if base:
-						(r, _, mask) = regset.index_reg(base)
-						if not r:
-							return None
-						if op:
-							op = OpArith(OpReg(r, mask), op, OpArith.ADD)
-						else:
+						if reg:
+							(r, _, mask) = regset.index_reg(reg)
+							if not r:
+								return None
 							op = OpReg(r, mask)
-					if off:
-						off = hex2int(off)
-						if m.group('arith') == '-':
-							op = OpArith(op, Op(off), OpArith.SUB)
-						else:
-							op = OpArith(op, Op(off), OpArith.ADD)
-
-				return op
-
-			if insn:
-				insn = insn.strip()
-			if arg1:
-				arg1 = arg1.strip()
-				if ishex(arg1):
-					arg1 = hex2int(arg1)
-				else:
-					(addr_op, load_size) = match_addr(arg1)
-					if addr_op:
-						rip = match_rip(addr_op, address, size)
-						if rip:
-							if load_size:
-								arg1 = OpLoad(Op(rip), load_size)
-							else:
-								arg1 = rip
-						else:
-							op = match_fmt(addr_op, self.regset)
+							if scale:
+								scale = int(scale)
+								op = OpArith(op, Op(scale), OpArith.MUL)
+						if base:
+							(r, _, mask) = regset.index_reg(base)
+							if not r:
+								return None
 							if op:
-								if load_size:
-									op = OpLoad(op, load_size)
-								arg1 = op
-			if arg2:
-				arg2 = arg2.strip()
-				if ishex(arg2):
-					arg2 = hex2int(arg2)
-				else:
-					(addr_op, load_size) = match_addr(arg2)
-					if addr_op:
-						rip = match_rip(addr_op, address, size)
-						if rip:
-							if load_size:
-								arg2 = OpLoad(Op(rip), load_size)
+								op = OpArith(OpReg(r, mask), op, OpArith.ADD)
 							else:
-								arg2 = rip
-						else:
-							op = match_fmt(addr_op, self.regset)
-							if op:
-								if load_size:
-									op = OpLoad(op, load_size)
-								arg2 = op
-			if comm:
-				comm = comm.strip()
-				if ishex(comm):
-					comm = hex2int(comm)
+								op = OpReg(r, mask)
+						if off:
+							off = hex2int(off)
+							if m.group('arith') == '-':
+								op = OpArith(op, Op(off), OpArith.SUB)
+							else:
+								op = OpArith(op, Op(off), OpArith.ADD)
 
-			if insn_type == opcodes.InstructionType.BRANCH:
-				if insn != 'ret' and target:
-					bb = self.cur_func.add_bblock(target)
+					return op
+
+				if insn:
+					insn = insn.strip()
+				if arg1:
+					arg1 = arg1.strip()
+					if ishex(arg1):
+						arg1 = hex2int(arg1)
+					else:
+						(addr_op, load_size) = match_addr(arg1)
+						if addr_op:
+							rip = match_rip(addr_op, address, size)
+							if rip:
+								if load_size:
+									arg1 = OpLoad(Op(rip), load_size)
+								else:
+									arg1 = rip
+							else:
+								op = match_fmt(addr_op, self.regset)
+								if op:
+									if load_size:
+										op = OpLoad(op, load_size)
+									arg1 = op
+				if arg2:
+					arg2 = arg2.strip()
+					if ishex(arg2):
+						arg2 = hex2int(arg2)
+					else:
+						(addr_op, load_size) = match_addr(arg2)
+						if addr_op:
+							rip = match_rip(addr_op, address, size)
+							if rip:
+								if load_size:
+									arg2 = OpLoad(Op(rip), load_size)
+								else:
+									arg2 = rip
+							else:
+								op = match_fmt(addr_op, self.regset)
+								if op:
+									if load_size:
+										op = OpLoad(op, load_size)
+									arg2 = op
+				if comm:
+					comm = comm.strip()
+					if ishex(comm):
+						comm = hex2int(comm)
+
+				if insn_type == opcodes.InstructionType.BRANCH:
+					if insn != 'ret' and target:
+						bb = self.cur_func.add_bblock(target)
+						self.cur_bb.targets.add(bb)
+
+					self.cur_bb.end = address + size
+					return opcodes.PYBFD_DISASM_STOP
+
+				if self.cur_bb.end and address >= self.cur_bb.end:
+					bb = self.cur_func.add_bblock(address)
 					self.cur_bb.targets.add(bb)
+					return opcodes.PYBFD_DISASM_STOP
 
-				self.cur_bb.end = address + size
-				return opcodes.PYBFD_DISASM_STOP
+				if insn_type == opcodes.InstructionType.COND_BRANCH:
+					next_bb = self.cur_func.add_bblock(address + size)
+					bb = self.cur_func.add_bblock(target)
 
-			if self.cur_bb.end and address >= self.cur_bb.end:
-				bb = self.cur_func.add_bblock(address)
-				self.cur_bb.targets.add(bb)
-				return opcodes.PYBFD_DISASM_STOP
+					self.cur_bb.end = address + size
+					self.cur_bb.targets.add(bb)
+					self.cur_bb.targets.add(next_bb)
+					self.cur_bb = next_bb
 
-			if insn_type == opcodes.InstructionType.COND_BRANCH:
-				next_bb = self.cur_func.add_bblock(address + size)
-				bb = self.cur_func.add_bblock(target)
+					if next_bb in self.cur_func.new_bblocks:
+						self.cur_func.new_bblocks.remove(next_bb)
+						self.cur_func.bblocks.append(next_bb)
 
-				self.cur_bb.end = address + size
-				self.cur_bb.targets.add(bb)
-				self.cur_bb.targets.add(next_bb)
-				self.cur_bb = next_bb
+				elif insn_type == opcodes.InstructionType.JSR:
+					if target:
+						self.add_entry(target)
+						self.cur_bb.insts.append(InstCall(self.cur_bb, address, disassembly, target))
 
-				if next_bb in self.cur_func.new_bblocks:
-					self.cur_func.new_bblocks.remove(next_bb)
-					self.cur_func.bblocks.append(next_bb)
+				elif insn_type == opcodes.InstructionType.COND_JSR:
+					if target:
+						self.add_entry(target)
+						self.cur_bb.insts.append(InstCall(self.cur_bb, address, disassembly, target))
 
-			elif insn_type == opcodes.InstructionType.JSR:
-				if target:
-					self.add_entry(target)
-					self.cur_bb.insts.append(InstCall(self.cur_bb, address, disassembly, [target]))
+				elif insn_type == opcodes.InstructionType.NON_BRANCH:
+					if insn == 'syscall' or insn == 'sysenter':
+						self.cur_bb.insts.append(InstSyscall(self.cur_bb, address, disassembly))
 
-			elif insn_type == opcodes.InstructionType.COND_JSR:
-				if target:
-					self.add_entry(target)
-					self.cur_bb.insts.append(InstCall(self.cur_bb, address, disassembly, [target]))
-
-			elif insn_type == opcodes.InstructionType.NON_BRANCH:
-				if insn == 'syscall' or insn == 'sysenter':
-					self.cur_bb.insts.append(InstSyscall(self.cur_bb, address, disassembly))
-
-				elif insn == 'lea':
-					if isinstance(arg2, (int, long)):
-						if arg2 >= self.start and arg2 < self.end:
-							self.add_entry(arg2)
-							self.cur_bb.insts.append(InstCall(self.cur_bb, address, disassembly, [arg2]))
+					elif insn == 'lea':
+						if isinstance(arg2, (int, long)):
+							if arg2 >= self.start and arg2 < self.end:
+								self.add_entry(arg2)
+						
+						self.cur_bb.insts.append(InstCall(self.cur_bb, address, disassembly, arg2))
 
 					else:
-						print "%x: %s" % (address, arg2)
+						self.cur_bb.insts.append(Inst(self.cur_bb, address, disassembly))
 
-				else:
-					self.cur_bb.insts.append(Inst(self.cur_bb, address, disassembly))
+			except Exception as e:
+				traceback.print_exc()
+				return opcodes.PYBFD_DISASM_STOP
 
 			return opcodes.PYBFD_DISASM_CONTINUE
 
@@ -484,7 +502,6 @@ def get_callgraph(binary_name):
 				self.cur_func = Func(addr)
 				self.cur_func.add_bblock(addr)
 				self.entries.remove(addr)
-				print "%x:" % (addr)
 
 				while self.cur_func.new_bblocks:
 					bb = self.cur_func.new_bblocks[0]
@@ -536,6 +553,29 @@ def get_callgraph(binary_name):
 	text_content = bfd.sections.get('.text').content
 	codes.start_process(text_content)
 
+	def Func_cmp(x, y):
+		return cmp(x.entry, y.entry)
+	def BBlock_cmp(x, y):
+		return cmp(x.start, y.start)
+
+	codes.funcs = sorted(codes.funcs, Func_cmp)
+	for func in codes.funcs:
+		func.bblocks = sorted(func.bblocks, BBlock_cmp)
+
+	for func in codes.funcs:
+		print "func %x:" % (func.entry)
+		start = end = 0
+		for bb in func.bblocks:
+			if end == bb.start:
+				end = bb.end
+				continue
+			if end > start:
+				print "    %x-%x" % (start, end)
+			start = bb.start
+			end = bb.end
+		if end > start:
+			print "    %x-%x" % (start, end)
+
 	print "Dynamic Symbols: %d" % (len(dynsyms))
 	print "Functions: %d" % (codes.nfuncs)
 	print "Basic Blocks: %d" % (codes.nbblocks)
@@ -560,360 +600,6 @@ class SymbolCaller:
 			else:
 				result += "\n\tsyscall: " + str(s)
 		return result
-
-def get_callgraph_recursive(binary_name):
-	calls = get_callgraph(binary_name)
-	if not calls:
-		return None
-
-	symbols = get_symbols(binary_name)
-	func_list = []
-	for symbol in symbols:
-		if not symbol.defined:
-			continue
-
-		for call in calls:
-			if call.func_name and symbol.name == call.func_name:
-				func_list.append(SymbolCaller(call.func_name, call.callees, call.syscalls))
-
-	run = True
-	while run:
-		run = False
-		for func in func_list:
-			new_callees = set()
-			for call in calls:
-				if call.func_name:
-					if call.func_name not in func.callees:
-						continue
-					new = call.func_name
-				else:
-					if call.func_addr not in func.callees:
-						continue
-					new = call.func_addr
-				if new in func.callees or new in func.traced_callees:
-					continue
-				new_callees |= set([new])
-				func.syscalls |= call.syscalls
-			if new_callees:
-				run = True
-			func.traced_callees |= func.callees
-			func.callees = new_callees
-
-	for func in func_list:
-		func.traced_callees |= func.callees
-		func.callees = set()
-		for symbol in symbols:
-			if symbol.defined:
-				continue
-
-			if symbol.name in func.traced_callees:
-				func.callees |= set([symbol.name])
-
-		func.traced_callees = set()
-
-	return func_list
-
-binary_call_table = Table('binary_call', [
-			('pkg_id', 'INT', 'NOT NULL'),
-			('bin_id', 'INT', 'NOT NULL'),
-			('func_addr', 'INT', 'NOT NULL'),
-			('call_addr', 'INT', ''),
-			('call_name', 'VARCHAR', '')],
-			[],
-			[['pkg_id', 'bin_id']])
-
-binary_unknown_call_table = Table('binary_unknown_call', [
-			('pkg_id', 'INT', 'NOT NULL'),
-			('bin_id', 'INT', 'NOT NULL'),
-			('func_addr', 'INT', 'NOT NULL'),
-			('target', 'VARCHAR', 'NOT NULL'),
-			('known', 'BOOLEAN', ''),
-			('call_addr', 'INT', ''),
-			('call_name', 'VARCHAR', '')],
-			['pkg_id', 'bin_id', 'func_addr', 'target', 'known'],
-			[['pkg_id', 'bin_id', 'known']])
-
-binary_syscall_table = Table('binary_syscall', [
-			('pkg_id', 'INT', 'NOT NULL'),
-			('bin_id', 'INT', 'NOT NULL'),
-			('func_addr', 'INT', 'NOT NULL'),
-			('syscall', 'SMALLINT', 'NOT NULL')],
-			[],
-			[['pkg_id', 'bin_id']])
-
-binary_unknown_syscall_table = Table('binary_unknown_syscall', [
-			('pkg_id', 'INT', 'NOT NULL'),
-			('bin_id', 'INT', 'NOT NULL'),
-			('func_addr', 'INT', 'NOT NULL'),
-			('target', 'VARCHAR', 'NOT NULL'),
-			('known', 'BOOLEAN', ''),
-			('syscall', 'SMALLINT', '')],
-			['pkg_id', 'bin_id', 'func_addr', 'target', 'known'],
-			[['pkg_id', 'bin_id', 'known']])
-
-binary_vecsyscall_table = Table('binary_vecsyscall', [
-			('pkg_id', 'INT', 'NOT NULL'),
-			('bin_id', 'INT', 'NOT NULL'),
-			('func_addr', 'INT', 'NOT NULL'),
-			('syscall', 'SMALLINT', 'NOT NULL'),
-			('request', 'BIGINT', 'NOT NULL')],
-			[],
-			[['pkg_id', 'bin_id']])
-
-binary_unknown_vecsyscall_table = Table('binary_unknown_vecsyscall', [
-			('pkg_id', 'INT', 'NOT NULL'),
-			('bin_id', 'INT', 'NOT NULL'),
-			('func_addr', 'INT', 'NOT NULL'),
-			('syscall', 'SMALLINT', 'NOT NULL'),
-			('target', 'VARCHAR', 'NOT NULL'),
-			('known', 'BOOLEAN', ''),
-			('request', 'BIGINT', '')],
-			['pkg_id', 'bin_id', 'func_addr', 'syscall', 'target', 'known'],
-			[['pkg_id', 'bin_id', 'known']])
-
-binary_fileaccess_table = Table('binary_fileaccess', [
-			('pkg_id', 'INT', 'NOT NULL'),
-			('bin_id', 'INT', 'NOT NULL'),
-			('func_addr', 'INT', 'NOT NULL'),
-			('file', 'VARCHAR', 'NOT NULL')],
-			[],
-			[['pkg_id', 'bin_id']])
-
-def BinaryCallgraph_run(jmgr, sql, args):
-	sql.connect_table(binary_call_table)
-	sql.connect_table(binary_unknown_call_table)
-	sql.connect_table(binary_syscall_table)
-	sql.connect_table(binary_unknown_syscall_table)
-	sql.connect_table(binary_vecsyscall_table)
-	sql.connect_table(binary_unknown_vecsyscall_table)
-	sql.connect_table(binary_fileaccess_table)
-
-	pkgname = args[0]
-	bin = args[1]
-	dir = args[2]
-	pkg_id = args[3]
-	bin_id = args[4]
-	ref = args[5]
-
-	exc = None
-	try:
-		path = dir + '/' + bin
-		if not os.path.exists(path):
-			raise Exception('path ' + path + ' does not exist')
-
-		callers = get_callgraph(path)
-		pkg_id = get_pkgname_id(sql, pkgname)
-		bin_id = get_path_id(sql, bin)
-		calls = []
-		unknown_calls = []
-		syscalls = []
-		unknown_syscalls = []
-		vecsyscalls = []
-		unknown_vecsyscalls = []
-		fileaccess = []
-
-		for caller in callers:
-			for callee in caller.callees:
-				values = dict()
-				values['func_addr'] = caller.func_addr
-
-				if isinstance(callee, str) and callee.startswith('<'):
-					values['target'] = callee[1:-1]
-					unknown_calls.append(values)
-					continue
-
-				if isinstance(callee, str):
-					values['call_name'] = callee
-				else:
-					values['call_addr'] = callee
-				calls.append(values)
-
-			for syscall in caller.syscalls:
-				values = dict()
-				values['func_addr'] = caller.func_addr
-
-				if isinstance(syscall, int):
-					values['syscall'] = syscall
-					syscalls.append(values)
-					continue
-
-				if isinstance(syscall, str):
-					values['target'] = syscall[1:-1]
-				else:
-					values['target'] = ''
-				unknown_syscalls.append(values)
-
-			for syscall in caller.vecsyscalls:
-				for request in caller.vecsyscalls[syscall]:
-					values = dict()
-					values['func_addr'] = caller.func_addr
-					values['syscall'] = syscall
-
-					if isinstance(request, int) or isinstance(request, long):
-						values['request'] = request
-						vecsyscalls.append(values)
-						continue
-
-					if isinstance(request, str):
-						values['target'] = request[1:-1]
-					else:
-						values['target'] = ''
-					unknown_vecsyscalls.append(values)
-
-			for file in caller.files:
-				values = dict()
-				values['func_addr'] = caller.func_addr
-				values['file'] = file
-				fileaccess.append(values)
-
-		if not fileaccess:
-			for file in get_fileaccess(path):
-				values = dict()
-				values['func_addr'] = 0
-				values['file'] = file
-				fileaccess.append(values)
-
-		condition = 'pkg_id=\'' + Table.stringify(pkg_id) + '\' and bin_id=\'' + Table.stringify(bin_id) + '\''
-		condition_unknown = condition + ' and known=False'
-		sql.delete_record(binary_call_table, condition)
-		sql.delete_record(binary_unknown_call_table, condition_unknown)
-		sql.delete_record(binary_syscall_table, condition)
-		sql.delete_record(binary_unknown_syscall_table, condition_unknown)
-		sql.delete_record(binary_vecsyscall_table, condition)
-		sql.delete_record(binary_unknown_vecsyscall_table, condition_unknown)
-		sql.delete_record(binary_fileaccess_table, condition)
-
-		for values in calls:
-			values['pkg_id'] = pkg_id
-			values['bin_id'] = bin_id
-			sql.append_record(binary_call_table, values)
-
-		for values in unknown_calls:
-			values['pkg_id'] = pkg_id
-			values['bin_id'] = bin_id
-			values['known'] = False
-			sql.append_record(binary_unknown_call_table, values)
-
-		for values in syscalls:
-			values['pkg_id'] = pkg_id
-			values['bin_id'] = bin_id
-			sql.append_record(binary_syscall_table, values)
-
-		for values in unknown_syscalls:
-			values['pkg_id'] = pkg_id
-			values['bin_id'] = bin_id
-			values['known'] = False
-			sql.append_record(binary_unknown_syscall_table, values)
-
-		for values in vecsyscalls:
-			values['pkg_id'] = pkg_id
-			values['bin_id'] = bin_id
-			sql.append_record(binary_vecsyscall_table, values)
-
-		for values in unknown_vecsyscalls:
-			values['pkg_id'] = pkg_id
-			values['bin_id'] = bin_id
-			values['known'] = False
-			sql.append_record(binary_unknown_vecsyscall_table, values)
-
-		for values in fileaccess:
-			values['pkg_id'] = pkg_id
-			values['bin_id'] = bin_id
-			sql.append_record(binary_fileaccess_table, values)
-
-		sql.update_record(package.binary_list_table, {'callgraph': False}, condition)
-		sql.commit()
-
-	except Exception as err:
-		exc = sys.exc_info()
-
-	if package.dereference_dir(dir, ref):
-		package.remove_dir(dir)
-
-def BinaryCallgraph_job_name(args):
-	return "Binary Callgraph: " + args[1] + " in " + args[0]
-
-BinaryCallgraph = Task(
-	name="Binary Callgraph",
-	func=BinaryCallgraph_run,
-	arg_defs=[],
-	job_name=BinaryCallgraph_job_name)
-
-def BinaryCallInfo_run(jmgr, sql, args):
-	pkgname = args[0]
-	if len(args) == 1:
-		pkgname_id = get_pkgname_id(sql, pkgname)
-	else:
-		pkgname_id = int(args[1])
-
-	packages = package.search_latest_packages(sql, pkgname_id, pkgname)
-
-	if not packages:
-		return
-
-	for (pkg_id, pkg) in packages:
-		binaries = package.search_binary_list(sql, pkg_id, ['EXE', 'LIB'])
-		if not binaries:
-			continue
-
-		target = package.get_package(pkg.source)
-		dir = package.unpack_package(target)
-		if not dir:
-			continue
-
-		for bin_id in binaries:
-			bin = get_path(sql, bin_id)
-			ref = package.reference_dir(dir)
-			BinaryCallgraph.create_job(jmgr, [pkgname, bin, dir, pkg_id, bin_id, ref])
-
-def BinaryCallInfo_job_name(args):
-	return "Binary Call Info: " + args[0]
-
-BinaryCallInfo = Task(
-	name="Binary Call Info",
-	func=BinaryCallInfo_run,
-	arg_defs=["Package Name"],
-	job_name=BinaryCallInfo_job_name)
-
-def BinaryCallInfoByNames_run(jmgr, sql, args):
-	for name in args[0].split():
-		BinaryCallInfo.create_job(jmgr, [name])
-
-def BinaryCallInfoByNames_job_name(args):
-	return "Binary Call Info By Names: " + args[0]
-
-BinaryCallInfoByNames = Task(
-	name="Binary Call Info By Names",
-	func=BinaryCallInfoByNames_run,
-	arg_defs=["Package Names"],
-	job_name=BinaryCallInfoByNames_job_name)
-
-def BinaryCallInfoByPrefixes_run(jmgr, sql, args):
-	for prefix in args[0].split():
-		for (pkgname_id, pkgname) in get_pkgnames_by_prefix(sql, prefix):
-			BinaryCallInfo.create_job(jmgr, [pkgname, pkgname_id])
-
-def BinaryCallInfoByPrefixes_job_name(args):
-	return "Binary Call Info By Prefixes: " + args[0]
-
-BinaryCallInfoByPrefixes = Task(
-	name="Binary Call Info By Prefixes",
-	func=BinaryCallInfoByPrefixes_run,
-	arg_defs=["Package Prefixes"],
-	job_name=BinaryCallInfoByPrefixes_job_name)
-
-def BinaryCallInfoByRanks_run(jmgr, sql, args):
-	for pkgname in get_packages_by_ranks(sql, int(args[0]), int(args[1])):
-		BinaryCallInfo.create_job(jmgr, [pkgname])
-
-def BinaryCallInfoByRanks_job_name(args):
-	return "Binary Call Info By Ranks: " + args[0] + " to " + args[1]
-
-BinaryCallInfoByRanks = Task(
-	name="Binary Call Info By Ranks",
-	func=BinaryCallInfoByRanks_run,
-	arg_defs=["Minimum Rank", "Maximum Rank"],
-	job_name=BinaryCallInfoByRanks_job_name)
 
 if __name__ == "__main__":
 	get_callgraph(sys.argv[1])
