@@ -90,7 +90,7 @@ class RegisterSet:
 			(size, mask) = reg.index_reg(regname)
 			if size is not None:
 				return (reg, size, mask)
-		return (None, None, Nonae)
+		return (None, None, None)
 
 class Inst:
 	def __init__(self, bb, addr, dism):
@@ -98,14 +98,45 @@ class Inst:
 		self.addr = addr
 		self.dism = dism
 
+	def __str__(self):
+		return "%x:        (%s)" % (self.addr, self.dism)
+
+class InstMov(Inst):
+	def __init__(self, bb, addr, dism, reg, source):
+		Inst.__init__(self, bb, addr, dism)
+		self.reg = reg
+		self.source = source
+
+	def __str__(self):
+		return "%x: %s=%s" % (self.addr, str(self.reg), str(self.source))
+
+class InstSave(Inst):
+	def __init__(self, bb, addr, dism, target, reg):
+		Inst.__init__(self, bb, addr, dism)
+		self.target = target
+		self.reg = reg
+
+	def __str__(self):
+		return "%x: *%s=%s" % (self.addr, str(self.target), str(self.reg))
+
 class InstCall(Inst):
 	def __init__(self, bb, addr, dism, target):
 		Inst.__init__(self, bb, addr, dism)
 		self.target = target
 
+	def __str__(self):
+		if isinstance(self.target, (int, long)):
+			return "%x: call %x" % (self.addr, self.target)
+		else:
+			return "%x: call %s" % (self.addr, str(self.target))
+
 class InstSyscall(Inst):
-	def __init__(self, bb, addr, dism):
+	def __init__(self, bb, addr, dism, syscall):
 		Inst.__init__(self, bb, addr, dism)
+		self.syscall = syscall
+
+	def __str__(self):
+		return "%x: syscall(%s)" % (self.addr, str(self.syscall))
 
 class BBlock:
 	def __init__(self, start, end=None):
@@ -168,7 +199,7 @@ class OpReg(Op):
 		self.mask = mask
 
 	def __str__(self):
-		return str(self.reg)
+		return "<" + str(self.reg) + ">"
 
 	def get_val(self, regval):
 		if isinstance(regval[self.reg], (int, long)):
@@ -218,9 +249,6 @@ class OpLoad(Op):
 		Op.__init__(self)
 		self.addr = addr
 		self.size = size
-
-	def get_val(self, regval):
-		return None
 
 def get_callgraph(binary_name):
 
@@ -317,7 +345,7 @@ def get_callgraph(binary_name):
 			insn_type, target, target2, disassembly):
 
 			try:
-				regex = r'^(?P<repz>repz )?(?P<insn>\S+)(\s+(?P<arg1>[^,]+)(,(?P<arg2>[^#]+)(#(?P<comm>.+))?)?)?$'
+				regex = r'^(?P<repz>repz )?(?P<insn>\S+)(\s+(?P<arg1>[^,]+)?(,(?P<arg2>[^#]+)(#(?P<comm>.+))?)?)?$'
 				m = re.match(regex, disassembly)
 
 				if not m:
@@ -349,7 +377,7 @@ def get_callgraph(binary_name):
 					else:
 						return (None, None)
 
-				def match_rip(arg, addr, size):
+				def match_pc(arg, addr, size):
 					regex = r'^rip\+(?P<offset>0x[0-9a-f]+)$'
 					m = re.match(regex, arg)
 					if m:
@@ -367,14 +395,6 @@ def get_callgraph(binary_name):
 						arith = m.group('arith')
 						off   = m.group('off')
 
-						if reg:
-							(r, _, mask) = regset.index_reg(reg)
-							if not r:
-								return None
-							op = OpReg(r, mask)
-							if scale:
-								scale = int(scale)
-								op = OpArith(op, Op(scale), OpArith.MUL)
 						if base:
 							(r, _, mask) = regset.index_reg(base)
 							if not r:
@@ -383,13 +403,20 @@ def get_callgraph(binary_name):
 								op = OpArith(OpReg(r, mask), op, OpArith.ADD)
 							else:
 								op = OpReg(r, mask)
+						if reg:
+							(r, _, mask) = regset.index_reg(reg)
+							if not r:
+								return None
+							op = OpReg(r, mask)
+							if scale:
+								scale = int(scale)
+								op = OpArith(op, Op(scale), OpArith.MUL)
 						if off:
 							off = hex2int(off)
 							if m.group('arith') == '-':
 								op = OpArith(op, Op(off), OpArith.SUB)
 							else:
 								op = OpArith(op, Op(off), OpArith.ADD)
-
 					return op
 
 				if insn:
@@ -397,16 +424,15 @@ def get_callgraph(binary_name):
 				if arg1:
 					arg1 = arg1.strip()
 					if ishex(arg1):
-						arg1 = hex2int(arg1)
+						arg1 = Op(hex2int(arg1))
 					else:
 						(addr_op, load_size) = match_addr(arg1)
 						if addr_op:
-							rip = match_rip(addr_op, address, size)
-							if rip:
+							pc = match_pc(addr_op, address, size)
+							if pc:
+								arg1 = Op(pc)
 								if load_size:
-									arg1 = OpLoad(Op(rip), load_size)
-								else:
-									arg1 = rip
+									arg1 = OpLoad(arg1, load_size)
 							else:
 								op = match_fmt(addr_op, self.regset)
 								if op:
@@ -416,16 +442,15 @@ def get_callgraph(binary_name):
 				if arg2:
 					arg2 = arg2.strip()
 					if ishex(arg2):
-						arg2 = hex2int(arg2)
+						arg2 = Op(hex2int(arg2))
 					else:
 						(addr_op, load_size) = match_addr(arg2)
 						if addr_op:
-							rip = match_rip(addr_op, address, size)
-							if rip:
+							pc = match_pc(addr_op, address, size)
+							if pc:
+								arg1 = Op(pc)
 								if load_size:
-									arg2 = OpLoad(Op(rip), load_size)
-								else:
-									arg2 = rip
+									arg2 = OpLoad(arg1, load_size)
 							else:
 								op = match_fmt(addr_op, self.regset)
 								if op:
@@ -475,12 +500,19 @@ def get_callgraph(binary_name):
 
 				elif insn_type == opcodes.InstructionType.NON_BRANCH:
 					if insn == 'syscall' or insn == 'sysenter':
-						self.cur_bb.insts.append(InstSyscall(self.cur_bb, address, disassembly))
+						(r, _, mask) = self.regset.index_reg("eax")
+						self.cur_bb.insts.append(InstSyscall(self.cur_bb, address, disassembly, OpReg(r, mask)))
+
+					elif insn == 'mov':
+						if isinstance(arg1, OpReg):
+							self.cur_bb.insts.append(InstMov(self.cur_bb, address, disassembly, arg1.reg, arg2))
+						else:
+							self.cur_bb.insts.append(Inst(self.cur_bb, address, disassembly))
 
 					elif insn == 'lea':
-						if isinstance(arg2, (int, long)):
-							if arg2 >= self.start and arg2 < self.end:
-								self.add_entry(arg2)
+						if arg2.val:
+							if arg2.val >= self.start and arg2.val < self.end:
+								self.add_entry(arg2.val)
 						
 						self.cur_bb.insts.append(InstCall(self.cur_bb, address, disassembly, arg2))
 
@@ -555,26 +587,15 @@ def get_callgraph(binary_name):
 
 	def Func_cmp(x, y):
 		return cmp(x.entry, y.entry)
-	def BBlock_cmp(x, y):
-		return cmp(x.start, y.start)
 
 	codes.funcs = sorted(codes.funcs, Func_cmp)
-	for func in codes.funcs:
-		func.bblocks = sorted(func.bblocks, BBlock_cmp)
 
 	for func in codes.funcs:
 		print "func %x:" % (func.entry)
-		start = end = 0
 		for bb in func.bblocks:
-			if end == bb.start:
-				end = bb.end
-				continue
-			if end > start:
-				print "    %x-%x" % (start, end)
-			start = bb.start
-			end = bb.end
-		if end > start:
-			print "    %x-%x" % (start, end)
+			print "    %x-%x" % (bb.start, bb.end)
+			for inst in bb.insts:
+				print "        %s" % (inst)
 
 	print "Dynamic Symbols: %d" % (len(dynsyms))
 	print "Functions: %d" % (codes.nfuncs)
