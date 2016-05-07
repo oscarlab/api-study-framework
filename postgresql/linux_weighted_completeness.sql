@@ -37,7 +37,7 @@ DECLARE
 	api RECORD;
 
 BEGIN
-	RETURN NEXT (SELECT ROW(null :: api_pair, linux_weighted_completeness(api_types, apis)));
+	RETURN NEXT (SELECT ROW(null::smallint, null::bigint, linux_weighted_completeness(api_types, apis)));
 
 	FOR api IN (
 		SELECT api_type, api_id
@@ -49,7 +49,8 @@ BEGIN
 	) LOOP
 		apis := apis || ROW(api.api_type, api.api_id)::api_pair;
 		RETURN NEXT (SELECT ROW(
-				ROW(api.api_type, api.api_id)::api_pair,
+				api.api_type,
+				api.api_id,
 				linux_weighted_completeness(api_types, apis)
 			));
 	END LOOP;
