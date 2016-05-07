@@ -104,6 +104,8 @@ class Table:
 			query += ' WHERE ' + condition
 		return query
 
+tables = dict()
+
 class SQL:
 	def __init__(self):
 		return

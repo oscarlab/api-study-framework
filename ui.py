@@ -184,10 +184,15 @@ def make_screen(jmgr, wmgr, tasks):
 			win.border(0)
 			win.addstr(1, 1, "Job ID: ")
 			curses.echo()
-			id = int(win.getstr(1, 9))
-			del win
-			curses.noecho()
-			jmgr.requeue_job(id)
+			try:
+				id = int(win.getstr(1, 9))
+			except:
+				del win
+				pass
+			else:
+				del win
+				curses.noecho()
+				jmgr.requeue_job(id)
 		elif c == ord('c'):
 			jmgr.clear_finished_jobs()
 			show_message(screen, "finished jobs are cleared")

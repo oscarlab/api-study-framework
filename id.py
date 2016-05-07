@@ -1,40 +1,40 @@
 #!/usr/bin/python
 
-from sql import Table
+from sql import tables, Table
 
 import os
 import sys
 import re
 
-path_id_table = Table('path_id', [
-			('id',		'INT',		'NOT NULL'),
-			('path',	'VARCHAR',	'UNIQUE'),
-			('basename',	'VARCHAR',	'')],
-			['id'],
-			[['basename']])
+tables['binary_id'] = Table('binary_id', [
+			('id', 'INT', 'NOT NULL'),
+			('binary_name', 'VARCHAR', 'UNIQUE'),
+			('file_name', 'VARCHAR', '')],
+			['id'], [['binary_name']])
 
-def get_path_id(sql, path):
-	sql.connect_table(path_id_table)
+def get_binary_id(sql, binary_name):
+	sql.connect_table(tables['binary_id'])
 
 	retry = True
 	while retry:
-		id = next(sql.search_record(path_id_table, 'path=\'' + Table.stringify(path) + '\'', ['id']), [None])[0]
-		if id:
+		res = sql.search_record(tables['binary_id'], 'binary_name=\'' + Table.stringify(binary_name) + '\'', ['id'])
+		if len(res) > 0 and res[0][0]:
+			id = res[0][0]
 			break
 
-		id = next(sql.search_record(path_id_table, None, ['MAX(id)']), [None])[0]
-		if id is None:
+		res = sql.search_record(tables['binary_id'], None, ['MAX(id)'])
+		if res[0][0] == None:
 			id = 1
 		else:
-			id = int(id) + 1
+			id = int(res[0][0]) + 1
 
 		values = dict()
 		values['id'] = id
-		values['path'] = path
-		values['basename'] = os.path.basename(path)
+		values['binary_name'] = binary_name
+		values['file_name'] = os.path.basename(binary_name)
 		retry = False
 		try:
-			sql.append_record(path_id_table, values)
+			sql.append_record(tables['binary_id'], values)
 			sql.commit()
 		except:
 			retry = True
@@ -42,37 +42,40 @@ def get_path_id(sql, path):
 
 	return id
 
-def get_path(sql, id):
-	sql.connect_table(path_id_table)
-	return next(sql.search_record(path_id_table, 'id=\'' + Table.stringify(id) + '\'', ['path']), [None])[0]
+def get_binary_name(sql, id):
+	sql.connect_table(tables['binary_id'])
+	res = sql.search_record(path_id_table, 'id=\'' + Table.stringify(id) + '\'', ['binary_name'])
+	if len(res) > 0 and res[0][0]:
+		return res[0][0]
+	return None
 
-pkgname_id_table = Table('pkgname_id', [
-			('id',		'INT',		'NOT NULL'),
-			('pkgname',	'VARCHAR',	'UNIQUE')],
-			['id'],
-			[['pkgname']])
+tables['package_id'] = Table('package_id', [
+			('id', 'INT', 'NOT NULL'),
+			('package_name', 'VARCHAR', 'UNIQUE')],
+			['id'], [['package_name']])
 
-def get_pkgname_id(sql, pkgname):
-	sql.connect_table(pkgname_id_table)
+def get_package_id(sql, pkgname):
+	sql.connect_table(tables['package_id'])
 
 	retry = True
 	while retry:
-		id = next(sql.search_record(pkgname_id_table, 'pkgname=\'' + Table.stringify(pkgname) + '\'', ['id']), [None])[0]
-		if id:
+		res = sql.search_record(tables['package_id'], 'package_name=\'' + Table.stringify(pkgname) + '\'', ['id'])
+		if len(res) > 0 and res[0][0]:
+			id = res[0][0]
 			break
 
-		id = next(sql.search_record(pkgname_id_table, None, ['MAX(id)']), [None])[0]
-		if id is None:
+		res = sql.search_record(tables['package_id'], None, ['MAX(id)'])
+		if res[0][0] == None:
 			id = 1
 		else:
-			id = int(id) + 1
+			id = int(res[0][0]) + 1
 
 		values = dict()
 		values['id'] = id
-		values['pkgname'] = pkgname
+		values['package_name'] = pkgname
 		retry = False
 		try:
-			sql.append_record(pkgname_id_table, values)
+			sql.append_record(tables['package_id'], values)
 			sql.commit()
 		except:
 			retry = True
@@ -80,13 +83,9 @@ def get_pkgname_id(sql, pkgname):
 
 	return id
 
-def get_pkgname(sql, id):
-	sql.connect_table(pkgname_id_table)
-	return next(sql.search_record(pkgname_id_table, 'id=\'' + Table.stringify(id) + '\'', ['pkgname']), [None])[0]
-
-def get_pkgnames_by_prefix(sql, prefix):
-	sql.connect_table(pkgname_id_table)
-	for result in sql.search_record(package_id_table,
-			'pkgname like \'' + Table.stringify(prefix) + '%\'',
-			['id', 'pkgname']):
-		yield result
+def get_package_by_id(sql, id):
+	sql.connect_table(tables['package_id'])
+	res = sql.search_record(tables['package_id'], 'id=\'' + Table.stringify(id) + '\'', ['package_name'])
+	if len(res) > 0 and res[0][0]:
+		return res[0][0]
+	return None

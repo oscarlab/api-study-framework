@@ -18,3 +18,6 @@ class Task:
 
 	def create_job(self, jmgr, args):
 		jmgr.add_job(self.job_name(args), self.func, args)
+
+tasks = dict()
+subtasks = dict()

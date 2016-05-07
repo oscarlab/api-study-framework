@@ -29,8 +29,8 @@ class Job(object):
 	def __eq__(self, obj):
 		return self.id == obj.id
 
-	def run(self, jmgr, sql):
-		self.func(jmgr, sql, self.args)
+	def run(self, jmgr, os_target, sql):
+		self.func(jmgr, os_target, sql, self.args)
 
 class JobStatus(object):
 	def __init__(self, id, name):
@@ -137,9 +137,10 @@ class JobManager:
 		self.lock.release()
 
 class Worker(Process):
-	def __init__(self, job_manager, sql):
+	def __init__(self, job_manager, os_target, sql):
 		Process.__init__(self)
 		self.job_manager = job_manager
+		self.os_target= os_target
 		self.sql = sql
 		self.current_job = Value('I', 0)
 
@@ -165,7 +166,7 @@ class Worker(Process):
 			s = JobStatus(j.id, j.name)
 			print "Start Job:", j.name, s.start_time
 			try:
-				j.run(self.job_manager, self.sql)
+				j.run(self.job_manager, self.os_target, self.sql)
 			except Exception as err:
 				print err.__class__.__name__, ':', err
 				print 'Traceback:'
@@ -180,15 +181,16 @@ class Worker(Process):
 		self.sql.disconnect()
 
 class WorkerManager:
-	def __init__(self, jmgr, sql, nworkers=0):
+	def __init__(self, jmgr, os_target, sql, nworkers=0):
 		self.workers = []
 		self.job_manager = jmgr
+		self.os_target = os_target
 		self.sql = sql
 		for i in range(nworkers):
 			self.add_worker()
 
 	def add_worker(self):
-		w = Worker(self.job_manager, self.sql)
+		w = Worker(self.job_manager, self.os_target, self.sql)
 		w.start()
 		self.workers.append(w)
 

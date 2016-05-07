@@ -2,8 +2,6 @@
 
 from task import Task
 from sql import SQL
-from package import binary_list_table, binary_link_table
-from binary import get_binary_id, get_binary_name, get_package_id, get_package_name, package_id_table
 from main import get_config
 
 import os
@@ -11,6 +9,7 @@ import sys
 import re
 import psycopg2
 
+"""
 def AnalysisLibrary_run(jmgr, sql, args):
 	pkg_name = args[0]
 	bin = args[1]
@@ -235,6 +234,7 @@ HashAllBinaries = Task(
 		func=HashAllBinaries_run,
 		arg_defs=[],
 		job_name=HashAllBinaries_job_name)
+"""
 
 class PostgreSQL(SQL):
 	def __init__(self):
@@ -247,6 +247,7 @@ class PostgreSQL(SQL):
 		self.db = None
 		self.tables = []
 
+		"""
 		#Task.register(AnalysisLibrary)
 		Task.register(AnalysisAllLibraries)
 		#Task.register(AnalysisLinking)
@@ -257,6 +258,7 @@ class PostgreSQL(SQL):
 		Task.register(AnalysisAllPackages)
 		#Task.register(HashBinary)
 		Task.register(HashAllBinaries)
+		"""
 
 	def __del__(self):
 		self.disconnect()

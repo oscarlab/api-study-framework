@@ -2,13 +2,10 @@
 
 from framework import JobManager, WorkerManager
 from ui import make_screen
-from task import Task
-# from example import ExampleTask, ExampleMoreTask
+from task import tasks, Task
+from os_target import OS
+import os_target
 import package
-import package_popularity
-import symbol
-import callgraph
-import syscall
 from sql import SQL
 
 import os
@@ -45,36 +42,25 @@ def get_temp_dir():
 	return temp_dir
 
 def main():
-	# Task.register(ExampleTask)
-	# Task.register(ExampleMoreTask)
-	Task.register(package.PackageListByNames)
-	Task.register(package.PackageListByPrefixes)
-	Task.register(package.PackageListByRanks)
-	Task.register(package.PackageUnpack)
-	Task.register(package.BinaryListByNames)
-	Task.register(package.BinaryListByPrefixes)
-	Task.register(package.BinaryListByRanks)
-	Task.register(symbol.BinaryInfoByNames)
-	Task.register(symbol.BinaryInfoByPrefixes)
-	Task.register(symbol.BinaryInfoByRanks)
-	Task.register(callgraph.BinaryCallgraph)
-	Task.register(callgraph.BinaryCallInfoByNames)
-	Task.register(callgraph.BinaryCallInfoByPrefixes)
-	Task.register(callgraph.BinaryCallInfoByRanks)
-	Task.register(package.PackageAnalysisByNames)
-	Task.register(package.PackageAnalysisByPrefixes)
-	Task.register(package.PackageAnalysisByRanks)
-	Task.register(package_popularity.PackagePopularity)
-	Task.register(syscall.ListSyscall)
+	os_target = OS.get_target(get_config('os_target'))
+	sql = SQL.get_engine(get_config('sql_engine'))
 
-	package.update_apt(get_config('package_source'))
-	sql = SQL.get_engine(get_config('sql_engine', 'postgresql.PostgreSQL'))
+	if not os_target:
+		print "os_target must be defined in config.py"
+		return
+
+	if not sql:
+		print "sql_engine must be defined in config.py"
+		return
+
+	for task_name in tasks.keys():
+		Task.register(tasks[task_name])
 
 	ncpu = multiprocessing.cpu_count() - 1;
 	if ncpu == 0:
 		ncpu = 1
 	jmgr = JobManager()
-	wmgr = WorkerManager(jmgr, sql, ncpu)
+	wmgr = WorkerManager(jmgr, os_target, sql, ncpu)
 
 	while True:
 		try:
