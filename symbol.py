@@ -17,7 +17,7 @@ tables['binary_symbol'] = Table('binary_symbol', [
 			('bin_id', 'INT', 'NOT NULL'),
 			('symbol_name', 'VARCHAR', 'NOT NULL'),
 			('func_addr','INT', '')],
-			['pkg_id', 'bin_id', 'symbol_name'],
+			['pkg_id', 'bin_id', 'symbol_name', 'func_addr'],
 			[['symbol_name'], ['pkg_id', 'bin_id', 'func_addr'], ['pkg_id', 'bin_id']])
 
 def BinarySymbol(jmgr, os_target, sql, args):

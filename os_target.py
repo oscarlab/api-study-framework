@@ -37,7 +37,7 @@ tables['api_type'] = Table('api_type', [
 tables['api_list'] = Table('api_list', [
 		('type', 'SMALLINT', 'NOT NULL'),
 		('id', 'BIGINT', 'NOT NULL'),
-		('name', 'VARCHAR(40)', 'NOT NULL')],
+		('name', 'VARCHAR', 'NOT NULL')],
 		['type', 'id'])
 
 def ApiList_run(jmgr, os_target, sql, args):
