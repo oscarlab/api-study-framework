@@ -1,8 +1,9 @@
 #!/usr/bin/python
 
-from binary import get_binary_id, get_package_id
-import main
+from id import get_binary_id, get_package_id
 from task import tasks, Task
+import package
+import main
 
 import os
 import sys
@@ -109,7 +110,7 @@ def get_package_info(pkgname):
 	if process:
 		process.kill()
 	if dir:
-		remove_dir(dir)
+		package.remove_dir(dir)
 
 	return {'arch': arch, 'opensource': has_source };
 
@@ -241,7 +242,7 @@ def unpack_package(name):
 			raise Exception("Cannot unpack \'" + name + "\'")
 	except:
 		os.chdir(main.root_dir)
-		remove_dir(dir)
+		package.remove_dir(dir)
 		raise
 
 	os.chdir(main.root_dir)
@@ -260,7 +261,7 @@ def download_package_source(name, unpack=False):
 			package_arch, package_options, unpack)
 	except:
 		os.chdir(main.root_dir)
-		remove_dir(dir)
+		package.remove_dir(dir)
 		raise
 
 	os.mkdir(dir + '/refs')

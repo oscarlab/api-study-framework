@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from task import tasks, Task
+from task import tasks, subtasks, Task
 from sql import tables, Table
 from id import get_binary_id, get_package_id
 import package
@@ -38,7 +38,7 @@ def BinarySymbol(jmgr, os_target, sql, args):
 
 	unpacked = False
 	if not dir:
-		(dir, pkgname, _) = package.unpack_package(args[0])
+		(dir, pkgname, _) = package.unpack_package(os_target, args[0])
 		if not dir:
 			return
 		unpacked = True
@@ -76,11 +76,11 @@ def BinarySymbol(jmgr, os_target, sql, args):
 	if exc:
 		raise exc[1], None, exc[2]
 
-tasks['BinarySymbol'] = Task(
+subtasks['BinarySymbol'] = Task(
 	name = "Collect Binary Symbol",
 	func = BinarySymbol,
 	arg_defs = ["Package Name", "Binary Path", "Unpack Path"],
-	job_name = lambda args: "Collect Binary Symbol" + args[1] + " in " + args[0])
+	job_name = lambda args: "Collect Binary Symbol: " + args[1] + " in " + args[0])
 
 tables['binary_dependency'] = Table('binary_dependency', [
 			('pkg_id', 'INT', 'NOT NULL'),
@@ -114,45 +114,42 @@ def BinaryDependency(jmgr, os_target, sql, args):
 
 	unpacked = False
 	if not dir:
-		(dir, pkgname, _) = package.unpack_package(args[0])
+		(dir, pkgname, _) = package.unpack_package(os_target, args[0])
 		if not dir:
 			return
 		unpacked = True
 
 	exc = None
 	try:
-		path = dir + '/' + bin
-		if not os.path.exists(path):
-			raise Exception('path ' + path + ' does not exist')
+		if not os.path.exists(dir + bin):
+			raise Exception('path ' + dir + bin + ' does not exist')
 
-		dependencies = get_dependencies(path)
-		interp = get_interpreter(path)
+		dependencies = os_target.get_binary_dependencies(dir, bin)
+		interp = os_target.get_binary_interpreter(dir, bin)
 		pkg_id = get_package_id(sql, pkgname)
 		bin_id = get_binary_id(sql, bin)
 		if interp:
 			interp = get_binary_id(sql, interp)
 
-		dependencies = get_dependencies(path)
-
 		condition = 'pkg_id=' + Table.stringify(pkg_id) + ' and bin_id=' + Table.stringify(bin_id)
-		sql.delete_record(binary_dependency_table, condition)
-		sql.delete_record(binary_interp_table, condition)
+		sql.delete_record(tables['binary_dependency'], condition)
+		sql.delete_record(tables['binary_interp'], condition)
 
 		for dep in dependencies:
 			values = dict()
 			values['pkg_id'] = pkg_id
 			values['bin_id'] = bin_id
 			values['dependency'] = dep
-			sql.append_record(binary_dependency_table, values)
+			sql.append_record(tables['binary_dependency'], values)
 
 		if interp:
 			values = dict()
 			values['pkg_id'] = pkg_id
 			values['bin_id'] = bin_id
 			values['interp'] = interp
-			sql.append_record(binary_interp_table, values)
+			sql.append_record(tables['binary_interp'], values)
 
-		sql.update_record(package.binary_list_table, {'linking': False}, condition)
+		sql.update_record(tables['binary_list'], {'linking': False}, condition)
 		sql.commit()
 
 	except Exception as err:
@@ -163,7 +160,7 @@ def BinaryDependency(jmgr, os_target, sql, args):
 	if exc:
 		raise exc[1], None, exc[2]
 
-tasks['BinaryDependency'] = Task(
+subtasks['BinaryDependency'] = Task(
 	name = "Collect Binary Dependency",
 	func = BinaryDependency,
 	arg_defs = ["Package Name", "Binary Path", "Unpack Path"],

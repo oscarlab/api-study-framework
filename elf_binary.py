@@ -1,10 +1,11 @@
 #!/usr/bin/python
 
-from package import walk_package
+import main
 
 import os
 import sys
 import re
+import subprocess
 
 # When the scope is D (Defined) , the libpath is the path where symbols is defined
 # When the scope is U (Undefined) , the libpath gives the path where it is actually defined
@@ -90,7 +91,7 @@ def get_symbols(binary):
 	return symbol_list
 
 # get_dependencies() will return list of dependencies that binary depends on.
-def get_dependency(binary):
+def get_dependencies(binary):
 	dependencies = set()
 
 	process = subprocess.Popen(["readelf", "-d", "-W", binary], stdout=subprocess.PIPE, stderr=main.null_dev)

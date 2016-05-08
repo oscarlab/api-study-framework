@@ -1,11 +1,10 @@
 #!/usr/bin/python
 
-from task import Task
-from sql import Table
-from symbol import get_symbols
+from sql import tables, Table
 from id import get_binary_id, get_package_id
-from linux import Ubuntu64
+from elf_binary import get_symbols
 import package
+import linux_defs
 import main
 
 import os
@@ -141,9 +140,9 @@ class Syscall_Inst(Inst):
 
 class Vec_Syscall_Inst(Syscall_Inst):
 	syscalls = [
-		{'syscall': FCNTL_SYSCALL, 'func_addr': 0, 'func_name':  'fcntl', 'reg': ('%rsi', '%rdx')},
-		{'syscall': IOCTL_SYSCALL, 'func_addr': 0, 'func_name':  'ioctl', 'reg': ('%rsi', '%rdx')},
-		{'syscall': PRCTL_SYSCALL, 'func_addr': 0, 'func_name':  'prctl', 'reg': ('%rdi', '%rsi')},
+		{'syscall': linux_defs.FCNTL_SYSCALL, 'func_addr': 0, 'func_name':  'fcntl', 'reg': ('%rsi', '%rdx')},
+		{'syscall': linux_defs.IOCTL_SYSCALL, 'func_addr': 0, 'func_name':  'ioctl', 'reg': ('%rsi', '%rdx')},
+		{'syscall': linux_defs.PRCTL_SYSCALL, 'func_addr': 0, 'func_name':  'prctl', 'reg': ('%rdi', '%rsi')},
 	]
 
 	@classmethod
@@ -933,7 +932,7 @@ def get_callgraph_recursive(binary_name):
 	return func_list
 
 def analysis_binary_call(sql, binary, pkg_id, bin_id):
-	callers = get_callgraph(path)
+	callers = get_callgraph(binary)
 	calls = []
 	unknown_calls = []
 	apis = []
@@ -960,7 +959,7 @@ def analysis_binary_call(sql, binary, pkg_id, bin_id):
 			values['func_addr'] = caller.func_addr
 
 			if isinstance(syscall, int):
-				values['api_type'] = Ubuntu64.SYSCALL
+				values['api_type'] = linux_defs.SYSCALL
 				values['api_id'] = syscall
 				apis.append(values)
 				continue
@@ -976,12 +975,12 @@ def analysis_binary_call(sql, binary, pkg_id, bin_id):
 				values = dict()
 				values['func_addr'] = caller.func_addr
 
-				if syscall == Ubuntu64.FCNTL_SYSCALL:
-					values['api_type'] = Ubuntu64.FCNTL
-				if syscall == Ubuntu64.IOCTL_SYSCALL:
-					values['api_type'] = Ubuntu64.IOCTL
-				if syscall == Ubuntu64.PRCTL_SYSCALL:
-					values['api_type'] = Ubuntu64.PRCTL
+				if syscall == linux_defs.FCNTL_SYSCALL:
+					values['api_type'] = linux_defs.FCNTL
+				if syscall == linux_defs.IOCTL_SYSCALL:
+					values['api_type'] = linux_defs.IOCTL
+				if syscall == linux_defs.PRCTL_SYSCALL:
+					values['api_type'] = linux_defs.PRCTL
 
 				if isinstance(request, int) or isinstance(request, long):
 					values['api_id'] = request
@@ -997,16 +996,7 @@ def analysis_binary_call(sql, binary, pkg_id, bin_id):
 		for file in caller.files:
 			values = dict()
 			values['func_addr'] = caller.func_addr
-			values['api_type'] = Ubuntu64.PSEUDO_FILE
-			values['api_id'] = sql.hash_text(file)
-			values['api_name'] = file
-			apis.append(values)
-
-	if not fileaccess:
-		for file in get_fileaccess(path):
-			values = dict()
-			values['func_addr'] = 0
-			values['api_type'] = Ubuntu64.PSEUDO_FILE
+			values['api_type'] = linux_defs.PSEUDOFILE
 			values['api_id'] = sql.hash_text(file)
 			values['api_name'] = file
 			apis.append(values)
@@ -1040,7 +1030,7 @@ def analysis_binary_call(sql, binary, pkg_id, bin_id):
 			api_values = dict()
 			api_values['type'] = values['api_type']
 			api_values['id']   = values['api_id']
-			api_values['name'] = valies['api_name']
+			api_values['name'] = values['api_name']
 			sql.append_record(tables['api_list'], api_values)
 
 	for values in unknown_apis:

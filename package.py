@@ -7,6 +7,7 @@ from id import get_package_id
 import os
 import sys
 import re
+import tempfile
 
 tables['package_dependency'] = Table('package_dependency', [
 		('pkg_id', 'INT', 'NOT NULL'),
@@ -46,7 +47,7 @@ def get_packages_by_ranks(os_target, sql, min, max):
 			result.append(name)
 	return result
 
-def unpack_package(pkgname):
+def unpack_package(os_target, pkgname):
 	(dir, pkgname, version) = os_target.unpack_package(pkgname)
 	os.mkdir(dir + '/refs')
 	return (dir, pkgname, version)
@@ -131,13 +132,13 @@ def pick_packages_from_args(os_target, sql, args):
 
 args_to_pick_packages = ['package names', 'package prefixes', 'min ranks', 'max ranks']
 
-def PackageInfoByList(jmgr, os_target, sql, args):
+def ListForPackageInfo(jmgr, os_target, sql, args):
 	for pkg in pick_packages_from_args(os_target, sql, args):
 		subtasks['PackageInfo'].create_job(jmgr, [pkg])
 
-tasks['PackageInfoByList'] = Task(
-	name = "Collect Package Info and Dependency by Listing",
-	func = PackageInfoByList,
+tasks['ListForPackageInfo'] = Task(
+	name = "List Packages to Collect Package Info and Dependency",
+	func = ListForPackageInfo,
 	arg_defs = args_to_pick_packages)
 
 def PackagePopularity(jmgr, os_target, sql, args):

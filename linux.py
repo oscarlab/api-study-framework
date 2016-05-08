@@ -1,6 +1,9 @@
 from os_target import OS
 import apt
 import popcon
+import elf_binary
+import objdump
+import linux_defs
 import main
 
 import os
@@ -32,30 +35,20 @@ def get_syscalls():
 	return syscalls
 
 class Ubuntu64(OS):
-	SYSCALL = 1
-	FCNTL_SYSCALL = 72
-	FCNTL = 2
-	IOCTL_SYSCALL = 16
-	IOCTL = 3
-	PRCTL_SYSCALL = 157
-	PRCTL = 4
-	PSEUDOFILE = 5
-	LIBC = 6
-
 	def __init__(self):
 		OS.__init__(self)
 		apt.update_apt(main.get_config('package_source'))
 
 	def get_api_types(self):
-		return { self.SYSCALL: 'system call',
-			 self.FCNTL: 'fcntl opcode',
-			 self.IOCTL: 'ioctl opcode',
-			 self.PRCTL: 'prctl opcode',
-			 self.PSEUDOFILE: 'system file',
-			 self.LIBC: 'libc function' }
+		return { linux_defs.SYSCALL: 'system call',
+			 linux_defs.FCNTL: 'fcntl opcode',
+			 linux_defs.IOCTL: 'ioctl opcode',
+			 linux_defs.PRCTL: 'prctl opcode',
+			 linux_defs.PSEUDOFILE: 'system file',
+			 linux_defs.LIBC: 'libc function' }
 
 	def get_apis(self):
-		return [ { 'type': self.SYSCALL, 'id': number, 'name': name }
+		return [ { 'type': linux_defs.SYSCALL, 'id': number, 'name': name }
 				for number, name in get_syscalls().items() ]
 
 	def get_packages(self):
@@ -71,19 +64,22 @@ class Ubuntu64(OS):
 		return apt.get_package_dependency(pkgname)
 
 	def unpack_package(self, pkgname):
-		return apt.unpack_package
+		return apt.unpack_package(pkgname)
 
 	def get_binaries(self, dir, find_script=False):
-		return elf_binary.get_binaries(dir, find_script)
+		return apt.get_binaries(dir, find_script)
 
 	def get_binary_info(self, dir, name):
-		return elf_binary.get_binary_info(os.path.join(dir, name))
+		return elf_binary.get_binary_info(dir + name)
 
 	def get_binary_symbols(self, dir, name):
-		return elf_binary.get_symbols(os.path.join(dir, name))
+		return elf_binary.get_symbols(dir + name)
+
+	def get_binary_interpreter(self, dir, name):
+		return elf_binary.get_interpreter(dir + name)
 
 	def get_binary_dependencies(self, dir, name):
-		return elf_binary.get_dependencies(os.path.join(dir, name))
+		return elf_binary.get_dependencies(dir + name)
 
 	def analysis_binary_call(self, sql, dir, name, pkg_id, bin_id):
-		objdump.analysis_binary_calls(sql, os.path.join(dir, name), pkg_id, bin_id)
+		objdump.analysis_binary_call(sql, dir + name, pkg_id, bin_id)

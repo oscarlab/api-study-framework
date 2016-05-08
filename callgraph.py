@@ -1,6 +1,6 @@
 from task import tasks, subtasks, Task
 from sql import tables, Table
-from binary import get_binary_id, get_package_id
+from id import get_binary_id, get_package_id
 import package
 import main
 
@@ -22,6 +22,7 @@ tables['binary_call_unknown'] = Table('binary_call_unknown', [
 			('bin_id', 'INT', 'NOT NULL'),
 			('func_addr', 'INT', 'NOT NULL'),
 			('target', 'VARCHAR', 'NOT NULL'),
+			('known', 'BOOLEAN', 'NOT NULL DEFAULT false'),
 			('call_addr', 'INT', ''),
 			('call_name', 'VARCHAR', '')],
 			['pkg_id', 'bin_id', 'func_addr', 'target', 'known'],
@@ -36,17 +37,18 @@ tables['binary_api_usage'] = Table('binary_api_usage', [
 			['pkg_id', 'bin_id', 'func_addr', 'api_type', 'api_id'],
 			[['pkg_id', 'bin_id'], ['pkg_id', 'bin_id', 'func_addr']])
 
-tables['binary_api_usage_unknown'] = Table('binary_api_usage_unknonw', [
+tables['binary_api_usage_unknown'] = Table('binary_api_usage_unknown', [
 			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
 			('func_addr', 'INT', 'NOT NULL'),
 			('target', 'VARCHAR', 'NOT NULL'),
+			('known', 'BOOLEAN', 'NOT NULL DEFAULT false'),
 			('api_type', 'SMALLINT', ''),
 			('api_id', 'BIGINT', '')],
-			['pkg_id', 'bin_id', 'func_addr', 'target'],
+			['pkg_id', 'bin_id', 'func_addr', 'target', 'known'],
 			[['pkg_id', 'bin_id']])
 
-def BinaryCall(jmgr, sql, args):
+def BinaryCall(jmgr, os_target, sql, args):
 	sql.connect_table(tables['binary_call'])
 	sql.connect_table(tables['binary_call_unknown'])
 	sql.connect_table(tables['binary_api_usage'])
@@ -67,19 +69,20 @@ def BinaryCall(jmgr, sql, args):
 
 	unpacked = False
 	if not dir:
-		(dir, pkgname, _) = package.unpack_package(args[0])
+		(dir, pkgname, _) = package.unpack_package(os_target, args[0])
 		if not dir:
 			return
 		unpacked = True
 
 	exc = None
 	try:
-		if not os.path.exists(os.path.join(dir, bin)):
-			raise Exception('path ' + os.path.join(dir, bin) + ' does not exist')
+		if not os.path.exists(dir + bin):
+			raise Exception('path ' + dir + bin + ' does not exist')
 
-		os_target.analysis_binary_call(sql, dir, bin,
-					pkg_id, get_binary_id(sql, bin))
+		bin_id = get_binary_id(sql, bin)
+		os_target.analysis_binary_call(sql, dir, bin, pkg_id, bin_id)
 
+		condition = 'pkg_id=' + Table.stringify(pkg_id) + ' and bin_id=' + Table.stringify(bin_id)
 		sql.update_record(tables['binary_list'], {'callgraph': False}, condition)
 		sql.commit()
 
@@ -99,7 +102,7 @@ subtasks['BinaryCall'] = Task(
 	job_name = lambda args: "Collect Binary Callgraph and API Usage: " + args[1] + " in " + args[0])
 
 def BinaryCallInfo(jmgr, os_target, sql, args):
-	(dir, pkgname, _) = package.unpack_package(args[0])
+	(dir, pkgname, _) = package.unpack_package(os_target, args[0])
 	if not dir:
 		return
 
@@ -112,7 +115,7 @@ def BinaryCallInfo(jmgr, os_target, sql, args):
 		if type == 'lnk':
 			continue
 		ref = package.reference_dir(dir)
-		tasks['BinaryCall'].create_job(jmgr, [pkgname, bin, dir, ref])
+		subtasks['BinaryCall'].create_job(jmgr, [pkgname, bin, dir, ref])
 
 tasks['BinaryCallInfo'] = Task(
 	name = "Collect Binary Call and APIs",
@@ -120,11 +123,11 @@ tasks['BinaryCallInfo'] = Task(
 	arg_defs = ["Package Name"],
 	job_name = lambda args: "Collect Binary Call and APIs: " + args[0])
 
-def BinaryCallInfoByList(jmgr, os_target, sql, args):
+def ListForBinaryCallInfo(jmgr, os_target, sql, args):
 	for pkg in package.pick_packages_from_args(os_target, sql, args):
 		tasks['BinaryCallInfo'].create_job(jmgr, [pkg])
 
-tasks['BinaryCallInfoByList'] = Task(
-	name = "Collect Binary Call and APIs by Listing",
-	func = BinaryCallInfoByList,
+tasks['ListForBinaryCallInfo'] = Task(
+	name = "List Packages to Collect Binary Call and APIs",
+	func = ListForBinaryCallInfo,
 	arg_defs = package.args_to_pick_packages)

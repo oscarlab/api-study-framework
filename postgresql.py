@@ -300,6 +300,7 @@ class PostgreSQL(SQL):
 		if table not in self.tables:
 			query = 'SELECT relname FROM pg_class WHERE relname=\'' + table.name + '\''
 			create_query = table.create_table()
+			retry = 10
 			while not self.postgresql_query(query):
 				try:
 					self.postgresql_execute(create_query)
@@ -307,6 +308,9 @@ class PostgreSQL(SQL):
 						self.postgresql_execute(q)
 					self.db.commit()
 				except:
+					retry = retry - 1
+					if retry == 0:
+						raise
 					continue
 				break
 

@@ -6,6 +6,9 @@ from task import tasks, Task
 from os_target import OS
 import os_target
 import package
+import binary
+import symbol
+import callgraph
 from sql import SQL
 
 import os
