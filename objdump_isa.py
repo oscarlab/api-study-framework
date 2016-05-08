@@ -100,6 +100,9 @@ class Inst:
 	def __str__(self):
 		return "%x:        (%s)" % (self.addr, self.dism)
 
+	def get_inst(self):
+		return self.dism.split()[0]
+
 class InstMov(Inst):
 	def __init__(self, bb, addr, dism, reg, source):
 		Inst.__init__(self, bb, addr, dism)
@@ -587,10 +590,18 @@ def get_callgraph(binary_name):
 
 	for func in codes.funcs:
 		print "func %x:" % (func.entry)
+
+		insts = dict()
 		for bb in func.bblocks:
-			print "    %x-%x" % (bb.start, bb.end)
 			for inst in bb.insts:
-				print "        %s" % (inst)
+				inst_name = inst.get_inst()
+				if inst_name in insts:
+					insts[inst_name] = insts[inst_name] + 1
+				else:
+					insts[inst_name] = 1
+
+		for inst, count in insts.items():
+			print "    %4d %s" % (count, inst)
 
 	print "Dynamic Symbols: %d" % (len(dynsyms))
 	print "Functions: %d" % (codes.nfuncs)
