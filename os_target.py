@@ -40,7 +40,7 @@ tables['api_list'] = Table('api_list', [
 		('name', 'VARCHAR', 'NOT NULL')],
 		['type', 'id'])
 
-def ApiList_run(jmgr, os_target, sql, args):
+def ApiList(jmgr, os_target, sql, args):
 	sql.connect_table(tables['api_type'])
 	sql.connect_table(tables['api_list'])
 
