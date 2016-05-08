@@ -170,17 +170,12 @@ def update_apt(source=None, force=False):
 	if process.returncode != 0:
 		print "Cannot update package"
 
-def UpdateApt_run(jmgr, os_target, sql, args):
+def UpdateApt(jmgr, os_target, sql, args):
 	update_apt(main.get_config('package_source'), True)
 
-def UpdateApt_job_name(args):
-	return "Update APT"
-
 tasks['UpdateApt'] = Task(
-	name="Update APT",
-	func=UpdateApt_run,
-	arg_defs=[],
-	job_name=UpdateApt_job_name)
+	name = "Update APT repository",
+	func = UpdateApt)
 
 def download_from_apt(name, source=None, arch=None, options=None):
 	cmd = ["apt-get", "download"]
@@ -249,7 +244,6 @@ def unpack_package(name):
 		remove_dir(dir)
 		raise
 
-	os.mkdir(dir + '/refs')
 	os.chdir(main.root_dir)
 	return (dir, name, version)
 
@@ -272,25 +266,6 @@ def download_package_source(name, unpack=False):
 	os.mkdir(dir + '/refs')
 	os.chdir(main.root_dir)
 	return dir
-
-def reference_dir(dir):
-	(file, path) = tempfile.mkstemp(dir=dir + '/refs')
-	os.close(file)
-	ref = path[len(dir) + 6:]
-	return ref
-
-def dereference_dir(dir, ref):
-	os.remove(dir + '/refs/' + ref)
-	return not os.listdir(dir + '/refs')
-
-def reference_exists(dir, ref):
-	return os.path.exists(dir + '/refs/' + ref)
-
-def remove_dir(dir):
-	try:
-		shutil.rmtree(dir)
-	except:
-		pass
 
 def check_elf(path):
 	process = subprocess.Popen(["readelf", "--file-header", "-W", path], stdout=subprocess.PIPE, stderr=main.null_dev)
@@ -362,7 +337,7 @@ def check_script(path):
 	binary.close()
 	return interpreter
 
-def walk_package(dir, find_script=False):
+def get_binaries(dir, find_script=False):
 	binaries = []
 	for (root, subdirs, files) in os.walk(dir):
 		if not os.access(root, os.X_OK):
@@ -370,6 +345,7 @@ def walk_package(dir, find_script=False):
 				os.chmod(root, 0755)
 			except:
 				continue
+
 		rel_root = root[len(dir) + 1:]
 		for f in files:
 			path = root + '/' + f

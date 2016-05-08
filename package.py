@@ -46,7 +46,31 @@ def get_packages_by_ranks(os_target, sql, min, max):
 			result.append(name)
 	return result
 
-def PackageInfo_run(jmgr, os_target, sql, args):
+def unpack_package(pkgname):
+	(dir, pkgname, version) = os_target.unpack_package(pkgname)
+	os.mkdir(dir + '/refs')
+	return (dir, pkgname, version)
+
+def reference_dir(dir):
+	(file, path) = tempfile.mkstemp(dir=dir + '/refs')
+	os.close(file)
+	ref = path[len(dir) + 6:]
+	return ref
+
+def dereference_dir(dir, ref):
+	os.remove(dir + '/refs/' + ref)
+	return not os.listdir(dir + '/refs')
+
+def reference_exists(dir, ref):
+	return os.path.exists(dir + '/refs/' + ref)
+
+def remove_dir(dir):
+	try:
+		shutil.rmtree(dir)
+	except:
+		pass
+
+def PackageInfo(jmgr, os_target, sql, args):
 	sql.connect_table(tables['package_dependency'])
 
 	pkgname = args[0]
@@ -67,31 +91,56 @@ def PackageInfo_run(jmgr, os_target, sql, args):
 
 	sql.commit()
 
-def PackageInfo_job_name(args):
-	return "Package Info and Dependency: " + args[0]
-
 subtasks['PackageInfo'] = Task(
-	name="Package Info and Dependency",
-	func=PackageInfo_run,
-	arg_defs=["Package Name"],
-	job_name=PackageInfo_job_name)
+	name = "Collect Package Info and Dependency",
+	func = PackageInfo,
+	arg_defs = ["Package Name"],
+	job_name = lambda args: "Package Info and Dependency: " + args[0])
 
-def PackageListInfo_run(jmgr, os_target, sql, args):
-	packages = get_packages_by_names(os_target, args[0].split())
-	if packages:
+def pick_packages_from_args(os_target, sql, args):
+	all_packages = []
+	
+	if args[0]:
+		packages = get_packages_by_names(os_target, args[0].split())
 		for pkg in packages:
-			subtasks['PackageInfo'].create_job(jmgr, [pkg])
+			if pkg not in all_packages:
+				all_packages.append(pkg)
 
-def PackageListInfo_job_name(args):
-	return "Package Info List By Names: " + args[0]
+	if args[1]:
+		packages = get_packages_by_prefixes(os_target, args[1].split())
+		for pkg in packages:
+			if pkg not in all_packages:
+				all_packages.append(pkg)
 
-tasks['PackageListInfo'] = Task(
-	name="Package List Info",
-	func=PackageListInfo_run,
-	arg_defs=["Package Names"],
-	job_name=PackageListInfo_job_name)
+	if args[2] or args[3]:
+		try:
+			min_rank = int(args[2])
+		except:
+			min_rank = 0
+		try:
+			max_rank = int(args[3])
+		except:
+			max_rank = 999999
 
-def PackagePopularity_run(jmgr, os_target, sql, args):
+		packages = get_packages_by_ranks(os_target, sql, min_rank, max_rank)
+		for pkg in packages:
+			if pkg not in all_packages:
+				all_packages.append(pkg)
+
+	return all_packages
+
+args_to_pick_packages = ['package names', 'package prefixes', 'min ranks', 'max ranks']
+
+def PackageInfoByList(jmgr, os_target, sql, args):
+	for pkg in pick_packages_from_args(os_target, sql, args):
+		subtasks['PackageInfo'].create_job(jmgr, [pkg])
+
+tasks['PackageInfoByList'] = Task(
+	name = "Collect Package Info and Dependency by Listing",
+	func = PackageInfoByList,
+	arg_defs = args_to_pick_packages)
+
+def PackagePopularity(jmgr, os_target, sql, args):
 	sql.connect_table(tables['package_popularity'])
 
 	pop = os_target.get_package_popularity()
@@ -102,11 +151,6 @@ def PackagePopularity_run(jmgr, os_target, sql, args):
 
 	sql.commit()
 
-def PackagePopularity_job_name(args):
-	return "Package Popularity"
-
 tasks['PackagePopularity'] = Task(
-		name="Package Popularity",
-		func=PackagePopularity_run,
-		arg_defs=[],
-		job_name=PackagePopularity_job_name)
+		name = "Collect Package Popularity",
+		func = PackagePopularity)

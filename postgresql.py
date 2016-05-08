@@ -323,3 +323,6 @@ class PostgreSQL(SQL):
 
 	def update_record(self, table, values, condition=None):
 		self.postgresql_execute(table.update_record(values, condition))
+
+	def hash_text(self, text):
+		return self.postgresql_query('SELECT hashtext(\'' + text + '\')')[0][0]

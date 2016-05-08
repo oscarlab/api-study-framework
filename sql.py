@@ -16,7 +16,7 @@ class Table:
 	@classmethod
 	def stringify(cls, val):
 		if isinstance(val, str):
-			return val.replace('\'', '\'\'')
+			return '\'' + val.replace('\'', '\'\'') + '\''
 		else:
 			return str(val)
 
@@ -62,7 +62,7 @@ class Table:
 			if field not in values or values[field] is None:
 				continue
 			query += delim + field
-			value_str += delim + '\'' + Table.stringify(values[field]) + '\''
+			value_str += delim + Table.stringify(values[field])
 			delim = ', '
 		query += ') VALUES (' + value_str + ')'
 		return query
@@ -96,7 +96,7 @@ class Table:
 		for (field, type, attr) in self.fields:
 			if field in values:
 				has_values = True
-				query += delim + field + '=\'' + Table.stringify(values[field]) + '\''
+				query += delim + field + '=' + Table.stringify(values[field])
 				delim = ', '
 		if not has_values:
 			raise Exception('syntax error: update ' + self.name)
@@ -120,6 +120,7 @@ class SQL:
 	# def search_record(self, table, condition=None, fields=None):
 	# def delete_record(self, table, condition=None):
 	# def update_record(self, table, values, condition=None):
+	# def hash_text(self, text)
 
 	@classmethod
 	def get_engine(cls, name):

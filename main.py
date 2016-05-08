@@ -53,7 +53,7 @@ def main():
 		print "sql_engine must be defined in config.py"
 		return
 
-	for task_name in tasks.keys():
+	for task_name in sorted(tasks.keys()):
 		Task.register(tasks[task_name])
 
 	ncpu = multiprocessing.cpu_count() - 1;

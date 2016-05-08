@@ -61,10 +61,7 @@ def ApiList_run(jmgr, os_target, sql, args):
 	sql.commit()
 
 def ApiList_job_name(args):
-	return "List APIs"
+	return "List API"
 
 tasks['ApiList'] = Task(
-		name="List APIs",
-		func=ApiList_run,
-		arg_defs=[],
-		job_name=ApiList_job_name)
+		name="List APIs", func=ApiList_run)
