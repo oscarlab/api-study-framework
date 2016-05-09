@@ -6,6 +6,7 @@ from id import get_package_id, get_binary_id
 import package
 import symbol
 import callgraph
+import isa
 
 import os
 import sys
@@ -139,6 +140,9 @@ def BinaryAnalysis(jmgr, os_target, sql, args):
 
 		ref = package.reference_dir(dir)
 		subtasks['BinaryCall'].create_job(jmgr, [pkgname, bin, dir, ref])
+
+		ref = package.reference_dir(dir)
+		subtasks['BinaryInstr'].create_job(jmgr, [pkgname, bin, dir, ref])
 
 subtasks['BinaryAnalysis'] = Task(
 	name = "Full Binary Analysis",
