@@ -7,7 +7,7 @@ config = {
 	'package_options':	{},
 
 	'sql_engine':		'postgresql.PostgreSQL',
-	'postgresql_host':	'localhost',
+	'postgresql_host':	'miss-piggy.oscar.cs.stonybrook.edu',
 	'postgresql_user':	'syspop',
 	'postgresql_pass':	'syspop',
 	'postgresql_db':	'isa_study',
