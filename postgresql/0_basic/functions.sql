@@ -1,3 +1,6 @@
+-- table_exists(name):
+-- check if a table exists in the database
+
 CREATE OR REPLACE FUNCTION table_exists(name VARCHAR)
 RETURNS BOOLEAN AS $$
 BEGIN
@@ -9,6 +12,9 @@ BEGIN
 	RETURN False;
 END
 $$ LANGUAGE plpgsql;
+
+-- temp_table_exists(name):
+-- check if a temporary table exists in the database
 
 CREATE or REPLACE FUNCTION temp_table_exists(name VARCHAR)
 RETURNS BOOLEAN AS $$
@@ -29,12 +35,8 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-CREATE or REPLACE FUNCTION get_binary_name(b INT)
-RETURNS VARCHAR AS $$
-BEGIN
-	RETURN (SELECT binary_name FROM binary_id WHERE id = b);
-END
-$$ LANGUAGE plpgsql;
+-- get_package_name(id):
+-- get packagename from package id
 
 CREATE or REPLACE FUNCTION get_package_name(p INT)
 RETURNS VARCHAR AS $$
@@ -43,16 +45,27 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-CREATE or REPLACE FUNCTION get_syscall(s INT)
+-- get_binary_name(id):
+-- get binary name from binary id
+
+CREATE or REPLACE FUNCTION get_binary_name(b INT)
 RETURNS VARCHAR AS $$
 BEGIN
-	RETURN (SELECT name FROM syscall WHERE number = s);
+	RETURN (SELECT binary_name FROM binary_id WHERE id = b);
 END
 $$ LANGUAGE plpgsql;
 
-CREATE or REPLACE FUNCTION get_syscall_no(n VARCHAR)
-RETURNS VARCHAR AS $$
+-- get_api_importance(order):
+-- in the database we store log10(1 - API importance) for precision.
+-- use this function to translate back to API importance
+
+CREATE OR REPLACE FUNCTION get_api_importance(order FLOAT)
+RETURNS FLOAT AS $$
 BEGIN
-	RETURN (SELECT number FROM syscall WHERE name = n);
+       IF order > 6 THEN
+               RETURN 1.0;
+       ELSE
+               RETURN 1.0 - 10.0 ^ (-prder);
+       END IF;
 END
 $$ LANGUAGE plpgsql;
