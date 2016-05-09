@@ -247,19 +247,6 @@ class PostgreSQL(SQL):
 		self.db = None
 		self.tables = []
 
-		"""
-		#Task.register(AnalysisLibrary)
-		Task.register(AnalysisAllLibraries)
-		#Task.register(AnalysisLinking)
-		Task.register(AnalysisAllLinking)
-		#Task.register(AnalysisExecutable)
-		Task.register(AnalysisAllExecutables)
-		#Task.register(AnalysisPackage)
-		Task.register(AnalysisAllPackages)
-		#Task.register(HashBinary)
-		Task.register(HashAllBinaries)
-		"""
-
 	def __del__(self):
 		self.disconnect()
 
@@ -281,6 +268,7 @@ class PostgreSQL(SQL):
 		except psycopg2.Error as err:
 			cur.close()
 			self.db.rollback()
+			print "query:", query
 			raise err
 		cur.close()
 	
@@ -292,6 +280,7 @@ class PostgreSQL(SQL):
 		except psycopg2.Error as err:
 			cur.close()
 			self.db.rollback()
+			print "query:", query
 			raise err
 		cur.close()
 		return results

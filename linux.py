@@ -3,6 +3,7 @@ import apt
 import popcon
 import elf_binary
 import objdump
+import objdump_isa
 import linux_defs
 import main
 
@@ -83,3 +84,6 @@ class Ubuntu64(OS):
 
 	def analysis_binary_call(self, sql, dir, name, pkg_id, bin_id):
 		objdump.analysis_binary_call(sql, dir + name, pkg_id, bin_id)
+
+	def analysis_binary_instr(self, sql, dir, name, pkg_id, bin_id):
+		objdump_isa.analysis_binary_instr(sql, dir + name, pkg_id, bin_id)

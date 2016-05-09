@@ -9,6 +9,7 @@ import package
 import binary
 import symbol
 import callgraph
+import isa
 from sql import SQL
 
 import os
