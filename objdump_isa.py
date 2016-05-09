@@ -285,7 +285,7 @@ def get_callgraph(binary_name):
 		symtab = bfd.sections['.dynsym'].content
 		strtab = bfd.sections['.dynstr'].content
 		off = 0
-		while off < len(symtab):
+		while off + ptr_size <= len(symtab):
 			st_name_off = struct.unpack(elf_word_fmt, symtab[off:off + elf_word_size])[0]
 			st_name = ""
 			while st_name_off < len(strtab) and strtab[st_name_off] != '\0':
@@ -306,7 +306,7 @@ def get_callgraph(binary_name):
 
 		content = sec.content
 		off = 0
-		while off < len(content):
+		while off + ptr_size * 2 <= len(content):
 			r_offset = struct.unpack(ptr_fmt, content[off:off + ptr_size])[0]
 			off += ptr_size
 			r_info = struct.unpack(ptr_fmt, content[off:off + ptr_size])[0]
@@ -561,15 +561,18 @@ def get_callgraph(binary_name):
 			self.initialize_smart_disassemble(content, self.start)
 			cont = True
 			while cont:
-				cont = False
-				for addr in self.entries:
-					if addr >= self.start and addr < self.end:
-						cont = True
+				next = None
+				for entry in self.entries:
+					if entry >= self.start and entry < self.end:
+						next = entry
 						break
 
-				self.cur_func = Func(addr)
-				self.cur_func.add_bblock(addr)
-				self.entries.remove(addr)
+				if not next:
+					break
+
+				self.cur_func = Func(next)
+				self.cur_func.add_bblock(next)
+				self.entries.remove(next)
 
 				while self.cur_func.new_bblocks:
 					bb = self.cur_func.new_bblocks[0]
@@ -606,7 +609,7 @@ def get_callgraph(binary_name):
 	if '.init_array' in bfd.sections:
 		init_content = bfd.sections.get('.init_array').content
 		off = 0
-		while off < len(init_content):
+		while off + ptr_size <= len(init_content):
 			addr = struct.unpack(ptr_fmt, init_content[off:off + ptr_size])[0]
 			codes.add_entry(addr)
 			off += ptr_size
@@ -614,7 +617,7 @@ def get_callgraph(binary_name):
 	if '.fini_array' in bfd.sections:
 		fini_content = bfd.sections.get('.fini_array').content
 		off = 0
-		while off < len(fini_content):
+		while off + ptr_size < len(fini_content):
 			addr = struct.unpack(ptr_fmt, init_content[off:off + ptr_size])[0]
 			codes.add_entry(addr)
 			off += ptr_size
