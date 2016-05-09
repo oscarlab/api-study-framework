@@ -138,6 +138,10 @@ class InstrCall(Instr):
 
 class BBlock:
 	def __init__(self, start, end=None):
+		if isinstance(start, long):
+			start = start & 0xffffffffffffffff
+		if isinstance(end, long):
+			end = end & 0xffffffffffffffff
 		self.start = start
 		self.end = end
 		self.instrs = []
@@ -145,6 +149,8 @@ class BBlock:
 
 class Func:
 	def __init__(self, entry):
+		if isinstance(entry, long):
+			entry = entry & 0xffffffffffffffff
 		self.entry = entry
 		self.bblocks = []
 		self.new_bblocks = []
