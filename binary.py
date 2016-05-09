@@ -87,6 +87,16 @@ def BinaryInfo(jmgr, os_target, sql, args):
 
 	append_binary_list(sql, pkgname, dir, binaries)
 
+	for (bin, type, _) in binaries:
+		if type == 'lnk' or type == 'scr':
+			continue
+
+		ref = package.reference_dir(dir)
+		subtasks['BinarySymbol'].create_job(jmgr, [pkgname, bin, dir, ref])
+
+		ref = package.reference_dir(dir)
+		subtasks['BinaryDependency'].create_job(jmgr, [pkgname, bin, dir, ref])
+
 	sql.commit()
 	package.remove_dir(dir)
 
@@ -94,14 +104,14 @@ subtasks['BinaryInfo'] = Task(
 	name = "Binary List",
 	func = BinaryInfo,
 	arg_defs = ["Package Name"],
-	job_name = lambda args: "Collect Binary Info: " + args[0])
+	job_name = lambda args: "Collect Binary Info, Symbols and Dependencies: " + args[0])
 
 def ListForBinaryInfo(jmgr, os_target, sql, args):
 	for pkg in package.pick_packages_from_args(os_target, sql, args):
 		subtasks['BinaryInfo'].create_job(jmgr, [pkg])
 
 tasks['ListForBinaryInfo'] = Task(
-	name = "List Packages to Collect Binary Info",
+	name = "List Packages to Collect Binary Info, Symbols and Dependencies",
 	func = ListForBinaryInfo,
 	arg_defs = package.args_to_pick_packages)
 

@@ -6,25 +6,31 @@ import re
 import urllib2
 
 popcon_urls = [
-	"http://popcon.ubuntu.com/by_inst",
-	"http://popcon.debian.org/by_inst",
+	"http://popcon.ubuntu.com/",
+	"http://popcon.debian.org/",
 ]
 
 def get_package_popularity():
-	popularity = dict()
-	sum = {'package_name': 'Total', 'rank': 999999, 'inst': 0}
-
+	sum = 0
 	for url in popcon_urls:
 		data = urllib2.urlopen(url)
+		for line in data:
+			# remove HTML tags
+			line = re.sub(r'<.*?>', '', line)
+			m = re.search('Number of submissions considered:\s*(\d+)', line)
+			if m:
+				sum = sum + int(m.group(1))
+
+	popularity = dict()
+
+	for url in popcon_urls:
+		data = urllib2.urlopen(url + "by_inst")
 		for line in data:
 			# Ignore comments
 			if line.startswith('#'):
 				continue
-			# End of the file/webpage confined for this webpage
+
 			if line.startswith('-'):
-				line = next(data)
-				results = line.strip().split()
-				sum['inst'] += int(results[2])
 				break
 
 			results = line.strip().split()
@@ -57,5 +63,15 @@ def get_package_popularity():
 		packages[i]['rank'] = rank
 		rank += 1
 
-	packages.append(sum)
+	values = dict()
+	values['package_name'] = 'Total'
+	values['rank'] = 1000000
+	values['inst'] = sum
+	packages.append(values)
+
 	return packages
+
+if __name__ == "__main__":
+	for pkg in get_package_popularity():
+		print "%d: %s (%d)" % (pkg['rank'], pkg['package_name'], pkg['inst'])
+
