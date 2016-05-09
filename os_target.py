@@ -40,6 +40,29 @@ tables['api_list'] = Table('api_list', [
 		('name', 'VARCHAR', 'NOT NULL')],
 		['type', 'id'])
 
+def append_api_list(sql, type, id, name):
+	sql.connect_table(tables['api_list'])
+
+	retry = True
+	while retry:
+		res = sql.search_record(tables['api_list'], 'type=' + Table.stringify(type)  + ' and id=' + Table.stringify(id), ['name'])
+		if len(res) > 0 and res[0][0]:
+			if res[0][0] != name:
+				raise Error('duplicate key value (' + Table.stringify(type) + ',' + Table.stringify(id) + ')')
+			return
+
+		values = dict()
+		values['type'] = type
+		values['id'] = id
+		values['name'] = name
+		retry = False
+		try:
+			sql.append_record(tables['api_list'], values)
+			sql.commit()
+		except:
+			retry = True
+			pass
+
 def ApiList(jmgr, os_target, sql, args):
 	sql.connect_table(tables['api_type'])
 	sql.connect_table(tables['api_list'])

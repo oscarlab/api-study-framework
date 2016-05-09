@@ -5,6 +5,7 @@ from id import get_binary_id, get_package_id
 from elf_binary import get_symbols
 import package
 import linux_defs
+import os_target
 import main
 
 import os
@@ -1001,6 +1002,10 @@ def analysis_binary_call(sql, binary, pkg_id, bin_id):
 			values['api_name'] = file
 			apis.append(values)
 
+	for values in apis:
+		if 'api_name' in values:
+			os_target.append_api_list(sql, values['api_type'], values['api_id'], values['api_name'])
+
 	condition = 'pkg_id=' + Table.stringify(pkg_id) + ' and bin_id=' + Table.stringify(bin_id)
 	condition_unknown = condition + ' and known=False'
 	sql.delete_record(tables['binary_call'], condition)
@@ -1022,16 +1027,6 @@ def analysis_binary_call(sql, binary, pkg_id, bin_id):
 		values['pkg_id'] = pkg_id
 		values['bin_id'] = bin_id
 		sql.append_record(tables['binary_api_usage'], values)
-
-		if 'api_name' in values:
-			sql.delete_record(tables['api_list'], 'type=' +
-					Table.stringify(values['api_type']) + ' and id=' +
-					Table.stringify(values['api_id']))
-			api_values = dict()
-			api_values['type'] = values['api_type']
-			api_values['id']   = values['api_id']
-			api_values['name'] = values['api_name']
-			sql.append_record(tables['api_list'], api_values)
 
 	for values in unknown_apis:
 		values['pkg_id'] = pkg_id
