@@ -54,10 +54,10 @@ BEGIN
 	RETURN NEXT (SELECT ROW(null::VARCHAR(15), x86_weighted_completeness(instrs)));
 
 	FOR instr IN (
-		SELECT instr
-		FROM instr_importance
-		WHERE NOT ARRAY[instr] <@ instrs
-		ORDER BY instr_importance_order DESC
+		SELECT t.instr
+		FROM instr_importance AS t
+		WHERE NOT ARRAY[t.instr] <@ instrs
+		ORDER BY t.instr_importance_order DESC
 		LIMIT more_instrs
 	) LOOP
 		instrs := instrs || instr;
