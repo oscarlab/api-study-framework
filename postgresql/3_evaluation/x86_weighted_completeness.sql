@@ -34,7 +34,7 @@ BEGIN
 		CREATE TYPE instr_improvement AS (
 			instr VARCHAR(15),
 			weighted_completeness FLOAT,
-		)
+		);
 	END IF;
 END
 $$ LANGUAGE plpgsql;

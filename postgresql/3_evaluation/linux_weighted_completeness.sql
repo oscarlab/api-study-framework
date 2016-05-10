@@ -4,7 +4,7 @@ BEGIN
 		CREATE TYPE api_pair AS (
 			api_type SMALLINT,
 			api_id BIGINT
-		)
+		);
 	END IF;
 END
 $$ LANGUAGE plpgsql;
@@ -53,7 +53,7 @@ BEGIN
 			api_type SMALLINT,
 			api_id BIGINT,
 			weighted_completeness FLOAT,
-		)
+		);
 	END IF;
 END
 $$ LANGUAGE plpgsql;
