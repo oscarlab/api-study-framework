@@ -63,7 +63,7 @@ BEGIN
 		instrs := instrs || ARRAY[instr.instr];
 		RETURN NEXT (SELECT ROW(
 				instr.instr,
-				linux_weighted_completeness(instrs)
+				x86_weighted_completeness(instrs)
 			));
 	END LOOP;
 	RETURN;
