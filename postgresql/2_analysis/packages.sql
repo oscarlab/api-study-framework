@@ -21,6 +21,16 @@ IF NOT table_exists('package_api_usage') THEN
 	CREATE INDEX package_api_usagel_pkg_id_idx
 		ON package_api_usage (pkg_id);
 END IF;
+
+IF NOT table_exists('package_instr_usage') THEN
+	CREATE TABLE package_instr_usage (
+		pkg_id INT NOT NULL,
+		instr VARCHAR(15) NOT NULL,
+		PRIMARY KEY (pkg_id, instr)
+	);
+	CREATE INDEX package_instr_usage_instr_idx
+		ON package_instr_usage (instr);
+END IF;
 END $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION analyze_package(p INT)
@@ -65,6 +75,14 @@ BEGIN
 	INSERT INTO package_api_usage
 		SELECT DISTINCT p, t1.api_type, t1.api_id
 		FROM executable_api_usage AS t1
+		INNER JOIN
+		pkg_bin AS t2
+		ON t1.pkg_id = p AND t1.bin_id = t2.bin_id;
+
+	DELETE FROM package_instr_usage WHERE pkg_id = p;
+	INSERT INTO package_instr_usage
+		SELECT DISTINCT p, t1.instr
+		FROM executable_instr_usage AS t1
 		INNER JOIN
 		pkg_bin AS t2
 		ON t1.pkg_id = p AND t1.bin_id = t2.bin_id;

@@ -27,6 +27,19 @@ IF NOT table_exists('executable_api_usage') THEN
 	CREATE INDEX executable_api_usage_api_id_idx
 		ON executable_api_usage (api_id);
 END IF;
+
+IF NOT table_exists('executable_instr_usage') THEN
+	CREATE TABLE executable_instr_usage (
+		pkg_id INT NOT NULL, bin_id INT NOT NULL,
+		instr VARCHAR(15) NOT NULL
+		PRIMARY KEY (pkg_id, bin_id, instr)
+	);
+	CREATE INDEX executable_instr_usage_pkg_id_bin_id_idx
+		ON executable_instr_usage (pkg_id, bin_id);
+	CREATE INDEX executable_instr_usage_instr_idx
+		ON executable_instr_usage (instr);
+END IF;
+
 END $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION analyze_executable(p INT, b INT)
@@ -209,6 +222,20 @@ BEGIN
 		FROM bin_call AS t1
 		INNER JOIN
 		library_api_usage AS t2
+		ON  t1.pkg_id = t2.pkg_id
+		AND t1.bin_id = t2.bin_id
+		AND t1.func_addr = t2.func_addr;
+
+	DELETE FROM executable_instr_usage WHERE pkg_id = p AND bin_id = b;
+	INSERT INTO executable_instr_usage
+		SELECT DISTINCT p, b, instr
+		FROM binary_instr_usage
+		WHERE pkg_id = p AND bin_id = b
+		UNION
+		SELECT DISTINCT p, b, t2.instr
+		FROM bin_call AS t1
+		INNER JOIN
+		library_instr_usage AS t2
 		ON  t1.pkg_id = t2.pkg_id
 		AND t1.bin_id = t2.bin_id
 		AND t1.func_addr = t2.func_addr;
