@@ -29,9 +29,9 @@ BEGIN
 	DELETE FROM package_instr_count WHERE pkg_id = p;
 
 	INSERT INTO package_instr_count
-		SELECT instr, SUM(count) FROM binary_instr_usage
+		SELECT p, instr, SUM(count) FROM binary_instr_usage
 		WHERE pkg_id = p
-		GROUP BY instr
+		GROUP BY instr;
 
 	time2 := clock_timestamp();
 	RAISE NOTICE 'Time: %', time2 - time1;
