@@ -53,7 +53,7 @@ tables['package_id'] = Table('package_id', [
 			('id', 'INT', 'NOT NULL'),
 			('package_name', 'VARCHAR', 'UNIQUE'),
 			('footprint', 'BOOLEAN', 'NOT NULL DEFAULT false'),
-			('instr', 'BOOLEAN', 'NOT NULL DEFAULT false'],
+			('instr', 'BOOLEAN', 'NOT NULL DEFAULT false')],
 			['id'], [['package_name']])
 
 def get_package_id(sql, pkgname):
