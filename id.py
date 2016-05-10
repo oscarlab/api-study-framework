@@ -44,14 +44,15 @@ def get_binary_id(sql, binary_name):
 
 def get_binary_name(sql, id):
 	sql.connect_table(tables['binary_id'])
-	res = sql.search_record(path_id_table, 'id=' + Table.stringify(id), ['binary_name'])
+	res = sql.search_record(tables['binary_id'], 'id=' + Table.stringify(id), ['binary_name'])
 	if len(res) > 0 and res[0][0]:
 		return res[0][0]
 	return None
 
 tables['package_id'] = Table('package_id', [
 			('id', 'INT', 'NOT NULL'),
-			('package_name', 'VARCHAR', 'UNIQUE')],
+			('package_name', 'VARCHAR', 'UNIQUE'),
+			('footprint', 'BOOLEAN', 'NOT NULL DEFAULT false')],
 			['id'], [['package_name']])
 
 def get_package_id(sql, pkgname):
@@ -83,7 +84,7 @@ def get_package_id(sql, pkgname):
 
 	return id
 
-def get_package_by_id(sql, id):
+def get_package_name(sql, id):
 	sql.connect_table(tables['package_id'])
 	res = sql.search_record(tables['package_id'], 'id=' + Table.stringify(id), ['package_name'])
 	if len(res) > 0 and res[0][0]:
