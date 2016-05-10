@@ -28,6 +28,22 @@ IF NOT table_exists('library_api_usage') THEN
 	CREATE INDEX library_api_usage_api_type_api_id_idx
 		ON library_api_usage (api_type, api_id);
 END IF;
+
+IF NOT table_exists('library_instr_usage') THEN
+	CREATE TABLE library_instr_usage (
+		pkg_id INT NOT NULL, bin_id INT NOT NULL,
+		func_addr INT NOT NULL,
+		instr VARCHAR(15) NOT NULL,
+		PRIMARY KEY (pkg_id, bin_id, func_addr, instr)
+	);
+	CREATE INDEX library_instr_usage_pkg_id_bin_id_func_addr_idx
+		ON library_instr_usage (pkg_id, bin_id, func_addr);
+	CREATE INDEX library_instr_usage_pkg_id_bin_id_idx
+		ON library_instr_usage (pkg_id, bin_id);
+	CREATE INDEX library_instr_usage_instr_idx
+		ON library_instr_usage (instr);
+END IF;
+
 END
 $$ LANGUAGE plpgsql;
 
@@ -94,6 +110,16 @@ BEGIN
 	lib_callgraph AS t1
 	INNER JOIN (
 		SELECT DISTINCT func_addr, api_type, api_id FROM binary_api_usage
+		WHERE pkg_id = p AND bin_id = b
+	) AS t2
+	ON t1.call_addr = t2.func_addr;
+
+	DELETE FROM library_instr_usage WHERE pkg_id = p AND bin_id = b;
+	INSERT INTO library_instr_usage
+	SELECT DISTINCT p, b, t1.func_addr, t2.instr FROM
+	lib_callgraph AS t1
+	INNER JOIN (
+		SELECT DISTINCT func_addr, api_type, api_id FROM binary_instr_usage
 		WHERE pkg_id = p AND bin_id = b
 	) AS t2
 	ON t1.call_addr = t2.func_addr;
