@@ -28,6 +28,17 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
+DO $$
+BEGIN
+	IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'instr_improvement') THEN
+		CREATE TYPE instr_improvement (
+			instr VARCHAR(15),
+			weighted_completeness FLOAT,
+		)
+	END IF;
+END
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION x86_weighted_completeness_improvement(
 	instrs VARCHAR(15)[], more_instrs INTEGER
 )

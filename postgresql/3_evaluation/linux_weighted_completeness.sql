@@ -46,6 +46,18 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
+DO $$
+BEGIN
+	IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'api_improvement') THEN
+		CREATE TYPE api_improvement (
+			api_type SMALLINT,
+			api_id BIGINT,
+			weighted_completeness FLOAT,
+		)
+	END IF;
+END
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION linux_weighted_completeness_improvement(
 	api_types SMALLINT[], apis api_pair[], more_apis INTEGER
 )
@@ -75,5 +87,3 @@ BEGIN
 	RETURN;
 END
 $$ LANGUAGE plpgsql;
-
-
