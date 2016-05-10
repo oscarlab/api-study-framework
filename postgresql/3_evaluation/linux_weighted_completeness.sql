@@ -1,3 +1,21 @@
+DO $$
+BEGIN
+	IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'api_pair') THEN
+		CREATE TYPE api_pair (
+			api_type SMALLINT,
+			api_id BIGINT
+		)
+	END IF;
+END
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE VIEW package_api_usage_array AS
+	SELECT pkg_id, api_type,
+	array_agg(ROW(api_type, api_id)::api_pair) AS apis
+	FROM package_api_usage
+	WHERE api_type < 5
+	GROUP BY pkg_id, api_type;
+
 CREATE OR REPLACE FUNCTION linux_weighted_completeness(
 	api_types SMALLINT[], apis api_pair[]
 )
