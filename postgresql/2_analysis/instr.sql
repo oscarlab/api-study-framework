@@ -5,7 +5,7 @@ IF NOT table_exists('package_instr_count') THEN
 		pkg_id INT NOT NULL,
 		instr VARCHAR(15) NOT NULL,
 		count INT NOT NULL,
-		PRIMARY KEY (pkg_id, bin_id, instr)
+		PRIMARY KEY (pkg_id, instr)
 	);
 	CREATE INDEX package_instr_count_pkg_id_idx
 		ON package_instr_count (pkg_id);
@@ -17,6 +17,9 @@ END $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION analyze_instr(p INT)
 RETURNS void AS $$
+DECLARE
+	time1 TIMESTAMP;
+	time2 TIMESTAMP;
 
 BEGIN
 	RAISE NOTICE 'analyze instructions in package %', p;
