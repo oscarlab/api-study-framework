@@ -61,6 +61,9 @@ BEGIN
 		LIMIT more_instrs
 	) LOOP
 		instrs := instrs || ARRAY[instr.instr];
+
+		RAISE NOTICE 'add % (%)', instr.instr, array_length(instrs, 1);
+
 		RETURN NEXT (SELECT ROW(
 				instr.instr,
 				x86_weighted_completeness(instrs)
