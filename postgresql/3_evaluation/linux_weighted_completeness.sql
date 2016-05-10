@@ -1,7 +1,7 @@
 DO $$
 BEGIN
 	IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'api_pair') THEN
-		CREATE TYPE api_pair (
+		CREATE TYPE api_pair AS (
 			api_type SMALLINT,
 			api_id BIGINT
 		)
@@ -49,7 +49,7 @@ $$ LANGUAGE plpgsql;
 DO $$
 BEGIN
 	IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'api_improvement') THEN
-		CREATE TYPE api_improvement (
+		CREATE TYPE api_improvement AS (
 			api_type SMALLINT,
 			api_id BIGINT,
 			weighted_completeness FLOAT,

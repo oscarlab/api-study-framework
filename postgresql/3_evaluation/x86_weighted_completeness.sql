@@ -31,7 +31,7 @@ $$ LANGUAGE plpgsql;
 DO $$
 BEGIN
 	IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'instr_improvement') THEN
-		CREATE TYPE instr_improvement (
+		CREATE TYPE instr_improvement AS (
 			instr VARCHAR(15),
 			weighted_completeness FLOAT,
 		)
