@@ -263,7 +263,7 @@ subtasks['PostgresqlAnalyzeInstrCount'] = Task(
 def AnalyzeInstrCountAllPackages(jmgr, os_target, sql, args):
 	sql.connect_table(tables['package_id'])
 
-	results = sql.search_record(tables['package_id'], ['id'])
+	results = sql.search_record(tables['package_id'], 'instr = false', ['id'])
 
 	for r in results:
 		pkg_id = r[0]

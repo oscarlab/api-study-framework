@@ -16,8 +16,8 @@ tables['binary_list'] = Table('binary_list', [
 		('pkg_id', 'INT', 'NOT NULL'),
 		('bin_id', 'INT', 'NOT NULL'),
 		('type', 'CHAR(3)', 'NOT NULL'),
-		('callgraph', 'BOOLEAN', ''),
-		('linking', 'BOOLEAN', '')],
+		('callgraph', 'BOOLEAN', 'NOT NULL DEFAULT false'),
+		('linking', 'BOOLEAN', 'NOT NULL DEFAULT false')],
 		['pkg_id', 'bin_id'],
 		[['pkg_id', 'bin_id', 'type'], ['bin_id']])
 
@@ -25,7 +25,7 @@ tables['binary_link'] = Table('binary_link', [
 		('pkg_id', 'INT', 'NOT NULL'),
 		('lnk_id', 'INT', 'NOT NULL'),
 		('target', 'INT', 'NOT NULL'),
-		('linking', 'BOOLEAN', '')],
+		('linking', 'BOOLEAN', 'NOT NULL DEFAULT false')],
 		['pkg_id', 'lnk_id'],
 		[['lnk_id'], ['target']])
 
