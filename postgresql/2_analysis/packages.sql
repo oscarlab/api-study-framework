@@ -18,7 +18,7 @@ IF NOT table_exists('package_api_usage') THEN
 		api_id BIGINT NOT NULL,
 		PRIMARY KEY (pkg_id, api_type, api_id)
 	);
-	CREATE INDEX package_api_usagel_pkg_id_idx
+	CREATE INDEX package_api_usage_pkg_id_idx
 		ON package_api_usage (pkg_id);
 END IF;
 END $$ LANGUAGE plpgsql;
