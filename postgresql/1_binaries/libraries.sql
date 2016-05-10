@@ -119,7 +119,7 @@ BEGIN
 	SELECT DISTINCT p, b, t1.func_addr, t2.instr FROM
 	lib_callgraph AS t1
 	INNER JOIN (
-		SELECT DISTINCT func_addr, api_type, api_id FROM binary_instr_usage
+		SELECT DISTINCT func_addr, instr FROM binary_instr_usage
 		WHERE pkg_id = p AND bin_id = b
 	) AS t2
 	ON t1.call_addr = t2.func_addr;
