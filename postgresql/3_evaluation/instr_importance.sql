@@ -49,7 +49,7 @@ BEGIN
 			) THEN
 				UPDATE instr_tmp
 				SET percent_order = percent_order + pkg_order
-				WHERE instr = i
+				WHERE instr = i;
 			ELSE
 				INSERT INTO instr_tmp VALUES (type, id, pkg_order);
 			END IF;
