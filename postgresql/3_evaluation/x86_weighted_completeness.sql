@@ -15,12 +15,10 @@ DECLARE
 
 BEGIN
 	FOR pkg_instrs IN (
-		SELECT t2.percent_order, t1.instrs FROM (
-			SELECT p.pkg_id, p.instrs
-			FROM package_instr_usage_array AS p
-			WHERE ARRAY[p.instr_type] <@ instr_types
-			GROUP BY p.pkg_id
-		) AS t1 JOIN package_install AS t2
+		SELECT t2.percent_order, t1.instrs FROM
+		package_instr_usage_array AS t1
+		JOIN
+		package_install AS t2
 		ON t1.pkg_id = t2.pkg_id
 	) LOOP
 		IF pkg_instrs.instrs <@ instrs THEN
