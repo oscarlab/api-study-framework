@@ -15,7 +15,7 @@ IF NOT table_exists('binary_linking') THEN
 END IF;
 END $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION analysis_linking(p INT, b INT, is_link BOOLEAN, do_reverse BOOLEAN)
+CREATE OR REPLACE FUNCTION analyze_linking(p INT, b INT, is_link BOOLEAN, do_reverse BOOLEAN)
 RETURNS void AS $$
 
 DECLARE

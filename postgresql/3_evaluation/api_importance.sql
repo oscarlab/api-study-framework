@@ -19,17 +19,19 @@ IF NOT table_exists('library_call_api_importance') THEN
 END IF;
 END $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION analysis_library_call_api_importance()
+CREATE OR REPLACE FUNCTION analyze_library_call_api_importance()
 RETURNS void AS $$
 
 DECLARE
 	total INT := (SELECT COUNT(DISTINCT pkg_id) FROM package_call);
 	count INT := 1;
-	p INT;
+	pkg INT;
 	dep INT;
 	call INT;
-	order FLOAT;
+	pkg_order FLOAT;
 BEGIN
+	PERFORM (SELECT update_package_install());
+
 	CREATE TEMP TABLE IF NOT EXISTS call_tmp (
 		bin_id INT NOT NULL, func_addr INT NOT NULL,
 		percent_order FLOAT,
@@ -39,7 +41,7 @@ BEGIN
 		bin_id INT NOT NULL, func_addr INT NOT NULL,
 		PRIMARY KEY(bin_id, func_addr));
 
-	FOR p IN (SELECT DISTINCT pkg_id FROM package_call) LOOP
+	FOR pkg IN (SELECT DISTINCT pkg_id FROM package_call) LOOP
 
 		RAISE NOTICE 'analyze package %/%', count, total;
 		count := count + 1;
@@ -48,9 +50,9 @@ BEGIN
 			SELECT t2.bin_id, t2.func_addr FROM
 			package_call AS t1 INNER JOIN libc_symbol AS t2
 			ON t1.dep_bin_id = t2.bin_id AND t1.call = t2.func_addr
-			WHERE t1.pkg_id = p;
+			WHERE t1.pkg_id = pkg;
 
-		order := (SELECT percent_order FROM package_install WHERE pkg_id = p);
+		pkg_order := (SELECT percent_order FROM package_install WHERE pkg_id = pkg);
 
 		FOR dep, call IN (SELECT * FROM pkg_call_tmp) LOOP
 			IF EXISTS(
@@ -58,10 +60,10 @@ BEGIN
 				bin_id = dep AND func_addr = call
 			) THEN
 				UPDATE call_tmp
-				SET precent_order = precent_order + order
+				SET precent_order = precent_order + pkg_order
 				WHERE bin_id = dep AND func_addr = call;
 			ELSE
-				INSERT INTO call_tmp VALUES (dep, call, order);
+				INSERT INTO call_tmp VALUES (dep, call, pkg_order);
 			END IF;
 		END LOOP;
 
@@ -83,18 +85,20 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION analysis_api_importance()
+CREATE OR REPLACE FUNCTION analyze_api_importance()
 RETURNS void AS $$
 
 DECLARE
 	total INT := (SELECT COUNT(DISTINCT pkg_id) FROM package_api_usage);
 	count INT := 1;
-	p INT;
+	pkg INT;
 	type SMALLINT;
 	id BIGINT;
-	order FLOAT;
+	pkg_order FLOAT;
 
 BEGIN
+	PERFORM (SELECT update_package_install());
+
 	CREATE TEMP TABLE IF NOT EXISTS api_tmp (
 		api_type SMALLINT NOT NULL,
 		api_id BIGINT NOT NULL,
@@ -106,16 +110,16 @@ BEGIN
 		api_id BIGINT NOT NULL,
 		PRIMARY KEY(api_type, api_id));
 
-	FOR p IN (SELECT DISTINCT pkg_id FROM package_api_usage) LOOP
+	FOR pkg IN (SELECT DISTINCT pkg_id FROM package_api_usage) LOOP
 
 		RAISE NOTICE 'analyze package %/%', count, total;
 		count := count + 1;
 
 		INSERT INTO pkg_api_tmp
 			SELECT api_type, api_id FROM package_api_usage
-			WHERE pkg_id = p;
+			WHERE pkg_id = pkg;
 
-		order := (SELECT percent_order FROM package_install WHERE pkg_id = p);
+		pkg_order := (SELECT percent_order FROM package_install WHERE pkg_id = pkg);
 
 		for type, id IN (SELECT * FROM pkg_api_tmp) LOOP
 			IF EXISTS(
@@ -123,11 +127,11 @@ BEGIN
 				WHERE api_type = type AND api_id = id
 			) THEN
 				UPDATE api_tmp
-				SET percent_order = percent_order + order
+				SET percent_order = percent_order + pkg_order
 				WHERE api_type = type
 				AND   api_id = id;
 			ELSE
-				INSERT INTO api_tmp VALUES (type, id, order);
+				INSERT INTO api_tmp VALUES (type, id, pkg_order);
 			END IF;
 		END LOOP;
 
@@ -136,10 +140,9 @@ BEGIN
 
 	TRUNCATE TABLE api_importance;
 	INSERT INTO api_importance
-		SELECT api_type, api_id,
-		api_importance_order
+		SELECT api_type, api_id, percent_order
 		FROM api_tmp
-		ORDER BY api_importance_order DESC, api_type, api_id;
+		ORDER BY percent_order DESC, api_type, api_id;
 
 	TRUNCATE TABLE api_tmp;
 END

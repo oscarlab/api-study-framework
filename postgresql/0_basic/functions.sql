@@ -59,13 +59,13 @@ $$ LANGUAGE plpgsql;
 -- in the database we store log10(1 - API importance) for precision.
 -- use this function to translate back to API importance
 
-CREATE OR REPLACE FUNCTION get_api_importance(order FLOAT)
+CREATE OR REPLACE FUNCTION get_api_importance(precent_order FLOAT)
 RETURNS FLOAT AS $$
 BEGIN
-       IF order > 6 THEN
+       IF precent_order > 6 THEN
                RETURN 1.0;
        ELSE
-               RETURN 1.0 - 10.0 ^ (-prder);
+               RETURN 1.0 - 10.0 ^ (-percent_order);
        END IF;
 END
 $$ LANGUAGE plpgsql;

@@ -18,12 +18,12 @@ IF NOT table_exists('package_api_usage') THEN
 		api_id BIGINT NOT NULL,
 		PRIMARY KEY (pkg_id, api_type, api_id)
 	);
-	CREATE INDEX package_syscall_pkg_id_idx
-		ON package_syscall (pkg_id);
+	CREATE INDEX package_api_usagel_pkg_id_idx
+		ON package_api_usage (pkg_id);
 END IF;
 END $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION analysis_package(p INT)
+CREATE OR REPLACE FUNCTION analyze_package(p INT)
 RETURNS void AS $$
 
 DECLARE

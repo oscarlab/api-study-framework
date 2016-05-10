@@ -31,7 +31,7 @@ END IF;
 END
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION analysis_library(p INT, b INT)
+CREATE OR REPLACE FUNCTION analyze_library(p INT, b INT)
 RETURNS void AS $$
 
 BEGIN

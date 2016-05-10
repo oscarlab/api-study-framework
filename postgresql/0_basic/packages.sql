@@ -1,16 +1,20 @@
 DO $$
-DECLARE
-	total INT := inst FROM package_popularity WHERE package_name = 'Total';
 BEGIN
-
 IF NOT table_exists('package_install') THEN
-	CREATE TABLE package_inst (pkg_id INT, percent_order FLOAT);
+	CREATE TABLE package_install (
+		pkg_id INT,
+		percent_order FLOAT,
+		PRIMARY KEY(pkg_id)
+	);
 END IF;
+END
+$$ LANGUAGE plpgsql;
 
 CREATE or REPLACE FUNCTION update_package_install()
 RETURNS void AS $$
 DECLARE
-	last INT := (SELECT MAX(id) FROM package_id);
+	total INT := (SELECT inst FROM package_popularity WHERE package_name = 'Total');
+	last INT := (SELECT COALESCE(MAX(pkg_id), 0) FROM package_install);
 
 BEGIN
 	INSERT INTO package_install
@@ -20,6 +24,3 @@ BEGIN
 		WHERE t2.id > last;
 END
 $$ LANGUAGE plpgsql;
-
-
-END $$ LANGUAGE plpgsql;

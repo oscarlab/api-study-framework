@@ -5,7 +5,7 @@ IF NOT table_exists('executable_call') THEN
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
 		dep_bin_id INT NOT NULL,
 		call_addr INT NOT NULL,
-		PRIMARY KEY(pkg_id, bin_id, dep_bin_id, call)
+		PRIMARY KEY(pkg_id, bin_id, dep_bin_id, call_addr)
 	);
 	CREATE INDEX executable_call_pkg_id_bin_id_idx
 		ON executable_call (pkg_id, bin_id);
@@ -29,7 +29,7 @@ IF NOT table_exists('executable_api_usage') THEN
 END IF;
 END $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION analysis_executable(p INT, b INT)
+CREATE OR REPLACE FUNCTION analyze_executable(p INT, b INT)
 RETURNS void AS $$
 
 DECLARE
@@ -164,8 +164,8 @@ BEGIN
 	WITH RECURSIVE
 	analysis(pkg_id, bin_id, func_addr) AS (
 		SELECT t2.pkg_id, t2.bin_id, t2.func_addr
-		FROM binary_symbol_hash AS t1 INNER JOIN dep_sym AS t2
-		ON t1.symbol = t2.symbol
+		FROM binary_symbol AS t1 INNER JOIN dep_sym AS t2
+		ON hashtext(t1.symbol_name) = t2.symbol_hash
 		WHERE t1.pkg_id = p AND t1.bin_id = b AND t1.func_addr = 0
 		UNION
 		SELECT DISTINCT
@@ -193,7 +193,7 @@ BEGIN
 		SELECT DISTINCT
 		p, b, bin_id, func_addr
 		FROM bin_call
-		WHERE pkg_id = libc AND by_libc = False;
+		WHERE pkg_id = libc;
 
 	time2 := clock_timestamp();
 	RAISE NOTICE '%', time2 - time1;
@@ -201,19 +201,16 @@ BEGIN
 
 	DELETE FROM executable_api_usage WHERE pkg_id = p AND bin_id = b;
 	INSERT INTO executable_api_usage
-		SELECT DISTINCT p, b, syscall, False
-		FROM binary_syscall
+		SELECT DISTINCT p, b, api_type, api_id
+		FROM binary_api_usage
 		WHERE pkg_id = p AND bin_id = b
 		UNION
-		SELECT DISTINCT p, b, syscall, False
-		FROM binary_unknown_syscall
-		WHERE pkg_id = p AND bin_id = b
-		AND known = True
-		UNION
-		SELECT DISTINCT p, b, t2.syscall, by_libc
-		FROM
-		bin_call AS t1 INNER JOIN library_syscall AS t2
-		ON  t1.pkg_id = t2.pkg_id AND t1.bin_id = t2.bin_id
+		SELECT DISTINCT p, b, t2.api_type, t2.api_id
+		FROM bin_call AS t1
+		INNER JOIN
+		library_api_usage AS t2
+		ON  t1.pkg_id = t2.pkg_id
+		AND t1.bin_id = t2.bin_id
 		AND t1.func_addr = t2.func_addr;
 
 	time2 := clock_timestamp();
