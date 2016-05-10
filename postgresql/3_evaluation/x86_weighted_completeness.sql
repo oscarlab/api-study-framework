@@ -1,3 +1,8 @@
+CREATE OR REPLACE VIEW package_instr_usage_array AS
+	SELECT pkg_id, array_agg(instr) AS instrs
+	FROM package_instr_usage
+	GROUP BY pkg_id;
+
 CREATE OR REPLACE FUNCTION x86_weighted_completeness(
 	instrs VARCHAR(15)[]
 )
@@ -11,7 +16,7 @@ DECLARE
 BEGIN
 	FOR pkg_instrs IN (
 		SELECT t2.percent_order, t1.instrs FROM (
-			SELECT p.pkg_id, array_accum(p.instrs) AS instrs
+			SELECT p.pkg_id, p.instrs
 			FROM package_instr_usage_array AS p
 			WHERE ARRAY[p.instr_type] <@ instr_types
 			GROUP BY p.pkg_id
