@@ -60,7 +60,7 @@ BEGIN
 		ORDER BY t.instr_importance_order DESC
 		LIMIT more_instrs
 	) LOOP
-		instrs := instrs || instr;
+		instrs := instrs || ARRAY[instr];
 		RETURN NEXT (SELECT ROW(
 				instr,
 				linux_weighted_completeness(instrs)
