@@ -65,7 +65,7 @@ BEGIN
 
 	DELETE FROM package_call WHERE pkg_id = p;
 	INSERT INTO package_call
-		SELECT DISTINCT p, t1.dep_bin_id, t1.call
+		SELECT DISTINCT p, t1.dep_bin_id, t1.call_hash
 		FROM executable_call AS t1
 		INNER JOIN
 		pkg_bin AS t2
