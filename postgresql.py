@@ -93,7 +93,7 @@ class PostgreSQL(SQL):
 	def hash_text(self, text):
 		return self.postgresql_query('SELECT hashtext(\'' + text + '\')')[0][0]
 
-def AnalysisLibrary(jmgr, os_target, sql, args):
+def AnalyzeLibrary(jmgr, os_target, sql, args):
 	pkg_name = args[0]
 	bin = args[1]
 
@@ -110,13 +110,13 @@ def AnalysisLibrary(jmgr, os_target, sql, args):
 	sql.postgresql_execute('SELECT analyze_library(%d, %d)' % (pkg_id, bin_id))
 	sql.commit()
 
-subtasks['PostgresqlAnalysisLibrary'] = Task(
+subtasks['PostgresqlAnalyzeLibrary'] = Task(
 		name = "Analyze Library by PostgreSQL",
-		func = AnalysisLibrary,
+		func = AnalyzeLibrary,
 		arg_defs = ["Package Name", "Binary Name"],
 		job_name = lambda args: "Analyze Library: " + args[1] + " in " + args[0])
 
-def AnalysisAllLibraries(jmgr, os_target, sql, args):
+def AnalyzeAllLibraries(jmgr, os_target, sql, args):
 	sql.connect_table(tables['binary_list'])
 
 	results = sql.search_record(tables['binary_list'], 'callgraph=false AND type=\'lib\'', ['pkg_id', 'bin_id'])
@@ -128,13 +128,13 @@ def AnalysisAllLibraries(jmgr, os_target, sql, args):
 		pkg_name = get_package_name(sql, pkg_id)
 		bin = get_binary_name(sql, bin_id)
 		if pkg_name and bin:
-			subtasks['PostgresqlAnalysisLibrary'].create_job(jmgr, [pkg_name, bin, pkg_id, bin_id]);
+			subtasks['PostgresqlAnalyzeLibrary'].create_job(jmgr, [pkg_name, bin, pkg_id, bin_id]);
 
-tasks['PostgresqlAnalysisAllLibraries'] = Task(
+tasks['PostgresqlAnalyzeAllLibraries'] = Task(
 		name="Analyze All Libaries by PostgreSQL",
-		func=AnalysisAllLibraries)
+		func=AnalyzeAllLibraries)
 
-def AnalysisLinking(jmgr, os_target, sql, args):
+def AnalyzeLinking(jmgr, os_target, sql, args):
 	pkg_name = args[0]
 
 	if len(args) > 1:
@@ -146,13 +146,13 @@ def AnalysisLinking(jmgr, os_target, sql, args):
 	sql.postgresql_execute('SELECT analyze_linking(%d, bin_id, false, false) FROM binary_list WHERE pkg_id=%d AND linking=false and type != \'scr\'' % (pkg_id, pkg_id))
 	sql.commit()
 
-subtasks['PostgresqlAnalysisLinking'] = Task(
+subtasks['PostgresqlAnalyzeLinking'] = Task(
 		name = "Analyze Linking by PostgreSQL",
-		func = AnalysisLinking,
+		func = AnalyzeLinking,
 		arg_defs = ["package_name"],
 		job_name = lambda args: "Analyze Linking: " + args[0])
 
-def AnalysisAllLinking(jmgr, os_target, sql, args):
+def AnalyzeAllLinking(jmgr, os_target, sql, args):
 	sql.connect_table(tables['binary_list'])
 	sql.connect_table(tables['binary_link'])
 
@@ -166,13 +166,13 @@ def AnalysisAllLinking(jmgr, os_target, sql, args):
 		pkg_id = int(r[0])
 		pkg_name = get_package_name(sql, pkg_id)
 		if pkg_name:
-			subtasks['PostgresqlAnalysisLinking'].create_job(jmgr, [pkg_name, pkg_id]);
+			subtasks['PostgresqlAnalyzeLinking'].create_job(jmgr, [pkg_name, pkg_id]);
 
-tasks['PostgresqlAnalysisAllLinking'] = Task(
+tasks['PostgresqlAnalyzeAllLinking'] = Task(
 		name = "Analyze All Linking by PostgreSQL",
-		func = AnalysisAllLinking)
+		func = AnalyzeAllLinking)
 
-def AnalysisExecutable(jmgr, os_target, sql, args):
+def AnalyzeExecutable(jmgr, os_target, sql, args):
 	pkg_name = args[0]
 	bin = args[1]
 	if len(args) > 2:
@@ -187,13 +187,13 @@ def AnalysisExecutable(jmgr, os_target, sql, args):
 	sql.postgresql_execute('SELECT analyze_executable(%d, %d)' % (pkg_id, bin_id))
 	sql.commit()
 
-subtasks['PostgresqlAnalysisExecutable'] = Task(
+subtasks['PostgresqlAnalyzeExecutable'] = Task(
 		name = "Analyze Executable by PostgreSQL",
-		func = AnalysisExecutable,
+		func = AnalyzeExecutable,
 		arg_defs = ["Package Name", "Binary Name"],
 		job_name = lambda args: "Analyze Executable: " + args[1] + " in " + args[0])
 
-def AnalysisAllExecutables(jmgr, os_target, sql, args):
+def AnalyzeAllExecutables(jmgr, os_target, sql, args):
 	sql.connect_table(tables['binary_list'])
 
 	results = sql.search_record(tables['binary_list'],
@@ -206,14 +206,14 @@ def AnalysisAllExecutables(jmgr, os_target, sql, args):
 		pkg_name = get_package_name(sql, pkg_id)
 		bin = get_binary_name(sql, bin_id)
 		if pkg_name and bin:
-			subtasks['PostgresqlAnalysisExecutable'] \
+			subtasks['PostgresqlAnalyzeExecutable'] \
 				.create_job(jmgr, [pkg_name, bin, pkg_id, bin_id]);
 
-tasks['PostgresqlAnalysisAllExecutables'] = Task(
+tasks['PostgresqlAnalyzeAllExecutables'] = Task(
 		name = "Analyze All Executables by PostgreSQL",
-		func = AnalysisAllExecutables)
+		func = AnalyzeAllExecutables)
 
-def AnalysisPackage(jmgr, os_target, sql, args):
+def AnalyzePackage(jmgr, os_target, sql, args):
 	pkg_name = args[0]
 	if len(args) > 1:
 		pkg_id = args[1]
@@ -223,13 +223,13 @@ def AnalysisPackage(jmgr, os_target, sql, args):
 	sql.postgresql_execute('SELECT analyze_package(%d)' % (pkg_id))
 	sql.commit()
 
-subtasks['PostgresqlAnalysisPackage'] = Task(
+subtasks['PostgresqlAnalyzePackage'] = Task(
 		name = "Analyze Package by PostgreSQL",
-		func = AnalysisPackage,
+		func = AnalyzePackage,
 		arg_defs = ["Package Name"],
 		job_name = lambda args: "Analyze Package: " + args[0])
 
-def AnalysisAllPackages(jmgr, os_target, sql, args):
+def AnalyzeAllPackages(jmgr, os_target, sql, args):
 	sql.connect_table(tables['package_id'])
 
 	results = sql.search_record(tables['package_id'], 'footprint=false', ['id'])
@@ -238,8 +238,8 @@ def AnalysisAllPackages(jmgr, os_target, sql, args):
 		pkg_id = r[0]
 		pkg_name = get_package_name(sql, pkg_id)
 		if pkg_name:
-			subtasks['PostgresqlAnalysisPackage'].create_job(jmgr, [pkg_name, pkg_id]);
+			subtasks['PostgresqlAnalyzePackage'].create_job(jmgr, [pkg_name, pkg_id]);
 
-tasks['PostgresqlAnalysisAllPackages'] = Task(
+tasks['PostgresqlAnalyzeAllPackages'] = Task(
 		name = "Analyze All Packages by PostgreSQL",
-		func = AnalysisAllPackages)
+		func = AnalyzeAllPackages)

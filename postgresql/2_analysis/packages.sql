@@ -18,7 +18,7 @@ IF NOT table_exists('package_api_usage') THEN
 		api_id BIGINT NOT NULL,
 		PRIMARY KEY (pkg_id, api_type, api_id)
 	);
-	CREATE INDEX package_api_usagel_pkg_id_idx
+	CREATE INDEX package_api_usage_pkg_id_idx
 		ON package_api_usage (pkg_id);
 END IF;
 END $$ LANGUAGE plpgsql;
@@ -55,7 +55,7 @@ BEGIN
 
 	DELETE FROM package_call WHERE pkg_id = p;
 	INSERT INTO package_call
-		SELECT DISTINCT p, t1.dep_bin_id, t1.call
+		SELECT DISTINCT p, t1.dep_bin_id, t1.call_addr
 		FROM executable_call AS t1
 		INNER JOIN
 		pkg_bin AS t2
