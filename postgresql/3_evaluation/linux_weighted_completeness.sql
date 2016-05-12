@@ -52,7 +52,7 @@ BEGIN
 		CREATE TYPE api_improvement AS (
 			api_type SMALLINT,
 			api_id BIGINT,
-			weighted_completeness FLOAT,
+			weighted_completeness FLOAT
 		);
 	END IF;
 END
