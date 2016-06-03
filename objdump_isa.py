@@ -19,6 +19,7 @@ sys.path.append('pybfd/lib/python')
 from pybfd import opcodes, bfd, section
 from pybfd.opcodes import Opcodes, OpcodesException
 from pybfd.bfd import Bfd, BfdException
+from pybfd.symbol import SymbolFlags
 
 x86_64_regs = [
 		['rax',  'eax',  'ax',   'al'  ],
@@ -594,6 +595,12 @@ def get_callgraph(binary_name):
 	codes.dynsyms = dynsyms
 
 	for sym_addr in dynsyms.keys():
+		# Only look at global functions
+		flags = dynsyms[sym_addr]
+		if SymbolFlags.GLOBAL not in flags:
+			continue
+		if SymbolFlags.FUNCTION not in flags:
+			continue
 		if sym_addr:
 			codes.add_entry(sym_addr)
 
