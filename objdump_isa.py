@@ -260,6 +260,22 @@ class OpLoad(Op):
 	def get_val(self, regval=None):
 		return None
 
+def val2ptr(val, ptr_size):
+	if ptr_size == 8:
+		max = 0xffffffffffffffff
+	elif ptr_size == 4:
+		max = 0xffffffff
+	else:
+		return 0
+
+	if isinstance(val, long):
+		return val & max
+
+	if val < 0:
+		return max + val - 1
+
+	return val
+
 def get_callgraph(binary_name):
 
 	# Initialize BFD instance
@@ -494,29 +510,33 @@ def get_callgraph(binary_name):
 					if ishex(comm):
 						comm = hex2int(comm)
 
+				if insn == 'ret':
+					self.cur_bb.end = address + size
+					return opcodes.PYBFD_DISASM_STOP
+
 				if insn_type == opcodes.InstructionType.BRANCH:
 					if isinstance(arg1, OpLoad):
 						target_addr = arg1.addr.get_val()
 						if target_addr in rel_entries:
 							self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, rel_entries[target_addr]))
 
-					if insn != 'ret' and target:
-						bb = self.cur_func.add_bblock(target)
+					if target:
+						bb = self.cur_func.add_bblock(val2ptr(target, ptr_size))
 						self.cur_bb.targets.add(bb)
 
 					self.cur_bb.end = address + size
 					return opcodes.PYBFD_DISASM_STOP
 
 				if self.cur_bb.end and address >= self.cur_bb.end:
-					bb = self.cur_func.add_bblock(address)
+					bb = self.cur_func.add_bblock(val2ptr(address, ptr_size))
 					self.cur_bb.targets.add(bb)
 					return opcodes.PYBFD_DISASM_STOP
 
 				if insn_type == opcodes.InstructionType.COND_BRANCH:
-					next_bb = self.cur_func.add_bblock(address + size)
+					next_bb = self.cur_func.add_bblock(val2ptr(address + size, ptr_size))
 					bb = self.cur_func.add_bblock(target)
 
-					self.cur_bb.end = address + size
+					self.cur_bb.end = val2ptr(address + size, ptr_size)
 					self.cur_bb.targets.add(bb)
 					self.cur_bb.targets.add(next_bb)
 					self.cur_bb = next_bb
@@ -527,12 +547,12 @@ def get_callgraph(binary_name):
 
 				elif insn_type == opcodes.InstructionType.JSR:
 					if target:
-						self.add_entry(target)
+						self.add_entry(val2ptr(target, ptr_size))
 						self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, target))
 
 				elif insn_type == opcodes.InstructionType.COND_JSR:
 					if target:
-						self.add_entry(target)
+						self.add_entry(val2ptr(target, ptr_size))
 						self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, target))
 
 				elif insn_type == opcodes.InstructionType.NON_BRANCH:
@@ -545,7 +565,7 @@ def get_callgraph(binary_name):
 					elif insn == 'lea':
 						if arg2.val:
 							if arg2.val >= self.start and arg2.val < self.end:
-								self.add_entry(arg2.val)
+								self.add_entry(val2ptr(arg2.val, ptr_size))
 						
 						self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, arg2))
 
@@ -596,7 +616,7 @@ def get_callgraph(binary_name):
 
 	for sym_addr in dynsyms.keys():
 		# Only look at global functions
-		flags = dynsyms[sym_addr]
+		flags = dynsyms[sym_addr].flags
 		if SymbolFlags.GLOBAL not in flags:
 			continue
 		if SymbolFlags.FUNCTION not in flags:
