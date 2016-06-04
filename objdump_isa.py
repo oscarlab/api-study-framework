@@ -384,6 +384,8 @@ def get_callgraph(binary_name):
 		def process_instructions(self, address, size, branch_delay_insn,
 			insn_type, target, target2, disassembly):
 
+			# print "%x: %s" % (address, disassembly)
+
 			try:
 				regex = r'^(?P<repz>repz )?(?P<insn>\S+)(\s+(?P<arg1>[^,]+)?(,(?P<arg2>[^#]+)(#(?P<comm>.+))?)?)?$'
 				m = re.match(regex, disassembly)
@@ -519,6 +521,9 @@ def get_callgraph(binary_name):
 						target_addr = arg1.addr.get_val()
 						if target_addr in rel_entries:
 							self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, rel_entries[target_addr]))
+						elif target_addr:
+							self.add_entry(val2ptr(target_addr, ptr_size))
+							self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, target_addr))
 
 					if target:
 						bb = self.cur_func.add_bblock(val2ptr(target, ptr_size))
@@ -546,12 +551,28 @@ def get_callgraph(binary_name):
 						self.cur_func.bblocks.append(next_bb)
 
 				elif insn_type == opcodes.InstructionType.JSR:
-					if target:
+					if isinstance(arg1, OpLoad):
+						target_addr = arg1.addr.get_val()
+						if target_addr in rel_entries:
+							self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, rel_entries[target_addr]))
+						elif target_addr:
+							self.add_entry(val2ptr(target_addr, ptr_size))
+							self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, target_addr))
+
+					elif target:
 						self.add_entry(val2ptr(target, ptr_size))
 						self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, target))
 
 				elif insn_type == opcodes.InstructionType.COND_JSR:
-					if target:
+					if isinstance(arg1, OpLoad):
+						target_addr = arg1.addr.get_val()
+						if target_addr in rel_entries:
+							self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, rel_entries[target_addr]))
+						elif target_addr:
+							self.add_entry(val2ptr(target_addr, ptr_size))
+							self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, target_addr))
+
+					elif target:
 						self.add_entry(val2ptr(target, ptr_size))
 						self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, target))
 
