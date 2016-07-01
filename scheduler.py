@@ -89,6 +89,7 @@ class WorkerProcess(Process):
 		os.dup2(log, 1)
 		os.dup2(log, 2)
 
+		self.scheduler.sql.connect()
 		while True:
 			try:
 				j = self.scheduler.worker_queue.get()
@@ -99,7 +100,7 @@ class WorkerProcess(Process):
 			s = JobStatus(j.id)
 			print "Start Job:", j.name, s.start_time
 			try:
-				j.run(self.scheduler, self.os_target, self.sql)
+				j.run(self.scheduler, self.scheduler.os_target, self.scheduler.sql)
 			except Exception as err:
 				print err.__class__.__name__, ':', err
 				print 'Traceback:'
@@ -183,8 +184,8 @@ class HostProcess(Process):
 				pass
 
 			def get_id():
-				id = self.id_alloc.value
-				self.id_alloc.value += 1
+				id = id_alloc.value
+				id_alloc.value += 1
 				return id
 
 			SyncManagerScheduler.register('get_id', get_id)

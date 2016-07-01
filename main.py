@@ -44,6 +44,6 @@ if __name__ == "__main__":
 		all_tasks.append(tasks[t])
 
 	if foreground:
-		make_screen(scheduler, os_target, sql, all_tasks)
+		make_screen(scheduler, all_tasks)
 
 	os._exit(0)

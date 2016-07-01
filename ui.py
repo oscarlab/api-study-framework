@@ -143,7 +143,7 @@ def confirm_exit(screen):
 	curses.noecho()
 	return text == "exit"
 
-def make_screen(scheduler, os_target, sql, tasks):
+def make_screen(scheduler, tasks):
 	sighandler = signal.getsignal(signal.SIGINT)
 	signal.signal(signal.SIGINT, signal.SIG_IGN)
 	ret = False
@@ -197,7 +197,7 @@ def make_screen(scheduler, os_target, sql, tasks):
 		elif c == ord('w'):
 			show_list(screen, "Workers", scheduler.get_workers(), print_worker)
 		elif c == ord('n'):
-			scheduler.add_worker(os_target, sql)
+			scheduler.add_worker()
 			show_message(screen, "A new worker is created")
 		elif c == ord('e'):
 			if confirm_exit(screen):
