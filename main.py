@@ -55,6 +55,7 @@ def main():
 		return
 
 	for task_name in sorted(tasks.keys()):
+		print(task_name)
 		Task.register(tasks[task_name])
 
 	ncpu = multiprocessing.cpu_count() - 1;
