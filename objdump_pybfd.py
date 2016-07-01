@@ -4,7 +4,6 @@ from sql import tables, Table
 from id import get_binary_id, get_package_id
 import package
 import os_target
-import main
 
 import os
 import sys

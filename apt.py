@@ -3,7 +3,7 @@
 from id import get_binary_id, get_package_id
 from task import tasks, Task
 import package
-import main
+from utils import get_config, null_dev, root_dir, get_temp_dir
 
 import os
 import sys
@@ -25,9 +25,9 @@ package_exclude_rules = [
 	]
 
 def get_packages():
-	package_source = main.get_config('package_source')
-	package_arch = main.get_config('package_arch')
-	package_options = main.get_config('package_options')
+	package_source = get_config('package_source')
+	package_arch = get_config('package_arch')
+	package_options = get_config('package_options')
 
 	cmd = ["apt-cache"]
 
@@ -39,7 +39,7 @@ def get_packages():
 		for (opt, val) in package_options.items():
 			cmd += ["-o", opt + "=" + val]
 
-	process = subprocess.Popen(cmd + ["pkgnames"], stdout=subprocess.PIPE, stderr=main.null_dev)
+	process = subprocess.Popen(cmd + ["pkgnames"], stdout=subprocess.PIPE, stderr=null_dev)
 	(stdout, stderr) = process.communicate()
 	packages = []
 	for name in stdout.split():
@@ -54,9 +54,9 @@ def get_packages():
 	return packages
 
 def get_package_info(pkgname):
-	package_source = main.get_config('package_source')
-	package_arch = main.get_config('package_arch')
-	package_options = main.get_config('package_options')
+	package_source = get_config('package_source')
+	package_arch = get_config('package_arch')
+	package_options = get_config('package_options')
 
 	cmd = ["apt-cache"]
 
@@ -70,7 +70,7 @@ def get_package_info(pkgname):
 
 	has_source = False
 	arch = 'all'
-	process = subprocess.Popen(cmd + ["showpkg", pkgname], stdout=subprocess.PIPE, stderr=main.null_dev)
+	process = subprocess.Popen(cmd + ["showpkg", pkgname], stdout=subprocess.PIPE, stderr=null_dev)
 	for line in process.stdout:
 		m = re.match('\s*Architecture:\s*(\S+)', line)
 		if m:
@@ -96,7 +96,7 @@ def get_package_info(pkgname):
 					args = "-tJf"
 				if args is None:
 					continue
-				process = subprocess.Popen(["tar", args, root + "/" + f], stdout=subprocess.PIPE, stderr=main.null_dev)
+				process = subprocess.Popen(["tar", args, root + "/" + f], stdout=subprocess.PIPE, stderr=null_dev)
 				for line in process.stdout:
 					line = line.strip()
 					for ext in extensions:
@@ -115,9 +115,9 @@ def get_package_info(pkgname):
 	return {'arch': arch, 'opensource': has_source };
 
 def get_package_dependency(pkgname):
-	package_source = main.get_config('package_source')
-	package_arch = main.get_config('package_arch')
-	package_options = main.get_config('package_options')
+	package_source = get_config('package_source')
+	package_arch = get_config('package_arch')
+	package_options = get_config('package_options')
 
 	cmd = ["apt-cache"]
 
@@ -129,7 +129,7 @@ def get_package_dependency(pkgname):
 		for (opt, val) in package_options.items():
 			cmd += ["-o", opt + "=" + val]
 
-	process = subprocess.Popen(cmd + ["depends", pkgname], stdout=subprocess.PIPE, stderr=main.null_dev)
+	process = subprocess.Popen(cmd + ["depends", pkgname], stdout=subprocess.PIPE, stderr=null_dev)
 	stdout = process.communicate()[0]
 	deps = []
 	for line in stdout.split('\n'):
@@ -142,11 +142,11 @@ def get_package_dependency(pkgname):
 
 def apt_options_for_source(source):
 	return [
-		"-o", "Dir::Etc::SourceList=" + os.path.join(main.root_dir, source),
+		"-o", "Dir::Etc::SourceList=" + os.path.join(root_dir, source),
 		"-o", "Dir::Etc::SourceParts=-",
-		"-o", "Dir::Cache=" + os.path.join(main.root_dir, 'apt/cache'),
-		"-o", "Dir::State::Lists=" + os.path.join(main.root_dir, 'apt/lists'),
-		"-o", "Dir::State::Status=" + os.path.join(main.root_dir, 'apt/status'),
+		"-o", "Dir::Cache=" + os.path.join(root_dir, 'apt/cache'),
+		"-o", "Dir::State::Lists=" + os.path.join(root_dir, 'apt/lists'),
+		"-o", "Dir::State::Status=" + os.path.join(root_dir, 'apt/status'),
 	]
 
 def update_apt(source=None, force=False):
@@ -172,7 +172,7 @@ def update_apt(source=None, force=False):
 		print "Cannot update package"
 
 def UpdateApt(jmgr, os_target, sql, args):
-	update_apt(main.get_config('package_source'), True)
+	update_apt(get_config('package_source'), True)
 
 tasks['UpdateApt'] = Task(
 	name = "Update APT repository",
@@ -189,7 +189,7 @@ def download_from_apt(name, source=None, arch=None, options=None):
 		for (opt, val) in options.items():
 			cmd += ["-o", opt + "=" + val]
 
-	process = subprocess.Popen(cmd + [name], stdout=subprocess.PIPE, stderr=main.null_dev)
+	process = subprocess.Popen(cmd + [name], stdout=subprocess.PIPE, stderr=null_dev)
 	stdout = process.communicate()[0]
 	if process.returncode != 0:
 		raise Exception("Cannot download \'" + name + "\'")
@@ -221,11 +221,11 @@ def download_source_from_apt(name, source=None, arch=None, options=None, unpack=
 		raise Exception("Cannot download \'" + name + "\'")
 
 def unpack_package(name):
-	package_source = main.get_config('package_source')
-	package_arch = main.get_config('package_arch')
-	package_options = main.get_config('package_options')
+	package_source = get_config('package_source')
+	package_arch = get_config('package_arch')
+	package_options = get_config('package_options')
 
-	dir = tempfile.mkdtemp('', '', main.get_temp_dir())
+	dir = tempfile.mkdtemp('', '', get_temp_dir())
 	os.chdir(dir)
 
 	try:
@@ -237,39 +237,39 @@ def unpack_package(name):
 		name = result.group(1)
 		version = result.group(2)
 		arch = result.group(3)
-		result = subprocess.call(["dpkg", "-x", filename, "."], stdout=main.null_dev, stderr=main.null_dev)
+		result = subprocess.call(["dpkg", "-x", filename, "."], stdout=null_dev, stderr=null_dev)
 		if result != 0:
 			raise Exception("Cannot unpack \'" + name + "\'")
 	except:
-		os.chdir(main.root_dir)
+		os.chdir(root_dir)
 		package.remove_dir(dir)
 		raise
 
-	os.chdir(main.root_dir)
+	os.chdir(root_dir)
 	return (dir, name, version)
 
 def download_package_source(name, unpack=False):
-	package_source = main.get_config('package_source')
-	package_arch = main.get_config('package_arch')
-	package_options = main.get_config('package_options')
+	package_source = get_config('package_source')
+	package_arch = get_config('package_arch')
+	package_options = get_config('package_options')
 
-	dir = tempfile.mkdtemp('', '', main.get_temp_dir())
+	dir = tempfile.mkdtemp('', '', get_temp_dir())
 	os.chdir(dir)
 
 	try:
 		download_source_from_apt(name, package_source,
 			package_arch, package_options, unpack)
 	except:
-		os.chdir(main.root_dir)
+		os.chdir(root_dir)
 		package.remove_dir(dir)
 		raise
 
 	os.mkdir(dir + '/refs')
-	os.chdir(main.root_dir)
+	os.chdir(root_dir)
 	return dir
 
 def check_elf(path):
-	process = subprocess.Popen(["readelf", "--file-header", "-W", path], stdout=subprocess.PIPE, stderr=main.null_dev)
+	process = subprocess.Popen(["readelf", "--file-header", "-W", path], stdout=subprocess.PIPE, stderr=null_dev)
 
 	for line in process.stdout:
 		results = re.match(r"([^\:]+)\: +(.+)", line.strip())
@@ -285,7 +285,7 @@ def check_elf(path):
 	if process.wait() != 0:
 		return False
 
-	process = subprocess.Popen(["readelf", "--section-headers", "-W", path], stdout=subprocess.PIPE, stderr=main.null_dev)
+	process = subprocess.Popen(["readelf", "--section-headers", "-W", path], stdout=subprocess.PIPE, stderr=null_dev)
 
 	has_text = False
 	for line in process.stdout:

@@ -133,12 +133,12 @@ class SQL:
 					next = val
 					break
 			if not next:
-				return None
+				raise Exception('Object ' + name + ' is not found')
 			obj = next
 		if not inspect.isclass(obj):
-			return None
+			raise Exception('Object ' + name + ' is not a class')
 		if not issubclass(obj, SQL):
-			return None
+			raise Exception('Object ' + name + ' is not a subclass of SQL')
 		return obj()
 
 class SQLPrintQuery(SQL):

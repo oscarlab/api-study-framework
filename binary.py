@@ -6,7 +6,6 @@ from id import get_package_id, get_binary_id
 import package
 import symbol
 import callgraph
-import isa
 
 import os
 import sys

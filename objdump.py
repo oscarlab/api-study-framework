@@ -6,7 +6,7 @@ from elf_binary import get_symbols
 import package
 import linux_defs
 import os_target
-import main
+from utils import null_dev
 
 import os
 import sys
@@ -229,7 +229,7 @@ class File_Inst(Inst):
 		return Inst.__str__(self) + ' access ' + self.file
 
 def get_callgraph(binary_name):
-	process = subprocess.Popen(["readelf", "--file-header", "-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
+	process = subprocess.Popen(["readelf", "--file-header", "-W", binary_name], stdout=subprocess.PIPE, stderr=null_dev)
 
 	entry_addr = None
 	for line in process.stdout:
@@ -245,7 +245,7 @@ def get_callgraph(binary_name):
 	if process.wait() != 0:
 		raise Exception('process failed: readelf --file-header')
 
-	process = subprocess.Popen(["readelf", "--dyn-syms","-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
+	process = subprocess.Popen(["readelf", "--dyn-syms","-W", binary_name], stdout=subprocess.PIPE, stderr=null_dev)
 
 	dynsym_list = {}
 	for line in process.stdout:
@@ -270,7 +270,7 @@ def get_callgraph(binary_name):
 	if process.wait() != 0:
 		raise Exception('process failed: readelf --dyn-syms')
 
-	process = subprocess.Popen(["readelf", "--program-headers", "-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
+	process = subprocess.Popen(["readelf", "--program-headers", "-W", binary_name], stdout=subprocess.PIPE, stderr=null_dev)
 
 	load_list = []
 	for line in process.stdout:
@@ -294,7 +294,7 @@ def get_callgraph(binary_name):
 	if process.wait() != 0:
 		raise Exception('process failed: readelf --program-headers')
 
-	process = subprocess.Popen(["readelf", "--section-headers", "-W", binary_name], stdout=subprocess.PIPE, stderr=main.null_dev)
+	process = subprocess.Popen(["readelf", "--section-headers", "-W", binary_name], stdout=subprocess.PIPE, stderr=null_dev)
 
 	text_area = None
 	init_addr = None
@@ -357,7 +357,7 @@ def get_callgraph(binary_name):
 	if fini_addr:
 		cmd += ["-j", ".fini"]
 
-	process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=main.null_dev)
+	process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=null_dev)
 
 	linenbr = 0
 	for line in process.stdout:

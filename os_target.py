@@ -21,12 +21,12 @@ class OS:
 					next = val
 					break
 			if not next:
-				return None
+				raise Exception('Object ' + name + ' is not found')
 			obj = next
 		if not inspect.isclass(obj):
-			return None
+			raise Exception('Object ' + name + ' is not a class')
 		if not issubclass(obj, OS):
-			return None
+			raise Exception('Object ' + name + ' is not a subclass of OS')
 		return obj()
 
 tables['api_type'] = Table('api_type', [

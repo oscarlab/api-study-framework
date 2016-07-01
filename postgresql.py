@@ -3,7 +3,7 @@
 from task import tasks, subtasks, Task
 from sql import SQL, tables
 from id import get_binary_id, get_binary_name, get_package_id, get_package_name
-from main import get_config
+from utils import get_config
 import binary
 
 import os
