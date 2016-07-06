@@ -3,7 +3,6 @@
 from task import tasks, subtasks, Task
 from sql import tables, Table
 from id import get_package_id, get_binary_id
-import package
 import symbol
 import callgraph
 
@@ -70,90 +69,3 @@ def append_binary_list(sql, pkgname, dir, binaries):
 			sql.append_record(tables['binary_list'], values)
 			if values['type'] == 'scr':
 				sql.append_record(tables['binary_interp'], values)
-
-def BinaryInfo(jmgr, os_target, sql, args):
-	sql.connect_table(tables['binary_list'])
-	sql.connect_table(tables['binary_link'])
-	sql.connect_table(tables['binary_interp'])
-
-	(dir, pkgname, _) = package.unpack_package(os_target, args[0])
-	if not dir:
-		return
-
-	binaries = os_target.get_binaries(dir, find_script=True)
-	if not binaries:
-		package.remove_dir(dir)
-		return
-
-	append_binary_list(sql, pkgname, dir, binaries)
-
-	for (bin, type, _) in binaries:
-		if type == 'lnk' or type == 'scr':
-			continue
-
-		ref = package.reference_dir(dir)
-		subtasks['BinarySymbol'].create_job(jmgr, [pkgname, bin, dir, ref])
-
-		ref = package.reference_dir(dir)
-		subtasks['BinaryDependency'].create_job(jmgr, [pkgname, bin, dir, ref])
-
-	sql.commit()
-	package.remove_dir(dir)
-
-subtasks['BinaryInfo'] = Task(
-	name = "Binary List",
-	func = BinaryInfo,
-	arg_defs = ["Package Name"],
-	job_name = lambda args: "Collect Binary Info, Symbols and Dependencies: " + args[0])
-
-def ListForBinaryInfo(jmgr, os_target, sql, args):
-	for pkg in package.pick_packages_from_args(os_target, sql, args):
-		subtasks['BinaryInfo'].create_job(jmgr, [pkg])
-
-tasks['ListForBinaryInfo'] = Task(
-	name = "List Packages to Collect Binary Info, Symbols and Dependencies",
-	func = ListForBinaryInfo,
-	arg_defs = package.args_to_pick_packages)
-
-def BinaryAnalysis(jmgr, os_target, sql, args):
-	(dir, pkgname, _) = package.unpack_package(os_target, args[0])
-	if not dir:
-		return
-
-	binaries = os_target.get_binaries(dir, find_script=True)
-	if not binaries:
-		package.remove_dir(dir)
-		return
-
-	append_binary_list(sql, pkgname, dir, binaries)
-
-	for (bin, type, _) in binaries:
-		if type == 'lnk' or type == 'scr':
-			continue
-
-		ref = package.reference_dir(dir)
-		subtasks['BinarySymbol'].create_job(jmgr, [pkgname, bin, dir, ref])
-
-		ref = package.reference_dir(dir)
-		subtasks['BinaryDependency'].create_job(jmgr, [pkgname, bin, dir, ref])
-
-		ref = package.reference_dir(dir)
-		subtasks['BinaryCall'].create_job(jmgr, [pkgname, bin, dir, ref])
-
-		ref = package.reference_dir(dir)
-		subtasks['BinaryInstr'].create_job(jmgr, [pkgname, bin, dir, ref])
-
-subtasks['BinaryAnalysis'] = Task(
-	name = "Full Binary Analysis",
-	func = BinaryAnalysis,
-	arg_defs = ["Package Name"],
-	job_name = lambda args: "Full Binary Analysis: " + args[0])
-
-def ListForBinaryAnalysis(jmgr, os_target, sql, args):
-	for pkg in package.pick_packages_from_args(os_target, sql, args):
-		subtasks['BinaryAnalysis'].create_job(jmgr, [pkg])
-
-tasks['ListForBinaryAnalysis'] = Task(
-	name = "List Packages for Full Binary Analysis",
-	func = ListForBinaryAnalysis,
-	arg_defs = package.args_to_pick_packages)

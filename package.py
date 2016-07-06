@@ -3,6 +3,7 @@
 from task import tasks, subtasks, Task
 from sql import tables, Table
 from id import get_package_id
+from binary import append_binary_list
 
 import os
 import sys
@@ -25,12 +26,11 @@ def get_packages_by_names(os_target, names):
 	return [name for name in names if name in packages]
 
 def get_packages_by_prefixes(os_target, prefixes):
-	packages = os_target.get_packages()
 	result = []
-	for package in packages:
+	for pkg in os_target.get_packages():
 		for p in prefixes:
-			if package.startswith(p):
-				result.append(package)
+			if pkg.startswith(p):
+				result.append(pkg)
 				break
 	return result
 
@@ -98,6 +98,43 @@ subtasks['PackageInfo'] = Task(
 	arg_defs = ["Package Name"],
 	job_name = lambda args: "Package Info and Dependency: " + args[0])
 
+def PackageAnalysis(jmgr, os_target, sql, args):
+	(dir, pkgname, _) = unpack_package(os_target, args[0])
+	if not dir:
+		return
+
+	subtasks['PackageInfo'].run_job(jmgr, [pkgname])
+
+	binaries = os_target.get_binaries(dir, find_script=True)
+	if not binaries:
+		remove_dir(dir)
+		return
+
+	append_binary_list(sql, pkgname, dir, binaries)
+
+	for (bin, type, _) in binaries:
+		if type == 'lnk' or type == 'scr':
+			continue
+
+		ref = reference_dir(dir)
+		subtasks['BinarySymbol'].run_job(jmgr, [pkgname, bin, dir, ref])
+
+		ref = reference_dir(dir)
+		subtasks['BinaryDependency'].run_job(jmgr, [pkgname, bin, dir, ref])
+
+		ref = reference_dir(dir)
+		subtasks['BinaryCall'].run_job(jmgr, [pkgname, bin, dir, ref])
+
+		#ref = reference_dir(dir)
+		#subtasks['BinaryInstr'].run_job(jmgr, [pkgname, bin, dir, ref])
+
+subtasks['PackageAnalysis'] = Task(
+	name = "Package Analysis",
+	func = PackageAnalysis,
+	arg_defs = ["Package Name"],
+	job_name = lambda args: "Package Analysis: " + args[0])
+
+
 def pick_packages_from_args(os_target, sql, args):
 	all_packages = []
 	
@@ -132,14 +169,15 @@ def pick_packages_from_args(os_target, sql, args):
 
 args_to_pick_packages = ['package names', 'package prefixes', 'min ranks', 'max ranks']
 
-def ListForPackageInfo(jmgr, os_target, sql, args):
+def ListForPackageAnalysis(jmgr, os_target, sql, args):
 	for pkg in pick_packages_from_args(os_target, sql, args):
-		subtasks['PackageInfo'].create_job(jmgr, [pkg])
+		subtasks['PackageAnalysis'].create_job(jmgr, [pkg])
 
-tasks['ListForPackageInfo'] = Task(
-	name = "List Packages to Collect Package Info and Dependency",
-	func = ListForPackageInfo,
-	arg_defs = args_to_pick_packages)
+tasks['ListForPackageAnalysis'] = Task(
+	name = "Analyze Selected Package(s)",
+	func = ListForPackageAnalysis,
+	arg_defs = args_to_pick_packages,
+	order = 10)
 
 def PackagePopularity(jmgr, os_target, sql, args):
 	sql.connect_table(tables['package_popularity'])
@@ -154,4 +192,5 @@ def PackagePopularity(jmgr, os_target, sql, args):
 
 tasks['PackagePopularity'] = Task(
 		name = "Collect Package Popularity",
-		func = PackagePopularity)
+		func = PackagePopularity,
+		order = 0)

@@ -366,7 +366,7 @@ class SimpleScheduler(Scheduler):
 
 	def clear_jobs(self):
 		for j in self.jobs.values():
-			if j.done:
+			if j.status is not None and j.status.success:
 				try:
 					self.jobs.pop(j.id)
 				except KeyError:

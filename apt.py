@@ -175,8 +175,9 @@ def UpdateApt(jmgr, os_target, sql, args):
 	update_apt(get_config('package_source'), True)
 
 tasks['UpdateApt'] = Task(
-	name = "Update APT repository",
-	func = UpdateApt)
+		name = "Update APT repository",
+		func = UpdateApt,
+		order = 99)
 
 def download_from_apt(name, source=None, arch=None, options=None):
 	cmd = ["apt-get", "download"]

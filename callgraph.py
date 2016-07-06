@@ -99,34 +99,3 @@ subtasks['BinaryCall'] = Task(
 	func = BinaryCall,
 	arg_defs = ["Package Name", "Binary Path", "Unpack Path"],
 	job_name = lambda args: "Collect Binary Callgraph and API Usage: " + args[1] + " in " + args[0])
-
-def BinaryCallInfo(jmgr, os_target, sql, args):
-	(dir, pkgname, _) = package.unpack_package(os_target, args[0])
-	if not dir:
-		return
-
-	binaries = os_target.get_binaries(dir)
-	if not binaries:
-		package.remove_dir(dir)
-		return
-
-	for (bin, type, _) in binaries:
-		if type == 'lnk':
-			continue
-		ref = package.reference_dir(dir)
-		subtasks['BinaryCall'].create_job(jmgr, [pkgname, bin, dir, ref])
-
-tasks['BinaryCallInfo'] = Task(
-	name = "Collect Binary Call and APIs",
-	func = BinaryCallInfo,
-	arg_defs = ["Package Name"],
-	job_name = lambda args: "Collect Binary Call and APIs: " + args[0])
-
-def ListForBinaryCallInfo(jmgr, os_target, sql, args):
-	for pkg in package.pick_packages_from_args(os_target, sql, args):
-		tasks['BinaryCallInfo'].create_job(jmgr, [pkg])
-
-tasks['ListForBinaryCallInfo'] = Task(
-	name = "List Packages to Collect Binary Call and APIs",
-	func = ListForBinaryCallInfo,
-	arg_defs = package.args_to_pick_packages)

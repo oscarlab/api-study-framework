@@ -83,4 +83,4 @@ def ApiList(jmgr, os_target, sql, args):
 
 	sql.commit()
 
-tasks['ApiList'] = Task(name = "List APIs", func = ApiList)
+tasks['ApiList'] = Task(name = "List System APIs", func = ApiList, order = 20)

@@ -132,7 +132,8 @@ def AnalyzeAllLibraries(jmgr, os_target, sql, args):
 
 tasks['PostgresqlAnalyzeAllLibraries'] = Task(
 		name="Analyze All Libaries by PostgreSQL",
-		func=AnalyzeAllLibraries)
+		func=AnalyzeAllLibraries,
+		order = 30)
 
 def AnalyzeLinking(jmgr, os_target, sql, args):
 	pkg_name = args[0]
@@ -170,7 +171,8 @@ def AnalyzeAllLinking(jmgr, os_target, sql, args):
 
 tasks['PostgresqlAnalyzeAllLinking'] = Task(
 		name = "Analyze All Linking by PostgreSQL",
-		func = AnalyzeAllLinking)
+		func = AnalyzeAllLinking,
+		order = 31)
 
 def AnalyzeExecutable(jmgr, os_target, sql, args):
 	pkg_name = args[0]
@@ -211,7 +213,8 @@ def AnalyzeAllExecutables(jmgr, os_target, sql, args):
 
 tasks['PostgresqlAnalyzeAllExecutables'] = Task(
 		name = "Analyze All Executables by PostgreSQL",
-		func = AnalyzeAllExecutables)
+		func = AnalyzeAllExecutables,
+		order = 32)
 
 def AnalyzePackage(jmgr, os_target, sql, args):
 	pkg_name = args[0]
@@ -242,4 +245,5 @@ def AnalyzeAllPackages(jmgr, os_target, sql, args):
 
 tasks['PostgresqlAnalyzeAllPackages'] = Task(
 		name = "Analyze All Packages by PostgreSQL",
-		func = AnalyzeAllPackages)
+		func = AnalyzeAllPackages,
+		order = 33)

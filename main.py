@@ -39,11 +39,11 @@ if __name__ == "__main__":
 	for i in range(nworkers):
 		scheduler.add_worker()
 
-	all_tasks = []
-	for t in sorted(tasks.keys()):
-		all_tasks.append(tasks[t])
+	sorted_tasks = []
+	for _, task in sorted(tasks.items(), key = lambda item: (item[1].order, item[0])):
+		sorted_tasks.append(task)
 
 	if foreground:
-		make_screen(scheduler, all_tasks)
+		make_screen(scheduler, sorted_tasks)
 
 	os._exit(0)
