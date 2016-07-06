@@ -68,17 +68,15 @@ class JobStatus:
 		return self.id == obj.id
 
 class WorkerProcess(Process):
-	def __init__(self, scheduler):
+	def __init__(self, scheduler, logfile):
 		Process.__init__(self)
 		self.scheduler = scheduler
+		self.logfile = logfile
 
 	def run(self):
-		name = current_process().name
-		print "Worker start running:", name
-		logfile = name + ".log"
-		if os.path.exists(logfile):
-			os.system('cat ' + logfile + ' >> ' + logfile + '.bak')
-		log = os.open(logfile, os.O_RDWR|os.O_CREAT|os.O_TRUNC)
+		if os.path.exists(self.logfile):
+			os.system('cat ' + self.logfile + ' >> ' + self.logfile + '.bak')
+		log = os.open(self.logfile, os.O_RDWR|os.O_CREAT|os.O_TRUNC)
 		os.dup2(log, 1)
 		os.dup2(log, 2)
 
@@ -237,9 +235,9 @@ class HostProcess(Process):
 		os._exit(0)
 
 	def add_worker(self):
-		w = WorkerProcess(self.scheduler)
 		self.worker_count += 1
-		w.name = self.host_server_name + "-" + str(self.worker_count)
+		w = WorkerProcess(self.scheduler, 'Worker-' + str(self.worker_count) + '.log')
+		w.name = self.host_server_name + '-' + str(self.worker_count)
 		w.start()
 		self.worker_processes.append(w)
 		self.scheduler.workers.update([(w.name, 0)])
@@ -294,7 +292,7 @@ class SimpleScheduler(Scheduler):
 				child = os.fork()
 				if child == 0:
 					os.setsid()
-					self.host_process = HostProcess(self, host_server, socket.gethostname() + ":" + str(host_port))
+					self.host_process = HostProcess(self, host_server, socket.gethostname() + ':' + str(host_port))
 					self.host_process.start()
 					os._exit(0)
 				else:
