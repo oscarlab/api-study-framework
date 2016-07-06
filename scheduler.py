@@ -210,7 +210,11 @@ class HostProcess(Process):
 			self.scheduler_process = SchedulerProcess(self.scheduler, scheduler_server)
 			self.scheduler_process.start()
 
-		self.scheduler.connect()
+		try:
+			self.scheduler.connect()
+		except socket.error:
+			os._exit(0)
+
 		self.worker_processes = []
 
 		def receive_connection(server):
