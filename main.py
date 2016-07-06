@@ -15,6 +15,10 @@ import callgraph
 import sys
 import os
 
+def usage():
+	print "./start-framework [-help] [-background] [-worker <nworker>]"
+	os._exit(0)
+
 if __name__ == "__main__":
 	foreground = True
 	nworkers = 0
@@ -22,14 +26,16 @@ if __name__ == "__main__":
 	i = 1
 	while i < len(sys.argv):
 		if sys.argv[i] == "-help":
-			print "./start-framework [-help] [-background] [-worker <nworker>]"
-			os._exit(0)
+			usage()
 		elif sys.argv[i] == "-background":
 			foreground = False
 		elif sys.argv[i] == "-worker":
+			if i == len(sys.argv):
+				usage()
 			i += 1
-			if i < len(sys.argv):
-				nworkers = int(sys.argv[i])
+			nworkers = int(sys.argv[i])
+		else:
+			usage()
 		i += 1
 
 	os_target = OS.get_target(get_config('os_target'))
