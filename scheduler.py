@@ -213,7 +213,8 @@ class HostProcess(Process):
 		try:
 			self.scheduler.connect()
 		except socket.error:
-			print "Failed connecting the scheduler."
+			print "Failed connecting to the scheduler."
+			self.host_server.listener.close()
 			os._exit(0)
 
 		self.worker_processes = []
@@ -237,6 +238,7 @@ class HostProcess(Process):
 		if os.path.exists(host_file):
 			os.unlink(host_file)
 
+		self.host_server.listener.close()
 		os._exit(0)
 
 	def add_worker(self):
@@ -300,6 +302,7 @@ class SimpleScheduler(Scheduler):
 					os._exit(0)
 				else:
 					os.waitpid(child, 0)
+					host_server.listener.close()
 
 			try:
 				class SyncManagerInterface(SyncManager):
@@ -314,6 +317,9 @@ class SimpleScheduler(Scheduler):
 					)
 				self.host_client.connect()
 			except:
+				if host_server:
+					print "Failed initializing the host."
+					os._exit(0)
 				host_port = None
 				self.host_client = None
 
@@ -323,6 +329,8 @@ class SimpleScheduler(Scheduler):
 	def connect(self):
 		class SyncManagerClient(SyncManager):
 			pass
+
+		print "Connecting to Scheduler (may take a few seconds)..."
 
 		SyncManagerClient.register('get_id')
 		SyncManagerClient.register('get_jobs')
@@ -344,6 +352,8 @@ class SimpleScheduler(Scheduler):
 		self.status_queue = self.client.get_status_queue()
 		self.exit_event = self.client.get_exit_event()
 		self.workers = self.client.get_workers()
+
+		print "Connected to the scheduler: " + self.scheduler_host + ":" + str(self.scheduler_port)
 
 	def add_worker(self):
 		self.host_client.add_worker()
