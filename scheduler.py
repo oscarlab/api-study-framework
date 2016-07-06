@@ -68,15 +68,8 @@ class JobStatus:
 		return self.id == obj.id
 
 class WorkerProcess(Process):
-	__count = 0
-
-	@classmethod
-	def get_worker_name(cls):
-		cls.__count += 1
-		return 'Worker-' + str(cls.__count)
-
 	def __init__(self, scheduler):
-		Process.__init__(self, name=WorkerProcess.get_worker_name())
+		Process.__init__(self)
 		self.scheduler = scheduler
 
 	def run(self):
@@ -163,10 +156,12 @@ class SchedulerProcess(Process):
 		self.server.serve_forever()
 
 class HostProcess(Process):
-	def __init__(self, scheduler, host_server):
+	def __init__(self, scheduler, host_server, host_server_name):
 		Process.__init__(self)
 		self.scheduler = scheduler
 		self.host_server = host_server
+		self.host_server_name = host_server_name
+		self.worker_count = 0
 
 	def run(self):
 		id_alloc = Value('I', 1)
@@ -243,6 +238,8 @@ class HostProcess(Process):
 
 	def add_worker(self):
 		w = WorkerProcess(self.scheduler)
+		self.worker_count += 1
+		w.name = self.host_server_name + "-" + str(self.worker_count)
 		w.start()
 		self.worker_processes.append(w)
 		self.scheduler.workers.update([(w.name, 0)])
@@ -297,7 +294,7 @@ class SimpleScheduler(Scheduler):
 				child = os.fork()
 				if child == 0:
 					os.setsid()
-					self.host_process = HostProcess(self, host_server)
+					self.host_process = HostProcess(self, host_server, socket.gethostname() + ":" + str(host_port))
 					self.host_process.start()
 					os._exit(0)
 				else:
