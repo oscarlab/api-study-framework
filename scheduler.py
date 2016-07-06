@@ -213,6 +213,7 @@ class HostProcess(Process):
 		try:
 			self.scheduler.connect()
 		except socket.error:
+			print "Failed connecting the scheduler."
 			os._exit(0)
 
 		self.worker_processes = []
