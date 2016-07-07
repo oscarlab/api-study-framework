@@ -21,12 +21,12 @@ class OS:
 					next = val
 					break
 			if not next:
-				return None
+				raise Exception('Object ' + name + ' is not found')
 			obj = next
 		if not inspect.isclass(obj):
-			return None
+			raise Exception('Object ' + name + ' is not a class')
 		if not issubclass(obj, OS):
-			return None
+			raise Exception('Object ' + name + ' is not a subclass of OS')
 		return obj()
 
 tables['api_type'] = Table('api_type', [
@@ -83,4 +83,4 @@ def ApiList(jmgr, os_target, sql, args):
 
 	sql.commit()
 
-tasks['ApiList'] = Task(name = "List APIs", func = ApiList)
+tasks['ApiList'] = Task(name = "List System APIs", func = ApiList, order = 20)

@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 from os_target import OS
 import apt
 import popcon
@@ -5,7 +7,7 @@ import elf_binary
 import objdump
 import objdump_isa
 import linux_defs
-import main
+from utils import get_config
 
 import os
 import sys
@@ -38,7 +40,7 @@ def get_syscalls():
 class Ubuntu64(OS):
 	def __init__(self):
 		OS.__init__(self)
-		apt.update_apt(main.get_config('package_source'))
+		apt.update_apt(get_config('package_source'))
 
 	def get_api_types(self):
 		return { linux_defs.SYSCALL: 'system call',

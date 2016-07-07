@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from sql import SQL
-from main import get_config
+from utils import get_config
 
 import os
 import sys

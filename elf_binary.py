@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import main
+from utils import null_dev
 
 import os
 import sys
@@ -24,7 +24,7 @@ class Symbol:
 		return self.name == obj.name and self.version == obj.version
 
 def get_symbols(binary):
-	process = subprocess.Popen(["readelf", "--dyn-syms", "-W", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
+	process = subprocess.Popen(["readelf", "--dyn-syms", "-W", binary], stdout=subprocess.PIPE, stderr=null_dev)
 
 	symbol_list = []
 	for line in process.stdout:
@@ -58,7 +58,7 @@ def get_symbols(binary):
 
 	process.wait()
 
-	process = subprocess.Popen(["readelf", "--file-header","-W", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
+	process = subprocess.Popen(["readelf", "--file-header","-W", binary], stdout=subprocess.PIPE, stderr=null_dev)
 
 	entry_addr = None
 	for line in process.stdout:
@@ -75,7 +75,7 @@ def get_symbols(binary):
 
 	process.wait()
 
-	process = subprocess.Popen(["readelf", "--section-headers", "-W", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
+	process = subprocess.Popen(["readelf", "--section-headers", "-W", binary], stdout=subprocess.PIPE, stderr=null_dev)
 
 	for line in process.stdout:
 		parts = line[6:].strip().split()
@@ -94,7 +94,7 @@ def get_symbols(binary):
 def get_dependencies(binary):
 	dependencies = set()
 
-	process = subprocess.Popen(["readelf", "-d", "-W", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
+	process = subprocess.Popen(["readelf", "-d", "-W", binary], stdout=subprocess.PIPE, stderr=null_dev)
 
 	for line in process.stdout:
 		parts = line.strip().split()
@@ -110,7 +110,7 @@ def get_dependencies(binary):
 
 # get_interpreter() will return the name of interpreter.
 def get_interpreter(binary):
-	process = subprocess.Popen(["readelf", "--program-headers", "-W", binary], stdout=subprocess.PIPE, stderr=main.null_dev)
+	process = subprocess.Popen(["readelf", "--program-headers", "-W", binary], stdout=subprocess.PIPE, stderr=null_dev)
 
 	for line in process.stdout:
 		line = line.strip()

@@ -1,7 +1,9 @@
 #!/usr/bin/python
 
-import syscall
-import main
+from sql import tables, Table
+from id import get_binary_id, get_package_id
+import package
+import os_target
 
 import os
 import sys
@@ -13,9 +15,10 @@ from sets import Set
 import traceback
 
 sys.path.append('pybfd/lib/python')
-from pybfd import opcodes, bfd
+from pybfd import opcodes, bfd, section
 from pybfd.opcodes import Opcodes, OpcodesException
 from pybfd.bfd import Bfd, BfdException
+from pybfd.symbol import SymbolFlags
 
 x86_64_regs = [
 		['rax',  'eax',  'ax',   'al'  ],
@@ -92,7 +95,7 @@ class RegisterSet:
 				return (reg, size, mask)
 		return (None, None, None)
 
-class Inst:
+class Instr:
 	def __init__(self, bb, addr, dism):
 		self.bblock = bb
 		self.addr = addr
@@ -101,27 +104,30 @@ class Inst:
 	def __str__(self):
 		return "%x:        (%s)" % (self.addr, self.dism)
 
-class InstMov(Inst):
+	def get_instr(self):
+		return self.dism.split()[0]
+
+class InstrMov(Instr):
 	def __init__(self, bb, addr, dism, reg, source):
-		Inst.__init__(self, bb, addr, dism)
+		Instr.__init__(self, bb, addr, dism)
 		self.reg = reg
 		self.source = source
 
 	def __str__(self):
 		return "%x: %s=%s" % (self.addr, str(self.reg), str(self.source))
 
-class InstSave(Inst):
+class InstrSave(Instr):
 	def __init__(self, bb, addr, dism, target, reg):
-		Inst.__init__(self, bb, addr, dism)
+		Instr.__init__(self, bb, addr, dism)
 		self.target = target
 		self.reg = reg
 
 	def __str__(self):
 		return "%x: *%s=%s" % (self.addr, str(self.target), str(self.reg))
 
-class InstCall(Inst):
+class InstrCall(Instr):
 	def __init__(self, bb, addr, dism, target):
-		Inst.__init__(self, bb, addr, dism)
+		Instr.__init__(self, bb, addr, dism)
 		self.target = target
 
 	def __str__(self):
@@ -130,23 +136,21 @@ class InstCall(Inst):
 		else:
 			return "%x: call %s" % (self.addr, str(self.target))
 
-class InstSyscall(Inst):
-	def __init__(self, bb, addr, dism, syscall):
-		Inst.__init__(self, bb, addr, dism)
-		self.syscall = syscall
-
-	def __str__(self):
-		return "%x: syscall(%s)" % (self.addr, str(self.syscall))
-
 class BBlock:
 	def __init__(self, start, end=None):
+		if isinstance(start, long):
+			start = start & 0xffffffffffffffff
+		if isinstance(end, long):
+			end = end & 0xffffffffffffffff
 		self.start = start
 		self.end = end
-		self.insts = []
+		self.instrs = []
 		self.targets = Set()
 
 class Func:
 	def __init__(self, entry):
+		if isinstance(entry, long):
+			entry = entry & 0xffffffffffffffff
 		self.entry = entry
 		self.bblocks = []
 		self.new_bblocks = []
@@ -163,13 +167,13 @@ class Func:
 					bb.end = addr
 
 					splice = 0
-					for inst in bb.insts:
-						if inst.addr >= addr:
+					for instr in bb.instrs:
+						if instr.addr >= addr:
 							break
 						splice += 1
 
-					new.insts = bb.insts[splice:]
-					bb.insts = bb.insts[:splice]
+					new.instrs = bb.instrs[splice:]
+					bb.instrs = bb.instrs[:splice]
 					self.bblocks.append(new)
 					return new
 			else:
@@ -184,12 +188,14 @@ class Func:
 
 class Op:
 	def __init__(self, val=None):
+		if isinstance(val, long):
+			val = val & 0xffffffffffffffff
 		self.val = val
 
 	def __str__(self):
 		return str(self.val)
 
-	def get_val(self, regval):
+	def get_val(self, regval=None):
 		return self.val
 
 class OpReg(Op):
@@ -201,8 +207,8 @@ class OpReg(Op):
 	def __str__(self):
 		return "<" + str(self.reg) + ">"
 
-	def get_val(self, regval):
-		if isinstance(regval[self.reg], (int, long)):
+	def get_val(self, regval=None):
+		if regval and isinstance(regval[self.reg], (int, long)):
 			return regval[self.reg] & self.mask
 		else:
 			return None
@@ -230,7 +236,7 @@ class OpArith(Op):
 			return "(" + str(self.op1) + "/" + str(self.op2) + ")"
 		return "unknown"
 
-	def get_val(self, regval):
+	def get_val(self, regval=None):
 		val1 = self.op1.get_val(regval)
 		val2 = self.op2.get_val(regval)
 		if val1 and val2:
@@ -250,6 +256,25 @@ class OpLoad(Op):
 		self.addr = addr
 		self.size = size
 
+	def get_val(self, regval=None):
+		return None
+
+def val2ptr(val, ptr_size):
+	if ptr_size == 8:
+		max = 0xffffffffffffffff
+	elif ptr_size == 4:
+		max = 0xffffffff
+	else:
+		return 0
+
+	if isinstance(val, long):
+		return val & max
+
+	if val < 0:
+		return max + val - 1
+
+	return val
+
 def get_callgraph(binary_name):
 
 	# Initialize BFD instance
@@ -258,57 +283,65 @@ def get_callgraph(binary_name):
 	if bfd.target == 'elf64-x86-64':
 		ptr_fmt = '<Q'
 		ptr_size = 8
+		elf_word_fmt = '<L'
+		elf_word_size = 4
 	elif bfd.target == 'elf32-i386':
 		ptr_fmt = '<L'
 		ptr_size = 4
+		elf_word_fmt = '<H'
+		elf_word_size = 2
 	else:
-		return
+		raise Exception("unknown target: " + bfd.target)
 
 	entry_addr = bfd.start_address
 	dynsyms = bfd.symbols
 
-	if '.text' in bfd.sections:
-		text_area = (bfd.sections['.text'].vma,
-			     bfd.sections['.text'].vma + bfd.sections['.text'].size,
-			     bfd.sections['.text'].file_offset)
-	else:
-		# must have text section
-		return
+	symbol_names = []
+	if '.dynsym' in bfd.sections and '.dynstr' in bfd.sections:
+		symtab = bfd.sections['.dynsym'].content
+		strtab = bfd.sections['.dynstr'].content
+		off = 0
+		while off + ptr_size <= len(symtab):
+			st_name_off = struct.unpack(elf_word_fmt, symtab[off:off + elf_word_size])[0]
+			st_name = ""
+			while st_name_off < len(strtab) and strtab[st_name_off] != '\0':
+				st_name += strtab[st_name_off]
+				st_name_off += 1
+			symbol_names.append(st_name)
+			if ptr_size == 8:
+				off += 24
+			else:
+				off += 12
 
-	if '.data' in bfd.sections:
-		data_area = (bfd.sections['.data'].vma,
-			     bfd.sections['.data'].vma + bfd.sections['.data'].size,
-			     bfd.sections['.data'].file_offset)
-	else:
-		# must have data section
-		return
+	rel_entries = dict()
+	if '.rela.plt' in bfd.sections or '.rel.plt' in bfd.sections:
+		key = '.rela.plt'
+		if key not in bfd.sections:
+			key = 'rel.plt'
+		sec = bfd.sections[key]
 
-	if '.init' in bfd.sections:
-		init_addr = bfd.sections['.init'].ptr
-	else:
-		init_addr = None
+		content = sec.content
+		off = 0
+		while off + ptr_size * 2 <= len(content):
+			r_offset = struct.unpack(ptr_fmt, content[off:off + ptr_size])[0]
+			off += ptr_size
+			r_info = struct.unpack(ptr_fmt, content[off:off + ptr_size])[0]
+			off += ptr_size
+			if key == '.rela.plt':
+				r_addend = struct.unpack(ptr_fmt, content[off:off + ptr_size])[0]
+				off += ptr_size
+			else:
+				r_addend = 0
+			if ptr_size == 8:
+				r_sym = r_info >> 32
+			else:
+				r_sym = r_info >> 8
 
-	if '.init_array' in bfd.sections:
-		init_area = (bfd.sections['.init_array'].vma,
-			     bfd.sections['.init_array'].vma + bfd.sections['.init_array'].size,
-			     bfd.sections['.init_array'].file_offset)
-	else:
-		init_area = None
-
-	if '.fini' in bfd.sections:
-		fini_addr = bfd.sections['.fini'].ptr
-	else:
-		fini_addr = None
-
-	if '.fini_array' in bfd.sections:
-		fini_area = (bfd.sections['.fini_array'].vma,
-			     bfd.sections['.fini_array'].vma + bfd.sections['.fini_array'].size,
-			     bfd.sections['.fini_array'].file_offset)
-	else:
-		fini_area = None
+			if r_sym:
+				rel_entries[r_offset] = symbol_names[r_sym]
 
 	class CodeOpcodes(Opcodes):
-		def __init__(self, bfd, start, end):
+		def __init__(self, bfd):
 			Opcodes.__init__(self, bfd)
 
 			if bfd.target == 'elf64-x86-64':
@@ -316,8 +349,13 @@ def get_callgraph(binary_name):
 			elif bfd.target == 'elf32-i386':
 				self.regset = RegisterSet(i386_regs)
 
-			self.start = start
-			self.end = end
+			self.start = self.end = None
+			for name, sec in bfd.sections.items():
+				if self.start == None or self.start > sec.vma:
+					self.start = sec.vma
+				if self.end == None or self.end < sec.vma + sec.size:
+					self.end = sec.vma + sec.size
+
 			self.entries = []
 			self.funcs = []
 			self.cur_func = None
@@ -325,11 +363,12 @@ def get_callgraph(binary_name):
 			self.nfuncs = 0
 			self.nbblocks = 0
 
+		def set_range(self,start, end):
+			self.start = start
+			self.end = end
+
 		def add_entry(self, addr):
 			if self.cur_func and self.cur_func.entry == addr:
-				return
-
-			if addr < self.start or addr > self.end:
 				return
 
 			if addr in self.entries:
@@ -343,6 +382,8 @@ def get_callgraph(binary_name):
 
 		def process_instructions(self, address, size, branch_delay_insn,
 			insn_type, target, target2, disassembly):
+
+			# print "%x: %s" % (address, disassembly)
 
 			try:
 				regex = r'^(?P<repz>repz )?(?P<insn>\S+)(\s+(?P<arg1>[^,]+)?(,(?P<arg2>[^#]+)(#(?P<comm>.+))?)?)?$'
@@ -358,7 +399,7 @@ def get_callgraph(binary_name):
 				comm = m.group('comm')
 
 				def match_addr(arg):
-					regex = r'^(?P<load>(?P<size>QWORD|DWORD|WORD|BYTE) PTR )?\[(?P<addr>[^\]]+)\]$'
+					regex = r'^(?P<load>(?P<size>QWORD|DWORD|WORD|BYTE) PTR )?\[(?P<addr>[^\]]+)\]'
 					m = re.match(regex, arg)
 					if m:
 						addr = m.group('addr')
@@ -439,6 +480,10 @@ def get_callgraph(binary_name):
 									if load_size:
 										op = OpLoad(op, load_size)
 									arg1 = op
+						else:
+							(r, _, mask) = self.regset.index_reg(arg1)
+							arg1 = OpReg(r, mask)
+
 				if arg2:
 					arg2 = arg2.strip()
 					if ishex(arg2):
@@ -448,7 +493,7 @@ def get_callgraph(binary_name):
 						if addr_op:
 							pc = match_pc(addr_op, address, size)
 							if pc:
-								arg1 = Op(pc)
+								arg2 = Op(pc)
 								if load_size:
 									arg2 = OpLoad(arg1, load_size)
 							else:
@@ -457,29 +502,45 @@ def get_callgraph(binary_name):
 									if load_size:
 										op = OpLoad(op, load_size)
 									arg2 = op
+						else:
+							(r, _, mask) = self.regset.index_reg(arg2)
+							arg2 = OpReg(r, mask)
+
 				if comm:
 					comm = comm.strip()
 					if ishex(comm):
 						comm = hex2int(comm)
 
+				if insn == 'ret' or insn == 'hlt':
+					self.cur_bb.end = address + size
+					return opcodes.PYBFD_DISASM_STOP
+
 				if insn_type == opcodes.InstructionType.BRANCH:
-					if insn != 'ret' and target:
-						bb = self.cur_func.add_bblock(target)
+					if isinstance(arg1, OpLoad):
+						target_addr = arg1.addr.get_val()
+						if target_addr in rel_entries:
+							self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, rel_entries[target_addr]))
+						elif target_addr:
+							self.add_entry(val2ptr(target_addr, ptr_size))
+							self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, target_addr))
+
+					if target:
+						bb = self.cur_func.add_bblock(val2ptr(target, ptr_size))
 						self.cur_bb.targets.add(bb)
 
 					self.cur_bb.end = address + size
 					return opcodes.PYBFD_DISASM_STOP
 
 				if self.cur_bb.end and address >= self.cur_bb.end:
-					bb = self.cur_func.add_bblock(address)
+					bb = self.cur_func.add_bblock(val2ptr(address, ptr_size))
 					self.cur_bb.targets.add(bb)
 					return opcodes.PYBFD_DISASM_STOP
 
 				if insn_type == opcodes.InstructionType.COND_BRANCH:
-					next_bb = self.cur_func.add_bblock(address + size)
+					next_bb = self.cur_func.add_bblock(val2ptr(address + size, ptr_size))
 					bb = self.cur_func.add_bblock(target)
 
-					self.cur_bb.end = address + size
+					self.cur_bb.end = val2ptr(address + size, ptr_size)
 					self.cur_bb.targets.add(bb)
 					self.cur_bb.targets.add(next_bb)
 					self.cur_bb = next_bb
@@ -489,35 +550,44 @@ def get_callgraph(binary_name):
 						self.cur_func.bblocks.append(next_bb)
 
 				elif insn_type == opcodes.InstructionType.JSR:
-					if target:
-						self.add_entry(target)
-						self.cur_bb.insts.append(InstCall(self.cur_bb, address, disassembly, target))
+					if isinstance(arg1, OpLoad):
+						target_addr = arg1.addr.get_val()
+						if target_addr in rel_entries:
+							self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, rel_entries[target_addr]))
+						elif target_addr:
+							self.add_entry(val2ptr(target_addr, ptr_size))
+							self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, target_addr))
+
+					elif target:
+						self.add_entry(val2ptr(target, ptr_size))
+						self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, target))
 
 				elif insn_type == opcodes.InstructionType.COND_JSR:
-					if target:
-						self.add_entry(target)
-						self.cur_bb.insts.append(InstCall(self.cur_bb, address, disassembly, target))
+					if isinstance(arg1, OpLoad):
+						target_addr = arg1.addr.get_val()
+						if target_addr in rel_entries:
+							self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, rel_entries[target_addr]))
+						elif target_addr:
+							self.add_entry(val2ptr(target_addr, ptr_size))
+							self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, target_addr))
+
+					elif target:
+						self.add_entry(val2ptr(target, ptr_size))
+						self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, target))
 
 				elif insn_type == opcodes.InstructionType.NON_BRANCH:
-					if insn == 'syscall' or insn == 'sysenter':
-						(r, _, mask) = self.regset.index_reg("eax")
-						self.cur_bb.insts.append(InstSyscall(self.cur_bb, address, disassembly, OpReg(r, mask)))
-
-					elif insn == 'mov':
+					if insn == 'mov':
 						if isinstance(arg1, OpReg):
-							self.cur_bb.insts.append(InstMov(self.cur_bb, address, disassembly, arg1.reg, arg2))
+							self.cur_bb.instrs.append(InstrMov(self.cur_bb, address, disassembly, arg1.reg, arg2))
 						else:
-							self.cur_bb.insts.append(Inst(self.cur_bb, address, disassembly))
+							self.cur_bb.instrs.append(Instr(self.cur_bb, address, disassembly))
 
 					elif insn == 'lea':
 						if arg2.val:
 							if arg2.val >= self.start and arg2.val < self.end:
-								self.add_entry(arg2.val)
+								self.add_entry(val2ptr(arg2.val, ptr_size))
 						
-						self.cur_bb.insts.append(InstCall(self.cur_bb, address, disassembly, arg2))
-
-					else:
-						self.cur_bb.insts.append(Inst(self.cur_bb, address, disassembly))
+						self.cur_bb.instrs.append(InstrCall(self.cur_bb, address, disassembly, arg2))
 
 			except Exception as e:
 				traceback.print_exc()
@@ -527,13 +597,20 @@ def get_callgraph(binary_name):
 
 		def start_process(self, content):
 			self.initialize_smart_disassemble(content, self.start)
+			cont = True
+			while cont:
+				next = None
+				for entry in self.entries:
+					if entry >= self.start and entry < self.end:
+						next = entry
+						break
 
-			while len(self.entries):
-				addr = self.entries[0]
+				if not next:
+					break
 
-				self.cur_func = Func(addr)
-				self.cur_func.add_bblock(addr)
-				self.entries.remove(addr)
+				self.cur_func = Func(next)
+				self.cur_func.add_bblock(next)
+				self.entries.remove(next)
 
 				while self.cur_func.new_bblocks:
 					bb = self.cur_func.new_bblocks[0]
@@ -551,76 +628,155 @@ def get_callgraph(binary_name):
 				self.nfuncs += 1
 				self.nbblocks += len(self.cur_func.bblocks)
 
-	codes = CodeOpcodes(bfd, text_area[0], text_area[1])
+	codes = CodeOpcodes(bfd)
+	codes.dynsyms = dynsyms
 
 	for sym_addr in dynsyms.keys():
+		# Only look at global functions
+		flags = dynsyms[sym_addr].flags
+		if SymbolFlags.GLOBAL not in flags:
+			continue
+		if SymbolFlags.FUNCTION not in flags:
+			continue
 		if sym_addr:
 			codes.add_entry(sym_addr)
 
 	if entry_addr:
 		codes.add_entry(entry_addr)
 
-	if init_addr:
-		codes.add_entry(init_addr)
+	if '.init' in bfd.sections:
+		codes.add_entry(bfd.sections.get('.init').vma)
 
-	if fini_addr:
-		codes.add_entry(fini_addr)
+	if '.fini' in bfd.sections:
+		codes.add_entry(bfd.sections.get('.fini').vma)
 
-	if init_area:
+	if '.init_array' in bfd.sections:
 		init_content = bfd.sections.get('.init_array').content
 		off = 0
-		while off < len(init_content):
+		while off + ptr_size <= len(init_content):
 			addr = struct.unpack(ptr_fmt, init_content[off:off + ptr_size])[0]
 			codes.add_entry(addr)
 			off += ptr_size
 
-	if fini_area:
+	if '.fini_array' in bfd.sections:
 		fini_content = bfd.sections.get('.fini_array').content
 		off = 0
-		while off < len(fini_content):
+		while off + ptr_size < len(fini_content):
 			addr = struct.unpack(ptr_fmt, init_content[off:off + ptr_size])[0]
 			codes.add_entry(addr)
 			off += ptr_size
 
-	text_content = bfd.sections.get('.text').content
-	codes.start_process(text_content)
+	for key, sec in bfd.sections.items():
+		if not (sec.flags & section.SectionFlags.CODE):
+			continue
+
+		content = sec.content
+		codes.set_range(sec.vma, sec.vma + sec.size)
+		codes.start_process(content)
 
 	def Func_cmp(x, y):
 		return cmp(x.entry, y.entry)
 
 	codes.funcs = sorted(codes.funcs, Func_cmp)
 
+	return codes
+
+def analysis_binary_instr(sql, binary, pkg_id, bin_id):
+	codes = get_callgraph(binary)
+
+	condition = 'pkg_id=' + Table.stringify(pkg_id) + ' and bin_id=' + Table.stringify(bin_id)
+	condition_unknown = condition + ' and known=False'
+	sql.delete_record(tables['binary_call'], condition)
+	sql.delete_record(tables['binary_call_unknown'], condition_unknown)
+	sql.delete_record(tables['binary_instr_usage'], condition)
+
 	for func in codes.funcs:
-		print "func %x:" % (func.entry)
+		instrs = dict()
+		calls = []
+
 		for bb in func.bblocks:
-			print "    %x-%x" % (bb.start, bb.end)
-			for inst in bb.insts:
-				print "        %s" % (inst)
+			for instr in bb.instrs:
+				if isinstance(instr, InstrCall):
+					if isinstance(instr.target, int) or isinstance(instr.target, long):
+						if not instr.target in calls:
+							calls.append(instr.target)
+					elif isinstance(instr.target, Op) and instr.target.val:
+						if not instr.target.val in calls:
+							calls.append(instr.target.val)
 
-	print "Dynamic Symbols: %d" % (len(dynsyms))
-	print "Functions: %d" % (codes.nfuncs)
-	print "Basic Blocks: %d" % (codes.nbblocks)
+				instr_name = instr.get_instr()
+				if instr_name in instrs:
+					instrs[instr_name] = instrs[instr_name] + 1
+				else:
+					instrs[instr_name] = 1
 
-class SymbolCaller:
-	def __init__(self, name, callees, syscalls):
-		self.name = name
-		self.callees = callees
-		self.traced_callees = set()
-		self.syscalls = syscalls
-
-	def __str__(self):
-		result = '%s:' % (self.name)
-		for c in self.callees:
-			if isinstance(c, int):
-				result += "\n\tcall: " + "%08x" % (c)
+		for call in calls:
+			values = dict()
+			values['pkg_id'] = pkg_id
+			values['bin_id'] = bin_id
+			values['func_addr'] = func.entry
+			if isinstance(call, int) or isinstance(call, long):
+				values['call_addr'] = call
 			else:
-				result += "\n\tcall: " + c
-		for s in self.syscalls:
-			if isinstance(s, int) and s in syscall.syscalls:
-				result += "\n\tsyscall: " + syscall.syscalls[s]
-			else:
-				result += "\n\tsyscall: " + str(s)
-		return result
+				for addr, sym in codes.dynsyms.items():
+					if sym.name == call:
+						values['call_addr'] = sym.value
+						break
+				values['call_name'] = call
+			sql.append_record(tables['binary_call'], values)
+
+		for instr, count in instrs.items():
+			values = dict()
+			values['pkg_id'] = pkg_id
+			values['bin_id'] = bin_id
+			values['func_addr'] = func.entry
+			values['instr'] = instr
+			values['count'] = count
+			sql.append_record(tables['binary_instr_usage'], values)
 
 if __name__ == "__main__":
-	get_callgraph(sys.argv[1])
+	codes = get_callgraph(sys.argv[1])
+
+	for func in codes.funcs:
+		print "func %x:" % (func.entry)
+
+		instrs = dict()
+		calls = []
+
+		for bb in func.bblocks:
+			for instr in bb.instrs:
+				if isinstance(instr, InstrCall):
+					if isinstance(instr.target, int) or isinstance(instr.target, long) or isinstance(instr.target, str):
+						if not instr.target in calls:
+							calls.append(instr.target)
+					elif isinstance(instr.target, Op) and instr.target.val:
+						if not instr.target.val in calls:
+							calls.append(instr.target.val)
+
+				instr_name = instr.get_instr()
+				if instr_name in instrs:
+					instrs[instr_name] = instrs[instr_name] + 1
+				else:
+					instrs[instr_name] = 1
+
+		for call in calls:
+			if isinstance(call, int) or isinstance(call, long):
+				print "    call: %x" % (call)
+			else:
+				call_addr = None
+				for addr, sym in codes.dynsyms.items():
+					if sym.name == call:
+						call_addr = sym.value
+						break
+				if call_addr:
+					print "    call: %s (%x)" % (call, call_addr)
+				else:
+					print "    call: %s" % (call)
+
+		for instr, count in instrs.items():
+			print "    %4d %s" % (count, instr)
+
+	print "-----------"
+	print "Dynamic Symbols: %d" % (len(codes.dynsyms))
+	print "Functions: %d" % (codes.nfuncs)
+	print "Basic Blocks: %d" % (codes.nbblocks)

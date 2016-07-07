@@ -11,4 +11,8 @@ config = {
 	'postgresql_user':	'syspop',
 	'postgresql_pass':	'syspop',
 	'postgresql_db':	'api_compat_study',
+
+	'scheduler':            'scheduler.SimpleScheduler',
+	'scheduler_host':       '127.0.0.1',
+	'scheduler_port':       5000,
 }

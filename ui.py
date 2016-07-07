@@ -1,7 +1,5 @@
 #!/usr/bin/python
 
-from framework import JobManager, WorkerManager
-
 import os
 import fnmatch
 import sys
@@ -102,7 +100,7 @@ def print_task(task):
 	return "{0}: {1}".format(k, t.name)
 
 def task_keys(screen, key, args):
-	(jmgr, keys) = args
+	(scheduler, keys) = args
 	task = None
 	for (k, t) in keys:
 		if key == ord(k):
@@ -122,7 +120,7 @@ def task_keys(screen, key, args):
 		y += 1
 		run_args.append(text)
 	del win
-	task.create_job(jmgr, run_args)
+	task.create_job(scheduler, run_args)
 	return True
 
 def show_message(screen, message):
@@ -145,9 +143,14 @@ def confirm_exit(screen):
 	curses.noecho()
 	return text == "exit"
 
-def make_screen(jmgr, wmgr, tasks):
+def make_screen(scheduler, tasks):
 	sighandler = signal.getsignal(signal.SIGINT)
 	signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+	log = os.open("ui.log", os.O_RDWR|os.O_CREAT|os.O_TRUNC)
+	olderr = os.dup(2)
+	os.dup2(log, 2)
+
 	ret = False
 	screen = curses.initscr()
 	screen.border(0)
@@ -165,7 +168,7 @@ def make_screen(jmgr, wmgr, tasks):
 	while True:
 		c = screen.getch()
 		if c == ord('l'):
-			show_list(screen, "Jobs", jmgr.get_jobs(), print_job)
+			show_list(screen, "Jobs", scheduler.get_jobs(), print_job)
 		elif c == ord('a'):
 			keys = []
 			for i in range(len(tasks)):
@@ -177,7 +180,7 @@ def make_screen(jmgr, wmgr, tasks):
 						tasks[i]))
 
 			show_list(screen, "Tasks", keys, print_task,
-					task_keys, (jmgr, keys,))
+					task_keys, (scheduler, keys,))
 		elif c == ord('r'):
 			(y, x) = center(screen, 3, 30)
 			win = curses.newwin(3, 30, y, x)
@@ -192,18 +195,18 @@ def make_screen(jmgr, wmgr, tasks):
 			else:
 				del win
 				curses.noecho()
-				jmgr.requeue_job(id)
+				scheduler.requeue_job(id)
 		elif c == ord('c'):
-			jmgr.clear_finished_jobs()
+			scheduler.clear_jobs()
 			show_message(screen, "finished jobs are cleared")
 		elif c == ord('w'):
-			show_list(screen, "Workers", wmgr.get_workers(), print_worker)
+			show_list(screen, "Workers", scheduler.get_workers(), print_worker)
 		elif c == ord('n'):
-			wmgr.add_worker()
+			scheduler.add_worker()
 			show_message(screen, "A new worker is created")
 		elif c == ord('e'):
 			if confirm_exit(screen):
-				ret = True
+				scheduler.exit()
 				break
 		elif c == ord('q'):
 			break
@@ -211,5 +214,5 @@ def make_screen(jmgr, wmgr, tasks):
 		screen.refresh()
 
 	curses.endwin()
+	os.dup2(olderr, 2)
 	signal.signal(signal.SIGINT, sighandler)
-	return ret

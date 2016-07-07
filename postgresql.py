@@ -3,7 +3,7 @@
 from task import tasks, subtasks, Task
 from sql import SQL, tables
 from id import get_binary_id, get_binary_name, get_package_id, get_package_name
-from main import get_config
+from utils import get_config
 import binary
 
 import os
@@ -132,7 +132,8 @@ def AnalyzeAllLibraries(jmgr, os_target, sql, args):
 
 tasks['PostgresqlAnalyzeAllLibraries'] = Task(
 		name="Analyze All Libaries by PostgreSQL",
-		func=AnalyzeAllLibraries)
+		func=AnalyzeAllLibraries,
+		order = 30)
 
 def AnalyzeLinking(jmgr, os_target, sql, args):
 	pkg_name = args[0]
@@ -170,7 +171,8 @@ def AnalyzeAllLinking(jmgr, os_target, sql, args):
 
 tasks['PostgresqlAnalyzeAllLinking'] = Task(
 		name = "Analyze All Linking by PostgreSQL",
-		func = AnalyzeAllLinking)
+		func = AnalyzeAllLinking,
+		order = 31)
 
 def AnalyzeExecutable(jmgr, os_target, sql, args):
 	pkg_name = args[0]
@@ -211,7 +213,8 @@ def AnalyzeAllExecutables(jmgr, os_target, sql, args):
 
 tasks['PostgresqlAnalyzeAllExecutables'] = Task(
 		name = "Analyze All Executables by PostgreSQL",
-		func = AnalyzeAllExecutables)
+		func = AnalyzeAllExecutables,
+		order = 32)
 
 def AnalyzePackage(jmgr, os_target, sql, args):
 	pkg_name = args[0]
@@ -242,35 +245,5 @@ def AnalyzeAllPackages(jmgr, os_target, sql, args):
 
 tasks['PostgresqlAnalyzeAllPackages'] = Task(
 		name = "Analyze All Packages by PostgreSQL",
-		func = AnalyzeAllPackages)
-
-def AnalyzeInstrCount(jmgr, os_target, sql, args):
-	pkg_name = args[0]
-	if len(args) > 1:
-		pkg_id = args[1]
-	else:
-		pkg_id = get_package_id(sql, pkg_name)
-
-	sql.postgresql_execute('SELECT analyze_instr(%d)' % (pkg_id))
-	sql.commit()
-
-subtasks['PostgresqlAnalyzeInstrCount'] = Task(
-		name = "Analyze Instruction Count by PostgreSQL",
-		func = AnalyzeInstrCount,
-		arg_defs = ["Package Name"],
-		job_name = lambda args: "Analyze Instruction Count: " + args[0])
-
-def AnalyzeInstrCountAllPackages(jmgr, os_target, sql, args):
-	sql.connect_table(tables['package_id'])
-
-	results = sql.search_record(tables['package_id'], 'instr = false', ['id'])
-
-	for r in results:
-		pkg_id = r[0]
-		pkg_name = get_package_name(sql, pkg_id)
-		if pkg_name:
-			subtasks['PostgresqlAnalyzeInstrCount'].create_job(jmgr, [pkg_name, pkg_id]);
-
-tasks['PostgresqlAnalyzeInstrCountAllPackages'] = Task(
-		name = "Analyze Instruction Count in All Packages by PostgreSQL",
-		func = AnalyzeInstrCountAllPackages)
+		func = AnalyzeAllPackages,
+		order = 33)

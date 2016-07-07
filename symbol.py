@@ -4,7 +4,6 @@ from task import tasks, subtasks, Task
 from sql import tables, Table
 from id import get_binary_id, get_package_id
 import package
-import main
 
 import os
 import sys

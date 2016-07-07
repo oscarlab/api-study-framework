@@ -3,11 +3,21 @@
 from task import tasks, subtasks, Task
 from sql import tables, Table
 from id import get_package_id
+from binary import append_binary_list
 
 import os
 import sys
 import re
 import tempfile
+
+tables['package_info'] = Table('package_info', [
+		('pkg_id', 'INT', 'NOT NULL'),
+		('arch', 'VARCHAR', 'NOT NULL'),
+		('version', 'VARCHAR', 'NOT NULL'),
+		('uri', 'VARCHAR', 'NOT NULL'),
+		('hash', 'VARCHAR', 'NOT NULL'),
+		('opensource', 'BOOLEAN', 'NOT NULL')],
+		['pkg_id', 'arch'], [])
 
 tables['package_dependency'] = Table('package_dependency', [
 		('pkg_id', 'INT', 'NOT NULL'),
@@ -25,12 +35,11 @@ def get_packages_by_names(os_target, names):
 	return [name for name in names if name in packages]
 
 def get_packages_by_prefixes(os_target, prefixes):
-	packages = os_target.get_packages()
 	result = []
-	for package in packages:
+	for pkg in os_target.get_packages():
 		for p in prefixes:
-			if package.startswith(p):
-				result.append(package)
+			if pkg.startswith(p):
+				result.append(pkg)
 				break
 	return result
 
@@ -72,6 +81,7 @@ def remove_dir(dir):
 		pass
 
 def PackageInfo(jmgr, os_target, sql, args):
+	sql.connect_table(tables['package_info'])
 	sql.connect_table(tables['package_dependency'])
 
 	pkgname = args[0]
@@ -81,7 +91,11 @@ def PackageInfo(jmgr, os_target, sql, args):
 	pkg_deps = os_target.get_package_dependency(pkgname)
 
 	# Clean up records
+	sql.delete_record(tables['package_info'], 'pkg_id=\'' + Table.stringify(pkg_id) + '\'')
 	sql.delete_record(tables['package_dependency'], 'pkg_id=\'' + Table.stringify(pkg_id) + '\'')
+
+	pkg_info['pkg_id'] = pkg_id
+	sql.append_record(tables['package_info'], pkg_info)
 
 	for dep in pkg_deps:
 		dep_id = get_package_id(sql, dep)
@@ -97,6 +111,43 @@ subtasks['PackageInfo'] = Task(
 	func = PackageInfo,
 	arg_defs = ["Package Name"],
 	job_name = lambda args: "Package Info and Dependency: " + args[0])
+
+def PackageAnalysis(jmgr, os_target, sql, args):
+	(dir, pkgname, _) = unpack_package(os_target, args[0])
+	if not dir:
+		return
+
+	subtasks['PackageInfo'].run_job(jmgr, [pkgname])
+
+	binaries = os_target.get_binaries(dir, find_script=True)
+	if not binaries:
+		remove_dir(dir)
+		return
+
+	append_binary_list(sql, pkgname, dir, binaries)
+
+	for (bin, type, _) in binaries:
+		if type == 'lnk' or type == 'scr':
+			continue
+
+		ref = reference_dir(dir)
+		subtasks['BinarySymbol'].run_job(jmgr, [pkgname, bin, dir, ref])
+
+		ref = reference_dir(dir)
+		subtasks['BinaryDependency'].run_job(jmgr, [pkgname, bin, dir, ref])
+
+		ref = reference_dir(dir)
+		subtasks['BinaryCall'].run_job(jmgr, [pkgname, bin, dir, ref])
+
+		ref = reference_dir(dir)
+		subtasks['BinaryInstr'].run_job(jmgr, [pkgname, bin, dir, ref])
+
+subtasks['PackageAnalysis'] = Task(
+	name = "Package Analysis",
+	func = PackageAnalysis,
+	arg_defs = ["Package Name"],
+	job_name = lambda args: "Package Analysis: " + args[0])
+
 
 def pick_packages_from_args(os_target, sql, args):
 	all_packages = []
@@ -132,14 +183,15 @@ def pick_packages_from_args(os_target, sql, args):
 
 args_to_pick_packages = ['package names', 'package prefixes', 'min ranks', 'max ranks']
 
-def ListForPackageInfo(jmgr, os_target, sql, args):
+def ListForPackageAnalysis(jmgr, os_target, sql, args):
 	for pkg in pick_packages_from_args(os_target, sql, args):
-		subtasks['PackageInfo'].create_job(jmgr, [pkg])
+		subtasks['PackageAnalysis'].create_job(jmgr, [pkg])
 
-tasks['ListForPackageInfo'] = Task(
-	name = "List Packages to Collect Package Info and Dependency",
-	func = ListForPackageInfo,
-	arg_defs = args_to_pick_packages)
+tasks['ListForPackageAnalysis'] = Task(
+	name = "Analyze Selected Package(s)",
+	func = ListForPackageAnalysis,
+	arg_defs = args_to_pick_packages,
+	order = 10)
 
 def PackagePopularity(jmgr, os_target, sql, args):
 	sql.connect_table(tables['package_popularity'])
@@ -154,4 +206,5 @@ def PackagePopularity(jmgr, os_target, sql, args):
 
 tasks['PackagePopularity'] = Task(
 		name = "Collect Package Popularity",
-		func = PackagePopularity)
+		func = PackagePopularity,
+		order = 0)
