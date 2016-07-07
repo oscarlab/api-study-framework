@@ -146,6 +146,11 @@ def confirm_exit(screen):
 def make_screen(scheduler, tasks):
 	sighandler = signal.getsignal(signal.SIGINT)
 	signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+	log = os.open("ui.log", os.O_RDWR|os.O_CREAT|os.O_TRUNC)
+	olderr = os.dup(2)
+	os.dup2(log, 2)
+
 	ret = False
 	screen = curses.initscr()
 	screen.border(0)
@@ -209,4 +214,5 @@ def make_screen(scheduler, tasks):
 		screen.refresh()
 
 	curses.endwin()
+	os.dup2(olderr, 2)
 	signal.signal(signal.SIGINT, sighandler)

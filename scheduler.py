@@ -43,7 +43,6 @@ class Scheduler:
 
 default_scheduler_host = '127.0.0.1'
 default_scheduler_port = 5000
-default_scheduler_auth = 'api-compat-study'
 
 class Job:
 	def __init__(self, id, name, func, args):
@@ -192,7 +191,6 @@ class HostProcess(Process):
 
 			scheduler_server = SyncManagerScheduler(
 					address=(self.scheduler.scheduler_host, self.scheduler.scheduler_port),
-					authkey=self.scheduler.scheduler_auth
 				).get_server()
 
 			logging.info("Scheduler listening at \"" + self.scheduler.scheduler_host + ":" + str(self.scheduler.scheduler_port) + "\".")
@@ -249,10 +247,9 @@ class SimpleScheduler(Scheduler):
 
 		self.scheduler_host = get_config('scheduler_host', default_scheduler_host)
 		self.scheduler_port = get_config('scheduler_port', default_scheduler_port)
-		self.scheduler_auth = get_config('scheduler_auth', default_scheduler_auth)
+		self.connected = False
 
 		host_file = root_dir + '/localserver.port'
-		host_auth = root_dir
 		host_port = None
 		if os.path.exists(host_file):
 			with open(host_file, 'r') as f:
@@ -276,12 +273,11 @@ class SimpleScheduler(Scheduler):
 						self.host_process.add_worker()
 					return True
 
-				SyncManagerHost.register('wait', callable=lambda: True)
+				SyncManagerHost.register('get_root', callable=lambda: root_dir)
 				SyncManagerHost.register('add_worker', callable=add_worker)
 
 				host_server = SyncManagerHost(
 						address=(localhost, host_port),
-						authkey=host_auth
 					).get_server()
 
 				logging.info("Host listening at \"" + localhost + ":" + str(host_port) + "\".")
@@ -304,12 +300,11 @@ class SimpleScheduler(Scheduler):
 				class SyncManagerInterface(SyncManager):
 					pass
 
-				SyncManagerInterface.register('wait')
+				SyncManagerInterface.register('get_root')
 				SyncManagerInterface.register('add_worker')
 
 				self.host_client = SyncManagerInterface(
 						address=(localhost, host_port),
-						authkey=host_auth
 					)
 				self.host_client.connect()
 			except:
@@ -319,10 +314,13 @@ class SimpleScheduler(Scheduler):
 				host_port = None
 				self.host_client = None
 
-		self.host_client.wait()
-		self.connect()
+			if self.host_client.get_root() == root_dir:
+				break
 
 	def connect(self):
+		if self.connected:
+			return
+
 		class SyncManagerClient(SyncManager):
 			pass
 
@@ -337,8 +335,7 @@ class SimpleScheduler(Scheduler):
 		SyncManagerClient.register('get_workers')
 
 		self.client = SyncManagerClient(
-				address=(self.scheduler_host, self.scheduler_port),
-				authkey=self.scheduler_auth
+				address=(self.scheduler_host, self.scheduler_port)
 			)
 		self.client.connect()
 
@@ -350,18 +347,22 @@ class SimpleScheduler(Scheduler):
 		self.workers = self.client.get_workers()
 
 		logging.info("Connected to the scheduler: " + self.scheduler_host + ":" + str(self.scheduler_port))
+		self.connected = True
 
 	def add_worker(self):
 		self.host_client.add_worker()
 
 	def get_workers(self):
+		self.connect()
 		return self.workers.items()
 
 	def add_job(self, name, func, args):
+		self.connect()
 		j = Job(self.client.get_id(), name, func, args)
 		self.submit_queue.put(j)
 
 	def requeue_job(self, id):
+		self.connect()
 		try:
 			j = self.jobs.get(id)
 			self.add_job(j.name, j.func, j.args)
@@ -369,6 +370,7 @@ class SimpleScheduler(Scheduler):
 			pass
 
 	def get_jobs(self):
+		self.connect()
 		all_jobs = []
 		for id in sorted(self.jobs.keys()):
 			j = self.jobs.get(id)
@@ -376,6 +378,7 @@ class SimpleScheduler(Scheduler):
 		return all_jobs
 
 	def clear_jobs(self):
+		self.connect()
 		for j in self.jobs.values():
 			if j.status is not None and j.status.success:
 				try:
@@ -384,4 +387,5 @@ class SimpleScheduler(Scheduler):
 					pass
 
 	def exit(self):
+		self.connect()
 		self.exit_event.set()
