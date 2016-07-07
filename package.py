@@ -139,9 +139,6 @@ def PackageAnalysis(jmgr, os_target, sql, args):
 		ref = reference_dir(dir)
 		subtasks['BinaryCall'].run_job(jmgr, [pkgname, bin, dir, ref])
 
-		#ref = reference_dir(dir)
-		#subtasks['BinaryInstr'].run_job(jmgr, [pkgname, bin, dir, ref])
-
 subtasks['PackageAnalysis'] = Task(
 	name = "Package Analysis",
 	func = PackageAnalysis,
