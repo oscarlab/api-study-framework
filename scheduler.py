@@ -7,7 +7,7 @@ import sys
 import socket
 import logging
 from multiprocessing import Process, Queue, Value, Event, current_process
-from multiprocessing.managers import SyncManager
+from multiprocessing.managers import SyncManager, ValueProxy
 from Queue import Empty
 from threading import Thread
 from datetime import datetime
@@ -45,8 +45,8 @@ default_scheduler_host = '127.0.0.1'
 default_scheduler_port = 5000
 
 class Job:
-	def __init__(self, id, name, func, args):
-		self.id = id
+	def __init__(self, name, func, args):
+		self.id = None
 		self.name = name
 		self.func = func
 		self.args = args
@@ -87,19 +87,19 @@ class WorkerProcess(Process):
 			except Empty:
 				continue
 
-			self.scheduler.workers.update([(name, j.id)])
+			self.scheduler.workers.update([(self.name, j.id)])
 			s = JobStatus(j.id)
-			logging.log("Start Job: " + j.name + " " + str(s.start_time))
+			logging.info("Start Job: " + j.name + " " + str(s.start_time))
 			try:
 				j.run(self.scheduler, self.scheduler.os_target, self.scheduler.sql)
 			except Exception as err:
-				logging.error(err.__class__.__name__ + ' : ' + err)
+				logging.error(err.__class__.__name__ + ' : ' + str(err))
 				logging.error('Traceback:')
 				traceback.print_tb(sys.exc_info()[2])
 				s.success = False
 			s.end_time = datetime.now()
-			logging.log("Finish Job: " + j.name + " " + str(s.end_time))
-			self.scheduler.workers.update([(name, 0)])
+			logging.info("Finish Job: " + j.name + " " + str(s.end_time))
+			self.scheduler.workers.update([(self.name, 0)])
 
 			self.scheduler.status_queue.put(s)
 
@@ -123,6 +123,8 @@ class SchedulerProcess(Process):
 						break
 
 				for j in jobs:
+					j.id = scheduler.job_counter.value
+					scheduler.job_counter.value += 1
 					scheduler.jobs.update([(j.id, j)])
 					scheduler.worker_queue.put(j)
 
@@ -162,7 +164,7 @@ class HostProcess(Process):
 		self.worker_count = 0
 
 	def run(self):
-		id_alloc = Value('I', 1)
+		self.scheduler.job_counter = Value('I', 1)
 		self.scheduler.jobs = dict()
 		self.scheduler.submit_queue = Queue()
 		self.scheduler.worker_queue = Queue()
@@ -176,12 +178,6 @@ class HostProcess(Process):
 			class SyncManagerScheduler(SyncManager):
 				pass
 
-			def get_id():
-				id = id_alloc.value
-				id_alloc.value += 1
-				return id
-
-			SyncManagerScheduler.register('get_id', get_id)
 			SyncManagerScheduler.register('get_jobs', callable=lambda: self.scheduler.jobs)
 			SyncManagerScheduler.register('get_submit_queue', callable=lambda: self.scheduler.submit_queue)
 			SyncManagerScheduler.register('get_worker_queue', callable=lambda: self.scheduler.worker_queue)
@@ -244,6 +240,8 @@ class HostProcess(Process):
 class SimpleScheduler(Scheduler):
 	def __init__(self, os_target, sql):
 		Scheduler.__init__(self, os_target, sql)
+
+		current_process().authkey = 'SimpleScheduler'
 
 		self.scheduler_host = get_config('scheduler_host', default_scheduler_host)
 		self.scheduler_port = get_config('scheduler_port', default_scheduler_port)
@@ -314,7 +312,7 @@ class SimpleScheduler(Scheduler):
 				host_port = None
 				self.host_client = None
 
-			if self.host_client.get_root() == root_dir:
+			if self.host_client and self.host_client.get_root() == root_dir:
 				break
 
 	def connect(self):
@@ -326,7 +324,6 @@ class SimpleScheduler(Scheduler):
 
 		logging.info("Connecting to Scheduler (may take a few seconds)...")
 
-		SyncManagerClient.register('get_id')
 		SyncManagerClient.register('get_jobs')
 		SyncManagerClient.register('get_submit_queue')
 		SyncManagerClient.register('get_worker_queue')
@@ -334,17 +331,17 @@ class SimpleScheduler(Scheduler):
 		SyncManagerClient.register('get_exit_event')
 		SyncManagerClient.register('get_workers')
 
-		self.client = SyncManagerClient(
-				address=(self.scheduler_host, self.scheduler_port)
+		client = SyncManagerClient(
+				address=(self.scheduler_host, self.scheduler_port),
 			)
-		self.client.connect()
+		client.connect()
 
-		self.jobs = self.client.get_jobs()
-		self.submit_queue = self.client.get_submit_queue()
-		self.worker_queue = self.client.get_worker_queue()
-		self.status_queue = self.client.get_status_queue()
-		self.exit_event = self.client.get_exit_event()
-		self.workers = self.client.get_workers()
+		self.jobs = client.get_jobs()
+		self.submit_queue = client.get_submit_queue()
+		self.worker_queue = client.get_worker_queue()
+		self.status_queue = client.get_status_queue()
+		self.exit_event = client.get_exit_event()
+		self.workers = client.get_workers()
 
 		logging.info("Connected to the scheduler: " + self.scheduler_host + ":" + str(self.scheduler_port))
 		self.connected = True
@@ -354,28 +351,22 @@ class SimpleScheduler(Scheduler):
 
 	def get_workers(self):
 		self.connect()
-		return self.workers.items()
+		return sorted(self.workers.items(), key=lambda w: w[0])
 
 	def add_job(self, name, func, args):
 		self.connect()
-		j = Job(self.client.get_id(), name, func, args)
+		j = Job(name, func, args)
 		self.submit_queue.put(j)
 
 	def requeue_job(self, id):
 		self.connect()
-		try:
+		if self.jobs.has_key(id):
 			j = self.jobs.get(id)
 			self.add_job(j.name, j.func, j.args)
-		except KeyError:
-			pass
 
 	def get_jobs(self):
 		self.connect()
-		all_jobs = []
-		for id in sorted(self.jobs.keys()):
-			j = self.jobs.get(id)
-			all_jobs.append((id, j.name, j.status))
-		return all_jobs
+		return [(j.id, j.name, j.status) for j in sorted(self.jobs.values(), key=lambda j: j.id)]
 
 	def clear_jobs(self):
 		self.connect()
