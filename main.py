@@ -14,6 +14,7 @@ import callgraph
 
 import sys
 import os
+import logging
 
 def usage():
 	print "./start-framework [-help] [-background] [-worker <nworker>]"
@@ -22,6 +23,8 @@ def usage():
 if __name__ == "__main__":
 	foreground = True
 	nworkers = 0
+
+	logging.basicConfig(level=logging.INFO)
 
 	i = 1
 	while i < len(sys.argv):

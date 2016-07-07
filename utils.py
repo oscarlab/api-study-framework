@@ -3,6 +3,7 @@
 import os
 import sys
 import re
+import logging
 import importlib
 
 config = None
@@ -23,7 +24,7 @@ def get_temp_dir():
 		temp_dir = get_config('temp_dir', '/tmp/syspop-' + str(os.getuid()))
 		try:
 			os.mkdir(temp_dir)
-			print "Create temp dir:", temp_dir
+			logging.info("Create temp dir: " + temp_dir)
 		except OSError:
 			pass
 	return temp_dir

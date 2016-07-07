@@ -8,6 +8,7 @@ from utils import get_config, null_dev, root_dir, get_temp_dir
 import os
 import sys
 import re
+import logging
 import subprocess
 import shutil
 import stat
@@ -104,7 +105,7 @@ def get_package_info(pkgname):
 							has_source = True
 							raise Exception(pkgname + " contains source")
 	except Exception as e:
-		print str(e)
+		logging.info(str(e))
 		pass
 
 	if process:
@@ -164,12 +165,12 @@ def update_apt(source=None, force=False):
 	if not force:
 		return
 
-	print "updating APT..."
+	logging.info("updating APT...")
 	process = subprocess.Popen(cmd, stdout = subprocess.PIPE,
 			stderr = subprocess.PIPE)
 	(stdout, stderr) = process.communicate()
 	if process.returncode != 0:
-		print "Cannot update package"
+		logging.info("Cannot update package")
 
 def UpdateApt(jmgr, os_target, sql, args):
 	update_apt(get_config('package_source'), True)
@@ -218,7 +219,7 @@ def download_source_from_apt(name, source=None, arch=None, options=None, unpack=
 	process = subprocess.Popen(cmd + [name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	(stdout, stderr) = process.communicate()
 	if process.returncode != 0:
-		print stderr
+		logging.error(stderr)
 		raise Exception("Cannot download \'" + name + "\'")
 
 def unpack_package(name):

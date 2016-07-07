@@ -5,6 +5,7 @@ from utils import get_config, root_dir
 import os
 import sys
 import socket
+import logging
 from multiprocessing import Process, Queue, Value, Event, current_process
 from multiprocessing.managers import SyncManager
 from Queue import Empty
@@ -89,16 +90,16 @@ class WorkerProcess(Process):
 
 			self.scheduler.workers.update([(name, j.id)])
 			s = JobStatus(j.id)
-			print "Start Job:", j.name, s.start_time
+			logging.log("Start Job: " + j.name + " " + str(s.start_time))
 			try:
 				j.run(self.scheduler, self.scheduler.os_target, self.scheduler.sql)
 			except Exception as err:
-				print err.__class__.__name__, ':', err
-				print 'Traceback:'
+				logging.error(err.__class__.__name__ + ' : ' + err)
+				logging.error('Traceback:')
 				traceback.print_tb(sys.exc_info()[2])
 				s.success = False
 			s.end_time = datetime.now()
-			print "Finish Job:", j.name, s.end_time
+			logging.log("Finish Job: " + j.name + " " + str(s.end_time))
 			self.scheduler.workers.update([(name, 0)])
 
 			self.scheduler.status_queue.put(s)
@@ -147,7 +148,7 @@ class SchedulerProcess(Process):
 						j.status = s
 						scheduler.jobs.update([(s.id, j)])
 
-		print "Scheduler process started."
+		logging.info("Scheduler process started.")
 
 		Thread(target=receive_submission, args=(self.scheduler,)).start()
 		Thread(target=receive_status, args=(self.scheduler,)).start()
@@ -194,9 +195,9 @@ class HostProcess(Process):
 					authkey=self.scheduler.scheduler_auth
 				).get_server()
 
-			print "Scheduler listening at \"" + self.scheduler.scheduler_host + ":" + str(self.scheduler.scheduler_port) + "\"."
+			logging.info("Scheduler listening at \"" + self.scheduler.scheduler_host + ":" + str(self.scheduler.scheduler_port) + "\".")
 		except socket.error:
-			print "Not scheduler server."
+			logging.info("Not scheduler server.")
 			pass
 
 		if scheduler_server:
@@ -206,7 +207,7 @@ class HostProcess(Process):
 		try:
 			self.scheduler.connect()
 		except socket.error:
-			print "Failed connecting to the scheduler."
+			logging.error("Failed connecting to the scheduler.")
 			self.host_server.listener.close()
 			os._exit(0)
 
@@ -220,11 +221,11 @@ class HostProcess(Process):
 		self.scheduler.exit_event.wait()
 
 		if self.scheduler_process:
-			print "Terminating scheduler process"
+			logging.info("Terminating scheduler process")
 			self.scheduler_process.terminate()
 
 		for w in self.worker_processes:
-			print "Terminating worker process " + w.name
+			logging.info("Terminating worker process " + w.name)
 			w.terminate()
 
 		host_file = root_dir + '/localserver.port'
@@ -283,7 +284,7 @@ class SimpleScheduler(Scheduler):
 						authkey=host_auth
 					).get_server()
 
-				print "Host listening at \"" + localhost + ":" + str(host_port) + "\"."
+				logging.info("Host listening at \"" + localhost + ":" + str(host_port) + "\".")
 			except socket.error:
 				pass
 
@@ -313,7 +314,7 @@ class SimpleScheduler(Scheduler):
 				self.host_client.connect()
 			except:
 				if host_server:
-					print "Failed initializing the host."
+					logging.error("Failed initializing the host.")
 					os._exit(0)
 				host_port = None
 				self.host_client = None
@@ -325,7 +326,7 @@ class SimpleScheduler(Scheduler):
 		class SyncManagerClient(SyncManager):
 			pass
 
-		print "Connecting to Scheduler (may take a few seconds)..."
+		logging.info("Connecting to Scheduler (may take a few seconds)...")
 
 		SyncManagerClient.register('get_id')
 		SyncManagerClient.register('get_jobs')
@@ -348,7 +349,7 @@ class SimpleScheduler(Scheduler):
 		self.exit_event = self.client.get_exit_event()
 		self.workers = self.client.get_workers()
 
-		print "Connected to the scheduler: " + self.scheduler_host + ":" + str(self.scheduler_port)
+		logging.info("Connected to the scheduler: " + self.scheduler_host + ":" + str(self.scheduler_port))
 
 	def add_worker(self):
 		self.host_client.add_worker()
