@@ -10,6 +10,15 @@ import sys
 import re
 import tempfile
 
+tables['package_info'] = Table('package_info', [
+		('pkg_id', 'INT', 'NOT NULL'),
+		('arch', 'VARCHAR', 'NOT NULL'),
+		('version', 'VARCHAR', 'NOT NULL'),
+		('uri', 'VARCHAR', 'NOT NULL'),
+		('hash', 'VARCHAR', 'NOT NULL'),
+		('opensource', 'BOOLEAN', 'NOT NULL')],
+		['pkg_id', 'arch'], [])
+
 tables['package_dependency'] = Table('package_dependency', [
 		('pkg_id', 'INT', 'NOT NULL'),
 		('dependency', 'INT', 'NOT NULL')],
@@ -72,6 +81,7 @@ def remove_dir(dir):
 		pass
 
 def PackageInfo(jmgr, os_target, sql, args):
+	sql.connect_table(tables['package_info'])
 	sql.connect_table(tables['package_dependency'])
 
 	pkgname = args[0]
@@ -81,7 +91,11 @@ def PackageInfo(jmgr, os_target, sql, args):
 	pkg_deps = os_target.get_package_dependency(pkgname)
 
 	# Clean up records
+	sql.delete_record(tables['package_info'], 'pkg_id=\'' + Table.stringify(pkg_id) + '\'')
 	sql.delete_record(tables['package_dependency'], 'pkg_id=\'' + Table.stringify(pkg_id) + '\'')
+
+	pkg_info['pkg_id'] = pkg_id
+	sql.append_record(tables['package_info'], pkg_info)
 
 	for dep in pkg_deps:
 		dep_id = get_package_id(sql, dep)

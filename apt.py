@@ -59,8 +59,7 @@ def get_package_info(pkgname):
 	package_arch = get_config('package_arch')
 	package_options = get_config('package_options')
 
-	cmd = ["apt-cache"]
-
+	cmd = []
 	if package_source:
 		cmd += apt_options_for_source(package_source)
 	if package_arch:
@@ -69,16 +68,17 @@ def get_package_info(pkgname):
 		for (opt, val) in package_options.items():
 			cmd += ["-o", opt + "=" + val]
 
-	has_source = False
-	arch = 'all'
-	process = subprocess.Popen(cmd + ["showpkg", pkgname], stdout=subprocess.PIPE, stderr=null_dev)
-	for line in process.stdout:
-		m = re.match('\s*Architecture:\s*(\S+)', line)
+	process = subprocess.Popen(["apt-get"] + cmd + ["download", "--print-uris", pkgname], stdout=subprocess.PIPE, stderr=null_dev)
+	(stdout, _) = process.communicate()
+	for line in stdout.split('\n'):
+		m = re.match('\'([^\']+)\'\s+[^\s_]+_([^\s_]+)_([^\s_]+).deb\s+\d+\s+(\S+)', line)
 		if m:
-			arch = m.group(1)
-	if process.wait() != 0:
-		return False
+			uri = m.group(1)
+			version = m.group(2)
+			arch = m.group(3)
+			hash = m.group(4)
 
+	has_source = False
 	extensions = [".c", ".cpp", ".c++", ".cxx", ".cc", ".cp"]
 	dir = None
 	process = None
@@ -103,7 +103,6 @@ def get_package_info(pkgname):
 					for ext in extensions:
 						if line.endswith(ext):
 							has_source = True
-							raise Exception(pkgname + " contains source")
 	except Exception as e:
 		logging.info(str(e))
 		pass
@@ -113,7 +112,7 @@ def get_package_info(pkgname):
 	if dir:
 		package.remove_dir(dir)
 
-	return {'arch': arch, 'opensource': has_source };
+	return {'arch': arch, 'version': version, 'uri': uri, 'opensource': has_source, 'hash': hash}
 
 def get_package_dependency(pkgname):
 	package_source = get_config('package_source')
