@@ -114,7 +114,7 @@ class Instr:
 		def get_size(self):
 			return self.size
 
-class InstrJCond:
+class InstrJCond(Instr):
 	def __init__(self, bb, addr, dism, target, size):
 		Instr.__init__(self, bb, addr, dism, size)
 		self.target = target
@@ -406,6 +406,7 @@ def get_callgraph(binary_name):
 
 		def process_instructions(self, address, size, branch_delay_insn,
 			insn_type, target, target2, disassembly):
+			print "%x: %s" % (address, disassembly)
 
 			try:
 				regex = r'^(?P<repz>repz )?(?P<insn>\S+)(\s+(?P<arg1>[^,]+)?(,(?P<arg2>[^#]+)(#(?P<comm>.+))?)?)?$'
@@ -589,8 +590,8 @@ def get_callgraph(binary_name):
 						target_addr = arg1.addr.get_val()
 						if target_addr in rel_entries:
 							self.cur_bb.instrs.append(InstrCall(self.cur_bb,
-											address, 
-											disassembly, 
+											address,
+											disassembly,
 											rel_entries[target_addr],
 											size))
 						elif target_addr:
@@ -765,7 +766,7 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 	sql.delete_record(tables['binary_call_unknown'], condition_unknown)
 	sql.delete_record(tables['binary_instr_usage'], condition)
 
-	def InstrSizes:
+	class InstrSizes:
 		def __init__(self, size):
 			self.sizes = dict()
 			sizes[size] = 1
