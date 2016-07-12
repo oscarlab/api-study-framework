@@ -33,3 +33,6 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+pybfd/gen_bfd_archs.c
+pybfd/supported_disasm.h
