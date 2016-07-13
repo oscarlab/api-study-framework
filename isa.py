@@ -15,20 +15,20 @@ tables['instr_list'] = Table('instr_list', [
 		('name', 'VARCHAR', 'NOT NULL')],
 		['id'])
 
-tables['binary_instr_usage'] = Table('binary_instr_usage', [
+tables['binary_opcode_usage'] = Table('binary_opcode_usage', [
 			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
 			('func_addr', 'INT', 'NOT NULL'),
-			('instr', 'VARCHAR(15)', 'NOT NULL'),
-			('count', 'INT', 'NOT NULL'),
-			('size', 'INT', 'NOT NULL')],
-			['pkg_id', 'bin_id', 'func_addr', 'instr', 'size'],
-			[['pkg_id', 'bin_id'], ['pkg_id', 'bin_id', 'func_addr']])
+			('opcode', 'INT', 'NOT NULL'),
+			('length', 'INT', 'NOT NULL'),
+			('count', 'INT', 'NOT NULL')],
+			['pkg_id', 'bin_id', 'func_addr', 'opcode', 'length'],
+			[['pkg_id', 'bin_id'], ['pkg_id', 'bin_id', 'func_addr'], ['opcode', 'length']])
 
 def BinaryInstr(jmgr, os_target, sql, args):
 	sql.connect_table(tables['binary_call'])
 	sql.connect_table(tables['binary_call_unknown'])
-	sql.connect_table(tables['binary_instr_usage'])
+	sql.connect_table(tables['binary_opcode_usage'])
 
 	pkgname = args[0]
 	bin = args[1]
