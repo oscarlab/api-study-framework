@@ -76,34 +76,3 @@ subtasks['BinaryInstr'] = Task(
 	func = BinaryInstr,
 	arg_defs = ["Package Name", "Binary Path", "Unpack Path"],
 	job_name = lambda args: "Collect Binary Instruction Usage: " + args[1] + " in " + args[0])
-
-def BinaryInstrInfo(jmgr, os_target, sql, args):
-	(dir, pkgname, _) = package.unpack_package(os_target, args[0])
-	if not dir:
-		return
-
-	binaries = os_target.get_binaries(dir)
-	if not binaries:
-		package.remove_dir(dir)
-		return
-
-	for (bin, type, _) in binaries:
-		if type == 'lnk':
-			continue
-		ref = package.reference_dir(dir)
-		subtasks['BinaryInstr'].create_job(jmgr, [pkgname, bin, dir, ref])
-
-tasks['BinaryInstrInfo'] = Task(
-	name = "Collect Binary Instruction Usage",
-	func = BinaryInstrInfo,
-	arg_defs = ["Package Name"],
-	job_name = lambda args: "Collect Binary Instruction Usage: " + args[0])
-
-def ListForBinaryInstrInfo(jmgr, os_target, sql, args):
-	for pkg in package.pick_packages_from_args(os_target, sql, args):
-		tasks['BinaryInstrInfo'].create_job(jmgr, [pkg])
-
-tasks['ListForBinaryInstrInfo'] = Task(
-	name = "List Packages to Collect Binary Instruction Usage",
-	func = ListForBinaryInstrInfo,
-	arg_defs = package.args_to_pick_packages)
