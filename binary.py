@@ -28,6 +28,10 @@ tables['binary_link'] = Table('binary_link', [
 		[['lnk_id'], ['target']])
 
 def append_binary_list(sql, pkgname, dir, binaries):
+	sql.connect_table(tables['binary_list'])
+	sql.connect_table(tables['binary_link'])
+	sql.connect_table(tables['binary_interp'])
+
 	pkg_id = get_package_id(sql, pkgname)
 	insert_values = []
 
