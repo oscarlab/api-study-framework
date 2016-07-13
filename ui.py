@@ -180,7 +180,7 @@ def make_screen(scheduler, tasks):
 						tasks[i]))
 
 			show_list(screen, "Tasks", keys, print_task,
-					task_keys, (scheduler, keys,))
+					task_keys, (scheduler, keys))
 		elif c == ord('r'):
 			(y, x) = center(screen, 3, 30)
 			win = curses.newwin(3, 30, y, x)

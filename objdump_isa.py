@@ -96,34 +96,33 @@ class RegisterSet:
 				return (reg, size, mask)
 		return (None, None, None)
 
-def get_x86_opcodes(bytes):
+def get_x86_opcodes(binbytes):
 	PREFIX = range(0x40, 0x4f) + [0xf3, 0xf2, 0xf0, 0x2e, 0x36, 0x3e, 0x26] + range(0x64, 0x67)
 	PREFIX = [chr(c) for c in PREFIX]
 	TWOBYTE = [chr(0x0f)]
 	THREEBYTE = [chr(0x38), chr(0x3a), chr(0x7a)]
 	prefixes = []
 	i = 0
-	while i < len(bytes) and bytes[i] in PREFIX:
-		prefixes.append(bytes[i])
+	while i < len(binbytes) and binbytes[i] in PREFIX:
+		prefixes.append(binbytes[i])
 		i += 1
 
 	opcode = ''
-	if len(bytes) > i:
-		opcode += bytes[i]
-	if len(bytes) > i + 1 and bytes[i] in TWOBYTE:
-		opcode += bytes[i + 1]
-	if len(bytes) > i + 2 and bytes[i] in TWOBYTE and bytes[i + 1] in THREEBYTE:
-		opcode += bytes[i + 2]
-
+	if len(binbytes) > i:
+		opcode += binbytes[i]
+	if len(binbytes) > i + 1 and binbytes[i] in TWOBYTE:
+		opcode += binbytes[i + 1]
+	if len(binbytes) > i + 2 and binbytes[i] in TWOBYTE and binbytes[i + 1] in THREEBYTE:
+		opcode += binbytes[i + 2]
 	return opcode, prefixes
 
 class Instr:
-	def __init__(self, bb, addr, dism, size, bytes):
+	def __init__(self, bb, addr, dism, size, binbytes):
 		self.bblock = bb
 		self.addr = addr
 		self.dism = dism
 		self.size = size
-		self.opcode, self.prefixes = get_x86_opcodes(bytes)
+		self.opcode, self.prefixes = get_x86_opcodes(binbytes)
 
 	def __str__(self):
 		return "%x:        (%s)" % (self.addr, self.dism)
@@ -135,8 +134,8 @@ class Instr:
 		return self.dism.split()[0]
 
 class InstrJCond(Instr):
-	def __init__(self, bb, addr, dism, target, size, bytes):
-		Instr.__init__(self, bb, addr, dism, size, bytes)
+	def __init__(self, bb, addr, dism, target, size, binbytes):
+		Instr.__init__(self, bb, addr, dism, size, binbytes)
 		self.target = target
 		self.size = size
 
@@ -147,8 +146,8 @@ class InstrJCond(Instr):
 			return "%x: %s %s" % (self.addr, self.dism, str(self.target))
 
 class InstrMov(Instr):
-	def __init__(self, bb, addr, dism, reg, source, size, bytes):
-		Instr.__init__(self, bb, addr, dism, size, bytes)
+	def __init__(self, bb, addr, dism, reg, source, size, binbytes):
+		Instr.__init__(self, bb, addr, dism, size, binbytes)
 		self.reg = reg
 		self.source = source
 
@@ -156,8 +155,8 @@ class InstrMov(Instr):
 		return "%x: %s=%s" % (self.addr, str(self.reg), str(self.source))
 
 class InstrSave(Instr):
-	def __init__(self, bb, addr, dism, target, reg, size, bytes):
-		Instr.__init__(self, bb, addr, dism ,size, bytes)
+	def __init__(self, bb, addr, dism, target, reg, size, binbytes):
+		Instr.__init__(self, bb, addr, dism ,size, binbytes)
 		self.target = target
 		self.reg = reg
 
@@ -165,8 +164,8 @@ class InstrSave(Instr):
 		return "%x: *%s=%s" % (self.addr, str(self.target), str(self.reg))
 
 class InstrCall(Instr):
-	def __init__(self, bb, addr, dism, target, size, bytes):
-		Instr.__init__(self, bb, addr, dism, size, bytes)
+	def __init__(self, bb, addr, dism, target, size, binbytes):
+		Instr.__init__(self, bb, addr, dism, size, binbytes)
 		self.target = target
 
 	def __str__(self):
@@ -390,6 +389,7 @@ def get_callgraph(binary_name):
 			if bfd.target == 'elf64-x86-64':
 				self.regset = RegisterSet(x86_64_regs)
 			elif bfd.target == 'elf32-i386':
+						#logging.info("Hello")
 				self.regset = RegisterSet(i386_regs)
 
 			self.start = self.end = None
@@ -426,7 +426,7 @@ def get_callgraph(binary_name):
 
 		def process_instructions(self, address, size, branch_delay_insn,
 			insn_type, target, target2, disassembly):
-			bytes = self.content[address - self.start:address - self.start + size]
+			binbytes = self.content[address - self.start:address - self.start + size]
 			#print "%x: %s" % (address, disassembly)
 
 			try:
@@ -557,7 +557,7 @@ def get_callgraph(binary_name):
 
 				if insn == 'ret' or insn == 'hlt':
 					self.cur_bb.end = address + size
-					self.cur_bb.instrs.append(Instr(self.cur_bb, address, disassembly, size, bytes))
+					self.cur_bb.instrs.append(Instr(self.cur_bb, address, disassembly, size, binbytes))
 					return opcodes.PYBFD_DISASM_STOP
 
 				if insn_type == opcodes.InstructionType.BRANCH:
@@ -568,13 +568,13 @@ def get_callgraph(binary_name):
 											address,
 											disassembly,
 											rel_entries[target_addr],
-											size, bytes))
+											size, binbytes))
 						elif target_addr:
 							self.add_entry(val2ptr(target_addr, ptr_size))
 							self.cur_bb.instrs.append(InstrCall(self.cur_bb,
 											address,
 											disassembly,
-											target_addr, size, bytes))
+											target_addr, size, binbytes))
 
 					if target:
 						bb = self.cur_func.add_bblock(val2ptr(target, ptr_size))
@@ -599,7 +599,7 @@ def get_callgraph(binary_name):
 									address,
 									disassembly,
 									target,
-									size, bytes))
+									size, binbytes))
 					self.cur_bb = next_bb
 
 					if next_bb in self.cur_func.new_bblocks:
@@ -614,14 +614,14 @@ def get_callgraph(binary_name):
 											address,
 											disassembly,
 											rel_entries[target_addr],
-											size, bytes))
+											size, binbytes))
 						elif target_addr:
 							self.add_entry(val2ptr(target_addr, ptr_size))
 							self.cur_bb.instrs.append(InstrCall(self.cur_bb,
 											address,
 											disassembly,
 											target_addr,
-											size, bytes))
+											size, binbytes))
 
 					elif target:
 						self.add_entry(val2ptr(target, ptr_size))
@@ -629,7 +629,7 @@ def get_callgraph(binary_name):
 										address,
 										disassembly,
 										target,
-										size, bytes))
+										size, binbytes))
 
 				elif insn_type == opcodes.InstructionType.COND_JSR:
 					if isinstance(arg1, OpLoad):
@@ -639,14 +639,14 @@ def get_callgraph(binary_name):
 											address,
 											disassembly,
 											rel_entries[target_addr],
-											size, bytes))
+											size, binbytes))
 						elif target_addr:
 							self.add_entry(val2ptr(target_addr, ptr_size))
 							self.cur_bb.instrs.append(InstrCall(self.cur_bb,
 											address,
 											disassembly,
 											target_addr,
-											size, bytes))
+											size, binbytes))
 
 					elif target:
 						self.add_entry(val2ptr(target, ptr_size))
@@ -654,7 +654,7 @@ def get_callgraph(binary_name):
 										address,
 										disassembly,
 										target,
-										size, bytes))
+										size, binbytes))
 
 				elif insn_type == opcodes.InstructionType.NON_BRANCH:
 					if insn == 'mov':
@@ -663,12 +663,12 @@ def get_callgraph(binary_name):
 											address,
 											disassembly,
 											arg1.reg, arg2,
-											size, bytes))
+											size, binbytes))
 						else:
 							self.cur_bb.instrs.append(Instr(self.cur_bb,
 											address,
 											disassembly,
-											size, bytes))
+											size, binbytes))
 
 					elif insn == 'lea':
 						if arg2.val:
@@ -679,13 +679,13 @@ def get_callgraph(binary_name):
 										address,
 										disassembly,
 										arg2,
-										size, bytes))
+										size, binbytes))
 
 					else:
 						self.cur_bb.instrs.append(Instr(self.cur_bb,
 										address,
 										disassembly,
-										size, bytes))
+										size, binbytes))
 
 			except Exception as e:
 				traceback.print_exc()
@@ -847,8 +847,8 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 			values['pkg_id'] = pkg_id
 			values['bin_id'] = bin_id
 			values['func_addr'] = func.entry
-			values['opcode'] = opcode[0]
-			values['opcode'] = opcode[1]
+			values['opcode'] = int(opcode[0].encode('hex'), 16)
+			values['size'] = opcode[1]
 			values['count'] = count
 			sql.append_record(tables['binary_opcode_usage'], values)
 
@@ -872,6 +872,11 @@ if __name__ == "__main__":
 							calls.append(instr.target.val)
 
 				for opcode, size in [(instr.opcode, instr.size)] + [(p, 0) for p in instr.prefixes]:
+					if size == 0:
+						print instr.dism, 
+						for item in instr.prefixes:
+							print item.encode('hex'),
+						print instr.opcode[0].encode('hex')
 					if opcode == '':
 						continue
 					if (opcode, size) in opcodes:
