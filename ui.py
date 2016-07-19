@@ -163,8 +163,9 @@ def make_screen(scheduler, tasks):
 	screen.addstr(6, 3, "c - Clear finished jobs")
 	screen.addstr(7, 3, "w - List all workers")
 	screen.addstr(8, 3, "n - Create new worker")
-	screen.addstr(9, 3, "e - End execution")
-	screen.addstr(10, 3, "q - Leave")
+	screen.addstr(9, 3, "f - Requeue failed jobs")
+	screen.addstr(10, 3, "e - End execution")
+	screen.addstr(11, 3, "q - Leave")
 	while True:
 		c = screen.getch()
 		if c == ord('l'):
@@ -204,6 +205,9 @@ def make_screen(scheduler, tasks):
 		elif c == ord('n'):
 			scheduler.add_worker()
 			show_message(screen, "A new worker is created")
+		elif c == ord('f'):
+			x = scheduler.requeue_failed()
+			show_message(screen, "Requeued", x, "failed jobs")
 		elif c == ord('e'):
 			if confirm_exit(screen):
 				scheduler.exit()

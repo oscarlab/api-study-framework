@@ -386,6 +386,22 @@ class SimpleScheduler(Scheduler):
 					self.jobs.pop(j.id)
 				except KeyError:
 					pass
+	
+	def requeue_failed(self):
+		self.connect()
+		i = 0
+		for j in self.get_failed_jobs():
+			self.requeue_job(j.id)
+			i=i+1
+		return i
+	
+	def get_failed_jobs(self):
+		self.connect()
+		failed_jobs = []
+		for j in self.jobs.values():
+			if j.status is not None and j.status.success is False:
+				failed_jobs.append((j.id, j.name, j.status))
+		return failed_jobs
 
 	def exit(self):
 		self.connect()
