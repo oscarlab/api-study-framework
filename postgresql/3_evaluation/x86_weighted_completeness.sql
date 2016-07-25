@@ -1,30 +1,30 @@
-CREATE OR REPLACE VIEW package_instr_usage_array AS
-	SELECT pkg_id, array_agg(instr) AS instrs
-	FROM package_instr_usage
+CREATE OR REPLACE VIEW package_opcode_usage_array AS
+	SELECT pkg_id, array_agg(opcode) AS opcodes
+	FROM package_opcode_usage
 	GROUP BY pkg_id;
 
 CREATE OR REPLACE FUNCTION x86_weighted_completeness(
-	instrs VARCHAR(15)[]
+	opcodes INT[]
 )
 RETURNS FLOAT AS $$
 
 DECLARE
-	pkg_instrs RECORD;
+	pkg_opcodes RECORD;
 	comp FLOAT := 0.0;
 	total_comp FLOAT := 0.0;
 
 BEGIN
-	FOR pkg_instrs IN (
-		SELECT t2.percent_order, t1.instrs FROM
-		package_instr_usage_array AS t1
+	FOR pkg_opcodes IN (
+		SELECT t2.percent_order, t1.opcodes FROM
+		package_opcode_usage_array AS t1
 		JOIN
 		package_install AS t2
 		ON t1.pkg_id = t2.pkg_id
 	) LOOP
-		IF pkg_instrs.instrs <@ instrs THEN
-			comp := comp + pkg_instrs.percent_order;
+		IF pkg_opcodes.opcodes <@ opcodes THEN
+			comp := comp + pkg_opcodes.percent_order;
 		END IF;
-		total_comp := total_comp + pkg_instrs.percent_order;
+		total_comp := total_comp + pkg_opcodes.percent_order;
 	END LOOP;
 
 	RETURN (SELECT COALESCE(MAX(comp), 0)) / total_comp;
@@ -33,9 +33,9 @@ $$ LANGUAGE plpgsql;
 
 DO $$
 BEGIN
-	IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'instr_improvement') THEN
-		CREATE TYPE instr_improvement AS (
-			instr VARCHAR(15),
+	IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'opcode_improvement') THEN
+		CREATE TYPE opcode_improvement AS (
+			opcode INT,
 			weighted_completeness FLOAT
 		);
 	END IF;
@@ -43,30 +43,30 @@ END
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION x86_weighted_completeness_improvement(
-	instrs VARCHAR(15)[], more_instrs INTEGER
+	opcodes INT[], more_opcodes INTEGER
 )
-RETURNS SETOF instr_improvement AS $$
+RETURNS SETOF opcode_improvement AS $$
 
 DECLARE
-	instr RECORD;
+	opcode RECORD;
 
 BEGIN
-	RETURN NEXT (SELECT ROW(null::VARCHAR(15), x86_weighted_completeness(instrs)));
+	RETURN NEXT (SELECT ROW(null::INT, x86_weighted_completeness(opcodes)));
 
-	FOR instr IN (
-		SELECT t.instr
-		FROM instr_importance AS t
-		WHERE NOT ARRAY[t.instr] <@ instrs
-		ORDER BY t.instr_importance_order DESC
-		LIMIT more_instrs
+	FOR opcode IN (
+		SELECT t.opcode
+		FROM opcode_importance AS t
+		WHERE NOT ARRAY[t.opcode] <@ opcodes
+		ORDER BY t.opcode_importance_order DESC
+		LIMIT more_opcodes
 	) LOOP
-		instrs := instrs || ARRAY[instr.instr];
+		opcodes := opcodes || ARRAY[opcode.opcode];
 
-		RAISE NOTICE 'add % (%)', instr.instr, array_length(instrs, 1);
+		RAISE NOTICE 'add % (%)', opcode.opcode, array_length(opcodes, 1);
 
 		RETURN NEXT (SELECT ROW(
-				instr.instr,
-				x86_weighted_completeness(instrs)
+				opcode.opcode,
+				x86_weighted_completeness(opcodes)
 			));
 	END LOOP;
 	RETURN;
