@@ -28,16 +28,16 @@ IF NOT table_exists('executable_api_usage') THEN
 		ON executable_api_usage (api_id);
 END IF;
 
-IF NOT table_exists('executable_instr_usage') THEN
-	CREATE TABLE executable_instr_usage (
+IF NOT table_exists('executable_opcode_usage') THEN
+	CREATE TABLE executable_opcode_usage (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
-		instr VARCHAR(15) NOT NULL,
-		PRIMARY KEY (pkg_id, bin_id, instr)
+		opcode INT NOT NULL,
+		PRIMARY KEY (pkg_id, bin_id, opcode)
 	);
-	CREATE INDEX executable_instr_usage_pkg_id_bin_id_idx
-		ON executable_instr_usage (pkg_id, bin_id);
-	CREATE INDEX executable_instr_usage_instr_idx
-		ON executable_instr_usage (instr);
+	CREATE INDEX executable_opcode_usage_pkg_id_bin_id_idx
+		ON executable_opcode_usage (pkg_id, bin_id);
+	CREATE INDEX executable_opcode_usage_opcode_idx
+		ON executable_opcode_usage (opcode);
 END IF;
 
 END $$ LANGUAGE plpgsql;
@@ -226,16 +226,16 @@ BEGIN
 		AND t1.bin_id = t2.bin_id
 		AND t1.func_addr = t2.func_addr;
 
-	DELETE FROM executable_instr_usage WHERE pkg_id = p AND bin_id = b;
-	INSERT INTO executable_instr_usage
-		SELECT DISTINCT p, b, instr
-		FROM binary_instr_usage
+	DELETE FROM executable_opcode_usage WHERE pkg_id = p AND bin_id = b;
+	INSERT INTO executable_opcode_usage
+		SELECT DISTINCT p, b, opcode
+		FROM binary_opcode_usage
 		WHERE pkg_id = p AND bin_id = b
 		UNION
-		SELECT DISTINCT p, b, t2.instr
+		SELECT DISTINCT p, b, t2.opcode
 		FROM bin_call AS t1
 		INNER JOIN
-		library_instr_usage AS t2
+		library_opcode_usage AS t2
 		ON  t1.pkg_id = t2.pkg_id
 		AND t1.bin_id = t2.bin_id
 		AND t1.func_addr = t2.func_addr;

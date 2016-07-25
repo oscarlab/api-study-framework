@@ -22,14 +22,14 @@ IF NOT table_exists('package_api_usage') THEN
 		ON package_api_usage (pkg_id);
 END IF;
 
-IF NOT table_exists('package_instr_usage') THEN
-	CREATE TABLE package_instr_usage (
+IF NOT table_exists('package_opcode_usage') THEN
+	CREATE TABLE package_opcode_usage (
 		pkg_id INT NOT NULL,
-		instr VARCHAR(15) NOT NULL,
-		PRIMARY KEY (pkg_id, instr)
+		opcode INT NOT NULL,
+		PRIMARY KEY (pkg_id, opcode)
 	);
-	CREATE INDEX package_instr_usage_instr_idx
-		ON package_instr_usage (instr);
+	CREATE INDEX package_opcode_usage_opcode_idx
+		ON package_opcode_usage (opcode);
 END IF;
 END $$ LANGUAGE plpgsql;
 
@@ -79,10 +79,10 @@ BEGIN
 		pkg_bin AS t2
 		ON t1.pkg_id = p AND t1.bin_id = t2.bin_id;
 
-	DELETE FROM package_instr_usage WHERE pkg_id = p;
-	INSERT INTO package_instr_usage
-		SELECT DISTINCT p, t1.instr
-		FROM executable_instr_usage AS t1
+	DELETE FROM package_opcode_usage WHERE pkg_id = p;
+	INSERT INTO package_opcode_usage
+		SELECT DISTINCT p, t1.opcode
+		FROM executable_opcode_usage AS t1
 		INNER JOIN
 		pkg_bin AS t2
 		ON t1.pkg_id = p AND t1.bin_id = t2.bin_id;
