@@ -415,7 +415,7 @@ class SimpleScheduler(Scheduler):
 		self.connect()
 		logging.info("Failed Jobs:")
 		for (id,name,_) in self.get_failed_jobs():
-			logging.info(id + name)
+			logging.info(str(id) + name)
 
 	def exit(self):
 		self.connect()
