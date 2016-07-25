@@ -760,7 +760,7 @@ def get_callgraph(binary_name):
 		fini_content = bfd.sections.get('.fini_array').content
 		off = 0
 		while off + ptr_size < len(fini_content):
-			addr = struct.unpack(ptr_fmt, init_content[off:off + ptr_size])[0]
+			addr = struct.unpack(ptr_fmt, fini_content[off:off + ptr_size])[0]
 			codes.add_entry(addr)
 			off += ptr_size
 

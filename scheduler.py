@@ -87,7 +87,7 @@ class WorkerProcess(Process):
 		logging.info("Connected to the scheduler")
 		while True:
 			try:
-				logging.info("Worker checking queue")
+#				logging.info("Worker checking queue")
 				j = self.scheduler.worker_queue.get()
 				logging.info("Worker found the following task:"+j.get_name())
 			except Empty:
@@ -124,11 +124,10 @@ class SchedulerProcess(Process):
 				while True:
 					try:
 						o = scheduler.submit_queue.get(timeout is None, timeout)
-						logging.info("Recieved a job "+str(o.get_name()))
-						jobs.append(o)
+#						logging.info("Recieved a job "+str(o.get_name()))
+						jbs.append(o)
 						timeout = 0
 					except Empty:
-						logging.info("No submission recieved.")
 						break
 
 				for j in jobs:
@@ -387,11 +386,11 @@ class SimpleScheduler(Scheduler):
 				except KeyError:
 					pass
 	
-	def requeue_failed(self):
+	def requeue_failed_jobs(self):
 		self.connect()
 		i = 0
-		for j in self.get_failed_jobs():
-			self.requeue_job(j.id)
+		for (id, _, _) in self.get_failed_jobs():
+			self.requeue_job(id)
 			i=i+1
 		return i
 	
@@ -402,6 +401,21 @@ class SimpleScheduler(Scheduler):
 			if j.status is not None and j.status.success is False:
 				failed_jobs.append((j.id, j.name, j.status))
 		return failed_jobs
+
+	def clear_failed_jobs(self):
+		self.connect()
+		for j in self.jobs.values():
+			if j.status is not None and j.status.success is False:
+				try:
+					self.jobs.pop(j.id)
+				except KeyError:
+					pass
+
+	def print_failed_jobs(self):
+		self.connect()
+		logging.info("Failed Jobs:")
+		for (id,name,_) in self.get_failed_jobs():
+			logging.info(id + name)
 
 	def exit(self):
 		self.connect()
