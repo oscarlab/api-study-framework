@@ -51,7 +51,7 @@ BEGIN
 				SET percent_order = percent_order + pkg_order
 				WHERE opcode = i;
 			ELSE
-				INSERT INTO opcode_tmp VALUES (type, id, pkg_order);
+				INSERT INTO opcode_tmp VALUES (i, pkg_order);
 			END IF;
 		END LOOP;
 

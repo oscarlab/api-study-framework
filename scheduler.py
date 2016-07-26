@@ -87,7 +87,7 @@ class WorkerProcess(Process):
 		logging.info("Connected to the scheduler")
 		while True:
 			try:
-#				logging.info("Worker checking queue")
+				logging.info("Worker checking queue")
 				j = self.scheduler.worker_queue.get()
 				logging.info("Worker found the following task:"+j.get_name())
 			except Empty:
@@ -125,7 +125,7 @@ class SchedulerProcess(Process):
 					try:
 						o = scheduler.submit_queue.get(timeout is None, timeout)
 #						logging.info("Recieved a job "+str(o.get_name()))
-						jbs.append(o)
+						jobs.append(o)
 						timeout = 0
 					except Empty:
 						break
@@ -415,7 +415,7 @@ class SimpleScheduler(Scheduler):
 		self.connect()
 		logging.info("Failed Jobs:")
 		for (id,name,_) in self.get_failed_jobs():
-			logging.info(id + name)
+			logging.info(str(id) + name)
 
 	def exit(self):
 		self.connect()
