@@ -13,9 +13,6 @@ IF NOT table_exists('package_opcode_count') THEN
 		ON package_opcode_count (opcode);
 END IF;
 
-END $$ LANGUAGE plpgsql;
-
-BEGIN
 IF NOT table_exists('package_size_count') THEN
 	CREATE TABLE package_size_count (
 		pkg_id INT NOT NULL,
