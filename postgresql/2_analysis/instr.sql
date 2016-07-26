@@ -53,7 +53,7 @@ BEGIN
 	IF NOT EXISTS (
 		SELECT * FROM pkg_bin
 	) THEN
-		UPDATE package_id SET footprint = True WHERE id = p;
+		UPDATE package_id SET instr = True WHERE id = p;
 		RETURN;
 	END IF;
 
