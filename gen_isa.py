@@ -13,14 +13,15 @@ class DumpOpcodes(Opcodes):
 		self.all_opcodes = dict()
 
 	def process_opcode(self, address, size, branch_delay_insn, insn_type, target, target2, disassembly):
-		self.all_opcodes[self.target] = disassembly.split(' ')[0]
+		if not disassembly.startswith('(bad)'):
+			self.all_opcodes[self.target] = disassembly
 		return PYBFD_DISASM_STOP
 
 # Initialize BFD instance
 bfd = Bfd("/lib/x86_64-linux-gnu/libc.so.6")
 opcodes = DumpOpcodes(bfd)
 
-PREFIX = range(0x40, 0x4f) + [0xf3, 0xf2, 0xf0, 0x2e, 0x36, 0x3e, 0x26] + range(0x64, 0x67)
+PREFIX = range(0x40, 0x50) + [0xf3, 0xf2, 0xf0, 0x2e, 0x36, 0x3e, 0x26] + range(0x64, 0x68)
 TWOBYTE = [0x0f]
 THREEBYTE = [0x38, 0x3a, 0x7a]
 
@@ -50,5 +51,5 @@ for byte1 in TWOBYTE:
 			opcodes.start_smart_disassemble(0, opcodes.process_opcode)
 
 
-for opcode in opcodes.all_opcodes.keys():
+for opcode in sorted(opcodes.all_opcodes.keys()):
 	print "%s: %s" % (opcode.encode('hex'), opcodes.all_opcodes[opcode])
