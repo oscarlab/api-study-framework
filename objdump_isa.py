@@ -788,28 +788,11 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 	sql.delete_record(tables['binary_call_unknown'], condition_unknown)
 	sql.delete_record(tables['binary_opcode_usage'], condition)
 
-	class InstrSizes:
-		def __init__(self, size):
-			self.sizes = dict()
-			sizes[size] = 1
-
-		def get_count(self, size):
-			return self.sizes[size]
-
-		def increment_count(self, size):
-			if size in self.sizes:
-					self.sizes[size] = self.sizes[size] + 1
-			else:
-					self.sizes[size] = 1
-
-		def get_sizes(self):
-			return self.sizes.items()
-
+	mnems = dict()
 	for func in codes.funcs:
 		opcodes = dict()
-		calls = []
-		mnems = dict()
 		prefixes = dict()
+		calls = []
 
 		for bb in func.bblocks:
 			for instr in bb.instrs:
@@ -823,11 +806,12 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 
 				opcode = instr.opcode
 				size = instr.size
+				prefix = instr.prefixes
 
 				if opcode == '':
 					continue
 				if (opcode, size) in opcodes:
-					opcodes[(opcode, size)] = opcodes[(opcode, size)] + 1
+					opcodes[(opcode, size)] += 1
 				else:
 					opcodes[(opcode, size)] = 1
 
@@ -835,12 +819,12 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 					mnems[(opcode, size)] = set()
 				mnems[(opcode,size)].add(instr.get_instr())
 
-				if instr.prefixes == '':
+				if prefix == '':
 					continue
-				if instr.prefixes in prefixes:
-					prefixes[instr.prefixes] = prefixes[instr.prefixes] + 1
+				if prefix in prefixes:
+					prefixes[prefix] += 1
 				else:
-					prefixes[instr.prefixes] = 1
+					prefixes[prefix] = 1
 
 
 		for call in calls:
@@ -868,21 +852,23 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 			values['count'] = count
 			sql.append_record(tables['binary_opcode_usage'], values)
 
-		for (opcode, size), mnem_set in mnems.items():
-			values = dict()
-			values['opcode'] = int(opcode.encode('hex'), 16)
-			values['size'] = size
-			for mnem in mnem_set:
-				values['mnem'] = mnem
-				sql.append_record(tables['instr_list'], values)
-
 		for prefix, count in prefixes.items():
 			values = dict()
 			values['pkg_id'] = pkg_id
 			values['bin_id'] = bin_id
+			values['func_addr'] = func.entry
 			values['prefix'] = int(prefix.encode('hex'), 16)
 			values['count'] = count
 			sql.append_record(tables['prefix_counts'], values)
+
+	for (opcode, size), mnem_set in mnems.items():
+		values = dict()
+		values['opcode'] = int(opcode.encode('hex'), 16)
+		values['size'] = size
+		for mnem in mnem_set:
+			values['mnem'] = mnem
+			sql.append_record(tables['instr_list'], values)
+
 
 
 if __name__ == "__main__":
