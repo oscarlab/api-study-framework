@@ -886,11 +886,11 @@ if __name__ == "__main__":
 							calls.append(instr.target.val)
 
 				for opcode, size in [(instr.opcode, instr.size)] + [(p, 0) for p in instr.prefixes]:
-					if size == 0:
-						print instr.dism,
-						for item in instr.prefixes:
-							print item.encode('hex'),
-						print instr.opcode[0].encode('hex')
+					print instr.get_instr(),
+					for item in instr.prefixes:
+						print item.encode('hex'),
+					print instr.opcode.encode('hex'), instr.size
+
 					if opcode == '':
 						continue
 					if (opcode, size) in opcodes:
