@@ -11,7 +11,7 @@ import sys
 import re
 
 tables['instr_list'] = Table('instr_list', [
-		('opcode', 'INT', 'NOT NULL'),
+		('opcode', 'BIGINT', 'NOT NULL'),
 		('mnem', 'VARCHAR', 'NOT NULL'),
 		('size', 'INT', 'NULL')],
 		None, # NO PRIMARY KEY. TABLE WILL HAVE DUPLICATES. REMOVE LATER.
@@ -30,7 +30,7 @@ tables['binary_opcode_usage'] = Table('binary_opcode_usage', [
 		('pkg_id', 'INT', 'NOT NULL'),
 		('bin_id', 'INT', 'NOT NULL'),
 		('func_addr', 'INT', 'NOT NULL'),
-		('opcode', 'INT', 'NOT NULL'),
+		('opcode', 'BIGINT', 'NOT NULL'),
 		('size', 'INT', 'NULL'),
 		('count', 'INT', 'NOT NULL')],
 		['pkg_id', 'bin_id', 'func_addr', 'opcode', 'size'],

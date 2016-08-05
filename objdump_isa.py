@@ -787,6 +787,7 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 	sql.delete_record(tables['binary_call'], condition)
 	sql.delete_record(tables['binary_call_unknown'], condition_unknown)
 	sql.delete_record(tables['binary_opcode_usage'], condition)
+	sql.delete_record(tables['prefix_counts'], condition)
 
 	mnems = dict()
 	for func in codes.funcs:
