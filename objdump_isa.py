@@ -870,7 +870,7 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 
 		for (opcode, size), mnem_set in mnems.items():
 			values = dict()
-			values['opcode'] = opcode
+			values['opcode'] = int(opcode.encode('hex'), 16)
 			values['size'] = size
 			for mnem in mnem_set:
 				values['mnem'] = mnem
@@ -878,7 +878,7 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 
 		for prefix, count in prefixes.items():
 			values = dict()
-			values['prefix'] = prefix
+			values['prefix'] = int(prefix.encode('hex'), 16)
 			values['count'] = count
 			sql.append_record(tables['prefixe_counts'], values)
 
