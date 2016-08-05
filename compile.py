@@ -4,15 +4,25 @@ from task import tasks, subtasks, Task
 from sql import tables, Table
 from id import get_package_id
 from binary import append_binary_list
+from utils import null_dev
 
 import package
 import os
 import sys
 import re
 import tempfile
+import subprocess
+import logging
 
 def PackageCompilation(jmgr, os_target, sql, args):
-	cmd = ["docker" "run -v /filer/bin:/filer -w /filer --network=host -it bpjain/ubuntu-compiler /filer/run-compile.sh"]
+	cmd = ['docker', 'run', '-v /filer/bin:/filer', '-w',
+	'/filer','--network=host', '-it', 'bpjain/ubuntu-compiler', '/filer/run-compile.sh']
+
+	p = subprocess.Popen(cmd +['sl'], stdout=subprocess.PIPE, stderr=null_dev)
+	(stdout, stderr) = process.communicate()
+	if process.returncode != 0:
+		logging.error(stderr)
+		raise Exception("Cannot compile sl")
 
 
 subtasks['PackageCompilation'] = Task(
@@ -30,3 +40,13 @@ tasks['ListForPackageCompiltation'] = Task(
 	func = ListForPackageCompiltation,
 	arg_defs = package.args_to_pick_packages,
 	order = 40)
+
+if __name__ == "main":
+	cmd = ['docker', 'run', '-v /filer/bin:/filer', '-w',
+	'/filer','--network=host', '-it', 'bpjain/ubuntu-compiler', '/filer/run-compile.sh']
+
+	p = subprocess.Popen(cmd +['sl'], stdout=subprocess.PIPE, stderr=null_dev)
+	(stdout, stderr) = process.communicate()
+	if process.returncode != 0:
+		logging.error(stderr)
+		raise Exception("Cannot compile sl")
