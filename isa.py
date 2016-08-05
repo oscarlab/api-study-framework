@@ -14,7 +14,7 @@ tables['instr_list'] = Table('instr_list', [
 		('opcode', 'INT', 'NOT NULL'),
 		('mnem', 'VARCHAR', 'NOT NULL'),
 		('size', 'INT', 'NULL')],
-		, # NO PRIMARY KEY. TABLE WILL HAVE DUPLICATES. REMOVE LATER.
+		None, # NO PRIMARY KEY. TABLE WILL HAVE DUPLICATES. REMOVE LATER.
 		[['opcode']])
 
 tables['prefix_counts'] = Table('prefix_counts', [

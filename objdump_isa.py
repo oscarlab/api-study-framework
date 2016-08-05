@@ -878,9 +878,11 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 
 		for prefix, count in prefixes.items():
 			values = dict()
+			values['pkg_id'] = pkg_id
+			values['bin_id'] = bin_id
 			values['prefix'] = int(prefix.encode('hex'), 16)
 			values['count'] = count
-			sql.append_record(tables['prefixe_counts'], values)
+			sql.append_record(tables['prefix_counts'], values)
 
 
 if __name__ == "__main__":
