@@ -18,7 +18,7 @@ tables['instr_list'] = Table('instr_list', [
 		['opcode'])
 
 tables['prefix_counts'] = Table('prefix_counts', [
-		('prefix', 'INT', 'NOT NULL')
+		('prefix', 'INT', 'NOT NULL'),
 		('count', 'INT', 'NOT NULL')],
 		['prefix'],
 		['prefix'])

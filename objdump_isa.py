@@ -838,9 +838,9 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 				if instr.prefixes == '':
 					continue
 				if instr.prefixes in prefixes:
-						prefixes[instr.prefixes] = prefixes[instr.prefixes] + 1
-					else:
-						prefixes[instr.prefixes] = 1
+					prefixes[instr.prefixes] = prefixes[instr.prefixes] + 1
+				else:
+					prefixes[instr.prefixes] = 1
 
 
 		for call in calls:
@@ -926,9 +926,9 @@ if __name__ == "__main__":
 				if instr.prefixes == '':
 					continue
 				if instr.prefixes in prefixes:
-						prefixes[instr.prefixes] = prefixes[instr.prefixes] + 1
-					else:
-						prefixes[instr.prefixes] = 1
+					prefixes[instr.prefixes] = prefixes[instr.prefixes] + 1
+				else:
+					prefixes[instr.prefixes] = 1
 
 		for call in calls:
 			if isinstance(call, int) or isinstance(call, long):
