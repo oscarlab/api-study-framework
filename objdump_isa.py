@@ -821,7 +821,7 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 						if not instr.target.val in calls:
 							calls.append(instr.target.val)
 
-				opcode == instr.opcode
+				opcode = instr.opcode
 				size = instr.size
 
 				if opcode == '':

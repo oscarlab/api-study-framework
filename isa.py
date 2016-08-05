@@ -15,13 +15,13 @@ tables['instr_list'] = Table('instr_list', [
 		('mnem', 'VARCHAR', 'NOT NULL'),
 		('size', 'INT', 'NULL')],
 		['opcode'],
-		['opcode'])
+		[['opcode']])
 
 tables['prefix_counts'] = Table('prefix_counts', [
 		('prefix', 'INT', 'NOT NULL'),
 		('count', 'INT', 'NOT NULL')],
 		['prefix'],
-		['prefix'])
+		[['prefix']])
 
 tables['binary_opcode_usage'] = Table('binary_opcode_usage', [
 		('pkg_id', 'INT', 'NOT NULL'),
