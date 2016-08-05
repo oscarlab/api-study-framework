@@ -101,10 +101,10 @@ def get_x86_opcodes(binbytes):
 	PREFIX = [chr(c) for c in PREFIX]
 	TWOBYTE = [chr(0x0f)]
 	THREEBYTE = [chr(0x38), chr(0x3a), chr(0x7a)]
-	prefixes = []
+	prefixes = ''
 	i = 0
 	while i < len(binbytes) and binbytes[i] in PREFIX:
-		prefixes.append(binbytes[i])
+		prefixes += binbytes[i]
 		i += 1
 
 	opcode = binbytes[0:i]
@@ -809,6 +809,7 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 		opcodes = dict()
 		calls = []
 		mnems = dict()
+		prefixes = dict()
 
 		for bb in func.bblocks:
 			for instr in bb.instrs:
@@ -820,16 +821,26 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 						if not instr.target.val in calls:
 							calls.append(instr.target.val)
 
-				for opcode, size in [(instr.opcode, instr.size)] + [(p, 0) for p in instr.prefixes]:
-					if opcode == '':
-						continue
-					if (opcode, size) in opcodes:
-						opcodes[(opcode, size)] = opcodes[(opcode, size)] + 1
+				opcode == instr.opcode
+				size = instr.size
+
+				if opcode == '':
+					continue
+				if (opcode, size) in opcodes:
+					opcodes[(opcode, size)] = opcodes[(opcode, size)] + 1
+				else:
+					opcodes[(opcode, size)] = 1
+
+				if (opcode, size) not in mnems:
+					mnems[(opcode, size)] = set()
+				mnems[(opcode,size)].add(instr.get_instr())
+
+				if instr.prefixes == '':
+					continue
+				if instr.prefixes in prefixes:
+						prefixes[instr.prefixes] = prefixes[instr.prefixes] + 1
 					else:
-						opcodes[(opcode, size)] = 1
-					if (opcode, size) not in mnems:
-						mnems[(opcode, size)] = set()
-					mnems[(opcode,size)].add(instr.get_instr())
+						prefixes[instr.prefixes] = 1
 
 
 		for call in calls:
@@ -865,6 +876,13 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 				values['mnem'] = mnem
 				sql.append_record(tables['instr_list'], values)
 
+		for prefix, count in prefixes.items():
+			values = dict()
+			values['prefix'] = prefix
+			values['count'] = count
+			sql.append_record(tables['prefixe_counts'], values)
+
+
 if __name__ == "__main__":
 	codes = get_callgraph(sys.argv[1])
 
@@ -874,6 +892,7 @@ if __name__ == "__main__":
 		opcodes = dict()
 		calls = []
 		mnems = dict()
+		prefixes = dict()
 
 		for bb in func.bblocks:
 			for instr in bb.instrs:
@@ -885,22 +904,31 @@ if __name__ == "__main__":
 						if not instr.target.val in calls:
 							calls.append(instr.target.val)
 
-				for opcode, size in [(instr.opcode, instr.size)] + [(p, 0) for p in instr.prefixes]:
-					print instr.get_instr(),
-					for item in instr.prefixes:
-						print item.encode('hex'),
-					print instr.opcode.encode('hex'), instr.size
+				print instr.get_instr(),
+				for item in instr.prefixes:
+					print item.encode('hex'),
+				print instr.opcode.encode('hex'), instr.size
 
-					if opcode == '':
-						continue
-					if (opcode, size) in opcodes:
-						opcodes[(opcode, size)] = opcodes[(opcode, size)] + 1
+				opcode = instr.opcode
+				size = instr.size
+
+				if opcode == '':
+					continue
+				if (opcode, size) in opcodes:
+					opcodes[(opcode, size)] = opcodes[(opcode, size)] + 1
+				else:
+					opcodes[(opcode, size)] = 1
+
+				if (opcode, size) not in mnems:
+					mnems[(opcode, size)] = set()
+				mnems[(opcode,size)].add(instr.get_instr())
+
+				if instr.prefixes == '':
+					continue
+				if instr.prefixes in prefixes:
+						prefixes[instr.prefixes] = prefixes[instr.prefixes] + 1
 					else:
-						opcodes[(opcode, size)] = 1
-					if (opcode, size) not in mnems:
-						mnems[(opcode, size)] = set()
-					mnems[(opcode,size)].add(instr.get_instr())
-
+						prefixes[instr.prefixes] = 1
 
 		for call in calls:
 			if isinstance(call, int) or isinstance(call, long):
@@ -922,6 +950,9 @@ if __name__ == "__main__":
 		for (opcode, size), mnem_set in mnems.items():
 			for mnem in mnem_set:
 				print opcode.encode('hex'), size, mnem
+		print "prefixes:"
+		for prefix, count in prefixes.items():
+			print prefix.encode('hex'), count
 
 	print "-----------"
 	print "Dynamic Symbols: %d" % (len(codes.dynsyms))

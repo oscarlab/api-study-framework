@@ -11,24 +11,34 @@ import sys
 import re
 
 tables['instr_list'] = Table('instr_list', [
-		('id', 'INT', 'NOT NULL'),
-		('name', 'VARCHAR', 'NOT NULL')],
-		['id'])
+		('opcode', 'INT', 'NOT NULL'),
+		('mnem', 'VARCHAR', 'NOT NULL'),
+		('size', 'INT', 'NULL')],
+		['opcode'],
+		['opcode'])
+
+tables['prefix_counts'] = Table('prefix_counts', [
+		('prefix', 'INT', 'NOT NULL')
+		('count', 'INT', 'NOT NULL')],
+		['prefix'],
+		['prefix'])
 
 tables['binary_opcode_usage'] = Table('binary_opcode_usage', [
-			('pkg_id', 'INT', 'NOT NULL'),
-			('bin_id', 'INT', 'NOT NULL'),
-			('func_addr', 'INT', 'NOT NULL'),
-			('opcode', 'INT', 'NOT NULL'),
-			('size', 'INT', 'NULL'),
-			('count', 'INT', 'NOT NULL')],
-			['pkg_id', 'bin_id', 'func_addr', 'opcode', 'size'],
-			[['pkg_id', 'bin_id'], ['pkg_id', 'bin_id', 'func_addr'], ['opcode', 'size']])
+		('pkg_id', 'INT', 'NOT NULL'),
+		('bin_id', 'INT', 'NOT NULL'),
+		('func_addr', 'INT', 'NOT NULL'),
+		('opcode', 'INT', 'NOT NULL'),
+		('size', 'INT', 'NULL'),
+		('count', 'INT', 'NOT NULL')],
+		['pkg_id', 'bin_id', 'func_addr', 'opcode', 'size'],
+		[['pkg_id', 'bin_id'], ['pkg_id', 'bin_id', 'func_addr'], ['opcode', 'size']])
 
 def BinaryInstr(jmgr, os_target, sql, args):
 	sql.connect_table(tables['binary_call'])
 	sql.connect_table(tables['binary_call_unknown'])
 	sql.connect_table(tables['binary_opcode_usage'])
+	sql.connect_table(tables['instr_list'])
+	sql.connect_table(tables['prefix_counts'])
 
 	pkgname = args[0]
 	bin = args[1]
