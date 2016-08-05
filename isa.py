@@ -14,13 +14,15 @@ tables['instr_list'] = Table('instr_list', [
 		('opcode', 'INT', 'NOT NULL'),
 		('mnem', 'VARCHAR', 'NOT NULL'),
 		('size', 'INT', 'NULL')],
-		['opcode'],
+		, # NO PRIMARY KEY. TABLE WILL HAVE DUPLICATES. REMOVE LATER.
 		[['opcode']])
 
 tables['prefix_counts'] = Table('prefix_counts', [
+		('pkg_id', 'INT', 'NOT NULL'),
+		('bin_id', 'INT', 'NOT NULL'),
 		('prefix', 'INT', 'NOT NULL'),
 		('count', 'INT', 'NOT NULL')],
-		['prefix'],
+		['pkg_id', 'bin_id', 'prefix'],
 		[['prefix']])
 
 tables['binary_opcode_usage'] = Table('binary_opcode_usage', [
