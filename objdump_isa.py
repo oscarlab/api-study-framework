@@ -14,6 +14,7 @@ import struct
 import string
 from sets import Set
 import traceback
+import logging
 
 sys.path.append('pybfd/lib/python')
 from pybfd import opcodes, bfd, section
@@ -560,6 +561,31 @@ def get_callgraph(binary_name):
 					self.cur_bb.instrs.append(Instr(self.cur_bb, address, disassembly, size, binbytes))
 					return opcodes.PYBFD_DISASM_STOP
 
+				if insn == 'data16':
+					logging.info("data16 (nop) instruction Skipping for convenience")
+#					logging.info(insn)
+#					logging.info(disassembly)
+#					logging.info(size)
+#					logging.info("%s", binbytes[0:size].encode('hex'))
+#					regexstr = r'(?P<data>(data16\ )+)\ ?(?P<nop>(nop).*)'
+#					regexop = r'(?P<data>(66)+)\ ?(?P<nop>.*)'
+#					matchstr = re.match(regexstr, disassembly)
+#					matchop = re.match(regexop, binbytes.encode('hex'))
+#					if  matchstr and matchop:
+#						instruction = Instr(
+#							self.cur_bb,
+#							address,
+#							matchstr.group('nop'),
+#							size,
+#							#matchop.group('nop')
+#							binbytes)
+#						instruction.opcode = matchop.group('nop')
+#						instruction.prefixes = matchop.group('data')
+#						self.cur_bb.instrs.append(instruction)
+#						logging.info(instruction.opcode)
+#						logging.info(instruction.prefixes)
+					return opcodes.PYBFD_DISASM_CONTINUE
+
 				if insn_type == opcodes.InstructionType.BRANCH:
 					if isinstance(arg1, OpLoad):
 						target_addr = arg1.addr.get_val()
@@ -851,7 +877,13 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 			values['opcode'] = int(opcode.encode('hex'), 16)
 			values['size'] = size
 			values['count'] = count
-			sql.append_record(tables['binary_opcode_usage'], values)
+			try:
+				sql.append_record(tables['binary_opcode_usage'], values)
+			except Exception as e:
+				logging.info(int(opcode.encode('hex'),16))
+				logging.info(opcode)
+				logging.info(mnems[(opcode,size)])
+				continue
 
 		for prefix, count in prefixes.items():
 			values = dict()

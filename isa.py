@@ -21,7 +21,7 @@ tables['prefix_counts'] = Table('prefix_counts', [
 		('pkg_id', 'INT', 'NOT NULL'),
 		('bin_id', 'INT', 'NOT NULL'),
 		('func_addr', 'INT', 'NOT NULL'),
-		('prefix', 'INT', 'NOT NULL'),
+		('prefix', 'BIGINT', 'NOT NULL'),
 		('count', 'INT', 'NOT NULL')],
 		['pkg_id', 'bin_id', 'func_addr', 'prefix'],
 		[['prefix']])
