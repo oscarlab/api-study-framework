@@ -17,7 +17,7 @@ import logging
 def PackageCompilation(jmgr, os_target, sql, args):
 
 	cmd = ['docker', 'run', '--rm', '-v', '/filer/bin:/filer', '-w',
-	'/filer', '--network=host', 'ubuntu-compiler-blah', '/filer/run-compile.sh']
+	'/filer', '--network=host', 'aakshintala/ubuntu-compiler', '/filer/run-compile.sh']
 
 	p = subprocess.Popen(cmd + [args[0]], stdout=subprocess.PIPE, stderr=null_dev)
 	(stdout, stderr) = p.communicate()
@@ -46,7 +46,7 @@ tasks['ListForPackageCompiltation'] = Task(
 
 if __name__ == "__main__":
 	cmd = ['docker', 'run', '--rm', '-v', '/filer/bin:/filer', '-w',
-	'/filer', '--network=host', 'ubuntu-compiler-blah', '/filer/run-compile.sh']
+	'/filer', '--network=host', 'aakshintala/ubuntu-compiler', '/filer/run-compile.sh']
 
 	p = subprocess.Popen(cmd +[sys.argv[1]], stdout=subprocess.PIPE, stderr=null_dev)
 	(stdout, stderr) = p.communicate()
@@ -56,4 +56,4 @@ if __name__ == "__main__":
 	if p.returncode != 0:
 		print stderr
 		logging.error(stderr)
-		raise Exception("Cannot compile sl")
+		raise Exception("Cannot compile")
