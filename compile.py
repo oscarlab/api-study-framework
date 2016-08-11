@@ -16,7 +16,7 @@ import logging
 
 def PackageCompilationGCC(jmgr, os_target, sql, args):
 	cmd = ['docker', 'run', '--rm', '-v', '/filer/bin:/filer', '-w',
-	'/filer', '--network=host', 'ubuntu-compiler-blah', '/filer/run-compile-gcc.sh']
+		'/filer', '--network=host', 'aakshintala/ubuntu-compiler:gcc', '/filer/run-compile-gcc.sh']
 
 	p = subprocess.Popen(cmd + [args[0]], stdout=subprocess.PIPE, stderr=null_dev)
 	(stdout, stderr) = p.communicate()
@@ -26,16 +26,25 @@ def PackageCompilationGCC(jmgr, os_target, sql, args):
 		logging.error(stderr)
 		raise Exception("Cannot compile - GCC")
 
-
 subtasks['PackageCompilationGCC'] = Task(
 	name = "Package Compilation - GCC",
 	func = PackageCompilationGCC,
 	arg_defs = ["Package Name"],
 	job_name = lambda args: "Package Compilation - GCC: " + args[0])
 
+def ListForPackageCompiltationGCC(jmgr, os_target, sql, args):
+	for pkg in package.pick_packages_from_args(os_target, sql, args):
+		subtasks['PackageCompilationGCC'].create_job(jmgr, [pkg])
+
+tasks['ListForPackageCompiltation'] = Task(
+	name = "Compile Selected Package(s) - GCC",
+	func = ListForPackageCompiltationGCC,
+	arg_defs = package.args_to_pick_packages,
+	order = 41)
+
 def PackageCompilationLLVM(jmgr, os_target, sql, args):
 	cmd = ['docker', 'run', '--rm', '-v', '/filer/bin:/filer', '-w',
-	'/filer', '--network=host', 'aakshintala/ubuntu-compiler', '/filer/run-compile.sh']
+		'/filer', '--network=host', 'aakshintala/ubuntu-compiler', '/filer/run-compile.sh']
 
 	p = subprocess.Popen(cmd + [args[0]], stdout=subprocess.PIPE, stderr=null_dev)
 	(stdout, stderr) = p.communicate()
@@ -61,15 +70,6 @@ tasks['ListForPackageCompiltation'] = Task(
 	arg_defs = package.args_to_pick_packages,
 	order = 40)
 
-def ListForPackageCompiltationGCC(jmgr, os_target, sql, args):
-	for pkg in package.pick_packages_from_args(os_target, sql, args):
-		subtasks['PackageCompilationGCC'].create_job(jmgr, [pkg])
-
-tasks['ListForPackageCompiltation'] = Task(
-	name = "Compile Selected Package(s) - GCC",
-	func = ListForPackageCompiltationGCC,
-	arg_defs = package.args_to_pick_packages,
-	order = 41)
 
 if __name__ == "__main__":
 	cmd = ['docker', 'run', '--rm', '-v', '/filer/bin:/filer', '-w',
@@ -86,7 +86,7 @@ if __name__ == "__main__":
 		raise Exception("Cannot compile using llvm")
 
 	cmd = ['docker', 'run', '--rm', '-v', '/filer/bin:/filer', '-w',
-	'/filer', '--network=host', 'ubuntu-compiler-blah', '/filer/run-compile-gcc.sh']
+			'/filer', '--network=host', 'aakshintala/ubuntu-compiler:gcc', '/filer/run-compile-gcc.sh']
 
 	p = subprocess.Popen(cmd +[sys.argv[1]], stdout=subprocess.PIPE, stderr=null_dev)
 	(stdout, stderr) = p.communicate()
