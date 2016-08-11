@@ -14,10 +14,9 @@ import tempfile
 import subprocess
 import logging
 
-def PackageCompilation(jmgr, os_target, sql, args):
-
+def PackageCompilationGCC(jmgr, os_target, sql, args):
 	cmd = ['docker', 'run', '--rm', '-v', '/filer/bin:/filer', '-w',
-	'/filer', '--network=host', 'aakshintala/ubuntu-compiler', '/filer/run-compile.sh']
+		'/filer', '--network=host', 'aakshintala/ubuntu-compiler:gcc', '/filer/run-compile-gcc.sh']
 
 	p = subprocess.Popen(cmd + [args[0]], stdout=subprocess.PIPE, stderr=null_dev)
 	(stdout, stderr) = p.communicate()
@@ -25,24 +24,52 @@ def PackageCompilation(jmgr, os_target, sql, args):
 	if p.returncode != 0:
 		print stderr
 		logging.error(stderr)
-		raise Exception("Cannot compile sl")
+		raise Exception("Cannot compile - GCC")
 
-
-subtasks['PackageCompilation'] = Task(
-	name = "Package Compilation",
-	func = PackageCompilation,
+subtasks['PackageCompilationGCC'] = Task(
+	name = "Package Compilation - GCC",
+	func = PackageCompilationGCC,
 	arg_defs = ["Package Name"],
-	job_name = lambda args: "Package Compilation: " + args[0])
+	job_name = lambda args: "Package Compilation - GCC: " + args[0])
 
-def ListForPackageCompiltation(jmgr, os_target, sql, args):
+def ListForPackageCompiltationGCC(jmgr, os_target, sql, args):
 	for pkg in package.pick_packages_from_args(os_target, sql, args):
-		subtasks['PackageCompilation'].create_job(jmgr, [pkg])
+		subtasks['PackageCompilationGCC'].create_job(jmgr, [pkg])
 
-tasks['ListForPackageCompiltation'] = Task(
-	name = "Compile Selected Package(s)",
-	func = ListForPackageCompiltation,
+tasks['ListForPackageCompiltationGCC'] = Task(
+	name = "Compile Selected Package(s) - GCC",
+	func = ListForPackageCompiltationGCC,
+	arg_defs = package.args_to_pick_packages,
+	order = 41)
+
+def PackageCompilationLLVM(jmgr, os_target, sql, args):
+	cmd = ['docker', 'run', '--rm', '-v', '/filer/bin:/filer', '-w',
+		'/filer', '--network=host', 'aakshintala/ubuntu-compiler', '/filer/run-compile.sh']
+
+	p = subprocess.Popen(cmd + [args[0]], stdout=subprocess.PIPE, stderr=null_dev)
+	(stdout, stderr) = p.communicate()
+	p.wait()
+	if p.returncode != 0:
+		print stderr
+		logging.error(stderr)
+		raise Exception("Cannot compile - LLVM")
+
+subtasks['PackageCompilationLLVM'] = Task(
+	name = "Package Compilation - LLVM",
+	func = PackageCompilationLLVM,
+	arg_defs = ["Package Name"],
+	job_name = lambda args: "Package Compilation - LLVM: " + args[0])
+
+def ListForPackageCompiltationLLVM(jmgr, os_target, sql, args):
+	for pkg in package.pick_packages_from_args(os_target, sql, args):
+		subtasks['PackageCompilationLLVM'].create_job(jmgr, [pkg])
+
+tasks['ListForPackageCompiltationLLVM'] = Task(
+	name = "Compile Selected Package(s) - LLVM",
+	func = ListForPackageCompiltationLLVM,
 	arg_defs = package.args_to_pick_packages,
 	order = 40)
+
 
 if __name__ == "__main__":
 	cmd = ['docker', 'run', '--rm', '-v', '/filer/bin:/filer', '-w',
@@ -56,4 +83,17 @@ if __name__ == "__main__":
 	if p.returncode != 0:
 		print stderr
 		logging.error(stderr)
-		raise Exception("Cannot compile")
+		raise Exception("Cannot compile using llvm")
+
+	cmd = ['docker', 'run', '--rm', '-v', '/filer/bin:/filer', '-w',
+			'/filer', '--network=host', 'aakshintala/ubuntu-compiler:gcc', '/filer/run-compile-gcc.sh']
+
+	p = subprocess.Popen(cmd +[sys.argv[1]], stdout=subprocess.PIPE, stderr=null_dev)
+	(stdout, stderr) = p.communicate()
+	for line in stdout.split("\n"):
+		print line
+	p.wait()
+	if p.returncode != 0:
+		print stderr
+		logging.error(stderr)
+		raise Exception("Cannot compile using gcc")
