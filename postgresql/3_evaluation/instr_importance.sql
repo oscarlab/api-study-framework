@@ -2,7 +2,7 @@ DO $$
 BEGIN
 IF NOT table_exists('opcode_importance') THEN
 	CREATE TABLE opcode_importance (
-		opcode INT NOT NULL,
+		opcode BIGINT NOT NULL,
 		opcode_importance_order FLOAT NOT NULL,
 		PRIMARY KEY(opcode)
 	);
@@ -23,12 +23,12 @@ BEGIN
 	PERFORM (SELECT update_package_install());
 
 	CREATE TEMP TABLE IF NOT EXISTS opcode_tmp (
-		opcode INT NOT NULL,
+		opcode BIGINT NOT NULL,
 		percent_order FLOAT NOT NULL,
 		PRIMARY KEY(opcode));
 
 	CREATE TEMP TABLE IF NOT EXISTS pkg_opcode_tmp (
-		opcode INT NOT NULL,
+		opcode BIGINT NOT NULL,
 		PRIMARY KEY(opcode));
 
 	FOR pkg IN (SELECT DISTINCT pkg_id FROM package_opcode_usage) LOOP

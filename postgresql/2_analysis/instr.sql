@@ -3,7 +3,7 @@ BEGIN
 IF NOT table_exists('package_opcode_count') THEN
 	CREATE TABLE package_opcode_count (
 		pkg_id INT NOT NULL,
-		opcode INT NOT NULL,
+		opcode BIGINT NOT NULL,
 		count INT NOT NULL,
 		PRIMARY KEY (pkg_id, opcode)
 	);

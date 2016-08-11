@@ -33,7 +33,7 @@ IF NOT table_exists('library_opcode_usage') THEN
 	CREATE TABLE library_opcode_usage (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
 		func_addr INT NOT NULL,
-		opcode INT NOT NULL,
+		opcode BIGINT NOT NULL,
 		PRIMARY KEY (pkg_id, bin_id, func_addr, opcode)
 	);
 	CREATE INDEX library_opcode_usage_pkg_id_bin_id_func_addr_idx

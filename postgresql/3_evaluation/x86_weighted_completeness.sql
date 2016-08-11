@@ -4,7 +4,7 @@ CREATE OR REPLACE VIEW package_opcode_usage_array AS
 	GROUP BY pkg_id;
 
 CREATE OR REPLACE FUNCTION x86_weighted_completeness(
-	opcodes INT[]
+	opcodes BIGINT[]
 )
 RETURNS FLOAT AS $$
 
@@ -35,7 +35,7 @@ DO $$
 BEGIN
 	IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'opcode_improvement') THEN
 		CREATE TYPE opcode_improvement AS (
-			opcode INT,
+			opcode BIGINT,
 			weighted_completeness FLOAT
 		);
 	END IF;
@@ -43,7 +43,7 @@ END
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION x86_weighted_completeness_improvement(
-	opcodes INT[], more_opcodes INTEGER
+	opcodes BIGINT[], more_opcodes INTEGER
 )
 RETURNS SETOF opcode_improvement AS $$
 

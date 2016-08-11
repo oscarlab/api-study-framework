@@ -25,7 +25,7 @@ END IF;
 IF NOT table_exists('package_opcode_usage') THEN
 	CREATE TABLE package_opcode_usage (
 		pkg_id INT NOT NULL,
-		opcode INT NOT NULL,
+		opcode BIGINT NOT NULL,
 		PRIMARY KEY (pkg_id, opcode)
 	);
 	CREATE INDEX package_opcode_usage_opcode_idx
