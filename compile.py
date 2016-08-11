@@ -36,7 +36,7 @@ def ListForPackageCompiltationGCC(jmgr, os_target, sql, args):
 	for pkg in package.pick_packages_from_args(os_target, sql, args):
 		subtasks['PackageCompilationGCC'].create_job(jmgr, [pkg])
 
-tasks['ListForPackageCompiltation'] = Task(
+tasks['ListForPackageCompiltationGCC'] = Task(
 	name = "Compile Selected Package(s) - GCC",
 	func = ListForPackageCompiltationGCC,
 	arg_defs = package.args_to_pick_packages,
@@ -64,7 +64,7 @@ def ListForPackageCompiltationLLVM(jmgr, os_target, sql, args):
 	for pkg in package.pick_packages_from_args(os_target, sql, args):
 		subtasks['PackageCompilationLLVM'].create_job(jmgr, [pkg])
 
-tasks['ListForPackageCompiltation'] = Task(
+tasks['ListForPackageCompiltationLLVM'] = Task(
 	name = "Compile Selected Package(s) - LLVM",
 	func = ListForPackageCompiltationLLVM,
 	arg_defs = package.args_to_pick_packages,
