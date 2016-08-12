@@ -31,7 +31,7 @@ END IF;
 IF NOT table_exists('executable_opcode_usage') THEN
 	CREATE TABLE executable_opcode_usage (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
-		opcode INT NOT NULL,
+		opcode BIGINT NOT NULL,
 		PRIMARY KEY (pkg_id, bin_id, opcode)
 	);
 	CREATE INDEX executable_opcode_usage_pkg_id_bin_id_idx

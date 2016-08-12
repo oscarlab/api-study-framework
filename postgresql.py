@@ -232,6 +232,22 @@ subtasks['PostgresqlAnalyzePackage'] = Task(
 		arg_defs = ["Package Name"],
 		job_name = lambda args: "Analyze Package: " + args[0])
 
+def AnalyzePackageOpcodeAndSize(jmgr, os_target, sql, args):
+	pkg_name = args[0]
+	if len(args) > 1:
+		pkg_id = args[1]
+	else:
+		pkg_id = get_package_id(sql, pkg_name)
+
+	sql.postgresql_execute('SELECT analyze_opcode(%d)' % (pkg_id))
+	sql.commit()
+
+subtasks['PostgresqlAnalyzeOpcodeAndSize'] = Task(
+		name = "Analyze Opcode and Size occurrence in packages by PostgreSQL",
+		func = AnalyzePackageOpcodeAndSize,
+		arg_defs = ["Package Name"],
+		job_name = lambda args: "Analyze Opcode and Size in Package: " + args[0])
+
 def AnalyzeAllPackages(jmgr, os_target, sql, args):
 	sql.connect_table(tables['package_id'])
 
@@ -247,3 +263,19 @@ tasks['PostgresqlAnalyzeAllPackages'] = Task(
 		name = "Analyze All Packages by PostgreSQL",
 		func = AnalyzeAllPackages,
 		order = 33)
+
+def AnalyzeAllPackagesOpcodesAndSizes(jmgr, os_target, sql, args):
+	sql.connect_table(tables['package_id'])
+
+	results = sql.search_record(tables['package_id'], 'instr=false', ['id'])
+
+	for r in results:
+		pkg_id = r[0]
+		pkg_name = get_package_name(sql, pkg_id)
+		if pkg_name:
+			subtasks['PostgresqlAnalyzeOpcodeAndSize'].create_job(jmgr, [pkg_name, pkg_id]);
+
+tasks['PostgresqlAnalyzeAllPackages'] = Task(
+		name = "Analyze Opcodes and Size in all Packages using PostgreSQL",
+		func = AnalyzeAllPackagesOpcodesAndSizes,
+		order = 34)

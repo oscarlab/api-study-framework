@@ -3,7 +3,7 @@ BEGIN
 IF NOT table_exists('package_opcode_count') THEN
 	CREATE TABLE package_opcode_count (
 		pkg_id INT NOT NULL,
-		opcode INT NOT NULL,
+		opcode BIGINT NOT NULL,
 		count INT NOT NULL,
 		PRIMARY KEY (pkg_id, opcode)
 	);
@@ -50,7 +50,7 @@ BEGIN
 	IF NOT EXISTS (
 		SELECT * FROM pkg_bin
 	) THEN
-		UPDATE package_id SET footprint = True WHERE id = p;
+		UPDATE package_id SET instr = True WHERE id = p;
 		RETURN;
 	END IF;
 

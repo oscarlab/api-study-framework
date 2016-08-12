@@ -1,0 +1,119 @@
+#!/usr/bin/python
+
+import sys
+import os
+import re
+
+src_file = sys.argv[1]
+tmp_file = src_file + ".tmp"
+asm_file = sys.argv[2]
+
+src = open(src_file, "r")
+if not src:
+	os._exit(0)
+
+tmp = open(tmp_file, "w")
+if not tmp:
+	os._exit(0)
+
+asm = open(asm_file, "w")
+if not asm:
+	os._exit(0)
+
+src_filename = src_file
+src_lineno = 1
+asm_lineno = 1
+
+in_str = False
+to_esc = False
+in_asm = False
+assembly = ""
+
+for line in src:
+	line = line.rstrip('\n')
+
+	if line.startswith('#'):
+		tokens = line.split()
+		src_lineno   = int(tokens[1])
+		src_filename = tokens[2][1:-1]
+		tmp.write(line + '\n')
+		continue
+
+	begin = 0
+	pos = 0
+	while pos < len(line):
+		if in_str:
+			# Consume string
+			next = len(line)
+			npos = pos
+			while npos < len(line):
+				next1 = line.find('"', npos)
+				if next1 == -1:
+					break
+
+				if next1 == npos or line[next1 - 1] != '\\':
+					next = next1;
+					in_str = False
+					break
+			if in_asm:
+				assembly += line[pos:next]
+		else:
+			next1 = line.find('"', pos)
+			next2 = line.find(';', pos)
+
+			next = len(line)
+			if next1 != -1 and next1 < next:
+				next = next1
+			if next2 != -1 and next2 < next:
+				next = next2
+
+			if in_asm:
+				next3 = line.find(':', pos, next)
+				next4 = line.find(')', pos, next)
+	
+				if next3 != -1 and next3 < next:
+					next = next3
+				if next4 != -1 and next4 < next:
+					next = next4
+
+				if next == next3 or next == next4:
+					in_asm = False
+					pos = next
+
+			else:
+				m = re.search("\s*(asm|__asm|__asm__)(\s(volatile|__volatile|__volatile__))?\(?", line[pos:next])
+				if m:
+					tmp.write(line[pos:pos + m.start()] + '\n')
+					tmp.write('# %d "%s" 1\n' % (asm_lineno, asm_file))
+					tmp.write(line[pos + m.start():next] + '\n')
+					in_asm = True
+
+			if next == next1:
+				in_str = True
+			if next == next2:
+				in_asm = False
+
+		if assembly and not in_asm:
+			for instr in re.sub(r'(\\r|\\n)+', ';', assembly).split(';'):
+				if not instr:
+					continue
+				tmp.write('"' + instr + '\\r\\n"\n')
+				asm.write('%s:%d\t%s\n' % (src_filename, src_lineno, instr))
+				asm_lineno += 1
+			tmp.write('# %d "%s" 2\n' % (src_lineno, src_filename))
+			assembly = ""
+
+		if next < len(line):
+			next += 1
+		if not in_asm:
+			tmp.write(line[pos:next])
+		pos = next
+
+	tmp.write('\n')
+	src_lineno += 1
+
+src.close()
+tmp.close()
+asm.close()
+
+os.rename(tmp_file, src_file)
