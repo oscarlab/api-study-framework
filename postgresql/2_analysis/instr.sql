@@ -28,6 +28,22 @@ END IF;
 
 END $$ LANGUAGE plpgsql;
 
+BEGIN
+IF NOT table_exists('package_prefix_count') THEN
+	CREATE TABLE package_prefix_count (
+		pkg_id INT NOT NULL,
+		prefix BIGINT NOT NULL,
+		count INT NOT NULL,
+		PRIMARY KEY (pkg_id, prefix)
+	);
+	CREATE INDEX package_prefix_count_pkg_id_idx
+		ON package_prefix_count (pkg_id);
+	CREATE INDEX package_prefix_count_prefix_idx
+		ON package_prefix_count (prefix);
+END IF;
+
+END $$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION analyze_opcode(p INT)
 RETURNS void AS $$
 DECLARE
@@ -63,6 +79,7 @@ BEGIN
 
 	DELETE FROM package_opcode_count WHERE pkg_id = p;
 	DELETE FROM package_size_count WHERE pkg_id = p;
+	DELETE FROM package_prefix_count WHERE pkg_id = p;
 
 	INSERT INTO package_opcode_count
 		SELECT p, t1.opcode, SUM(t1.count) FROM
@@ -72,7 +89,7 @@ BEGIN
 		ON t1.pkg_id = p AND t1.bin_id = t2.bin_id
 		GROUP BY t1.opcode;
 
-	
+
 	INSERT INTO package_size_count
 		SELECT p, t1.size, SUM(t1.count) FROM
 		binary_opcode_usage AS t1
@@ -80,7 +97,15 @@ BEGIN
 		pkg_bin AS t2
 		ON t1.pkg_id = p AND t1.bin_id = t2.bin_id
 		GROUP BY t1.size;
-	
+
+	INSERT INTO package_prefix_count
+		SELECT p, t1.prefix, SUM(t1.count) FROM
+		prefix_counts AS t1
+		INNER JOIN
+		pkg_bin AS t2
+		ON t1.pkg_id = p AND t1.bin_id = t2.bin_id
+		GROUP BY t1.prefix;
+
 	time2 := clock_timestamp();
 	RAISE NOTICE 'Time: %', time2 - time1;
 	time1 := time2;
