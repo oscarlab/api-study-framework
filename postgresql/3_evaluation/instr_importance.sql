@@ -62,7 +62,7 @@ BEGIN
 	INSERT INTO opcode_importance
 		SELECT opcode, percent_order
 		FROM opcode_tmp
-		ORDER BY percent_order DESC, opcode_type, opcode_id;
+		ORDER BY percent_order DESC;
 
 	TRUNCATE TABLE opcode_tmp;
 END
