@@ -16,7 +16,7 @@ DECLARE
 	total INT := (SELECT COUNT(DISTINCT pkg_id) FROM package_opcode_usage);
 	count INT := 1;
 	pkg INT;
-	i INT;
+	i BIGINT;
 	pkg_order FLOAT;
 
 BEGIN
