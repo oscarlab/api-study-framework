@@ -275,7 +275,7 @@ def AnalyzeAllPackagesOpcodesAndSizes(jmgr, os_target, sql, args):
 		if pkg_name:
 			subtasks['PostgresqlAnalyzeOpcodeAndSize'].create_job(jmgr, [pkg_name, pkg_id]);
 
-tasks['PostgresqlAnalyzeAllPackages'] = Task(
+tasks['PostgresqlAnalyzeAllPackagesOpcodes'] = Task(
 		name = "Analyze Opcodes and Size in all Packages using PostgreSQL",
 		func = AnalyzeAllPackagesOpcodesAndSizes,
 		order = 34)
