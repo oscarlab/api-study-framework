@@ -4,8 +4,9 @@ IF NOT table_exists('package_opcode_count') THEN
 	CREATE TABLE package_opcode_count (
 		pkg_id INT NOT NULL,
 		opcode BIGINT NOT NULL,
+		size INT NOT NULL,
 		count INT NOT NULL,
-		PRIMARY KEY (pkg_id, opcode)
+		PRIMARY KEY (pkg_id, opcode, size)
 	);
 	CREATE INDEX package_opcode_count_pkg_id_idx
 		ON package_opcode_count (pkg_id);
@@ -79,12 +80,12 @@ BEGIN
 	DELETE FROM package_prefix_count WHERE pkg_id = p;
 
 	INSERT INTO package_opcode_count
-		SELECT p, t1.opcode, SUM(t1.count) FROM
+		SELECT p, t1.opcode, t1.size, SUM(t1.count) FROM
 		binary_opcode_usage AS t1
 		INNER JOIN
 		pkg_bin AS t2
 		ON t1.pkg_id = p AND t1.bin_id = t2.bin_id
-		GROUP BY t1.opcode;
+		GROUP BY t1.opcode, t1.size;
 
 
 	INSERT INTO package_size_count
