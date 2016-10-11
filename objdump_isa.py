@@ -110,7 +110,7 @@ def get_x86_opcodes(binbytes):
 
 	#opcode = binbytes[0:i]
 	if len(binbytes) > i:
-		opcode += binbytes[i]
+		opcode = binbytes[i]
 	if len(binbytes) > i + 1 and binbytes[i] in TWOBYTE:
 		opcode += binbytes[i + 1]
 	if len(binbytes) > i + 2 and binbytes[i] in TWOBYTE and binbytes[i + 1] in THREEBYTE:
