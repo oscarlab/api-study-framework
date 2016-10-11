@@ -35,8 +35,8 @@ tables['binary_opcode_usage'] = Table('binary_opcode_usage', [
 		('size', 'INT', 'NOT NULL'),
 		('mnem', 'VARCHAR', 'NOT NULL'),
 		('count', 'INT', 'NOT NULL')],
-		['pkg_id', 'bin_id', 'func_addr', 'opcode', 'size'],
-		[['pkg_id', 'bin_id'], ['pkg_id', 'bin_id', 'func_addr'], ['opcode', 'size']])
+		['pkg_id', 'bin_id', 'func_addr', 'prefix', 'opcode', 'size', 'mnem'],
+		[['pkg_id', 'bin_id'], ['pkg_id', 'bin_id', 'func_addr'], ['prefix', 'opcode', 'size']])
 
 def BinaryInstr(jmgr, os_target, sql, args):
 	sql.connect_table(tables['binary_call'])

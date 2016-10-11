@@ -108,7 +108,7 @@ def get_x86_opcodes(binbytes):
 		prefixes += binbytes[i]
 		i += 1
 
-	opcode = binbytes[0:i]
+	#opcode = binbytes[0:i]
 	if len(binbytes) > i:
 		opcode += binbytes[i]
 	if len(binbytes) > i + 1 and binbytes[i] in TWOBYTE:
@@ -863,7 +863,7 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 			values['pkg_id'] = pkg_id
 			values['bin_id'] = bin_id
 			values['func_addr'] = func.entry
-			values['prefix'] = prefix
+			values['prefix'] = int(prefix.encode('hex'), 16)
 			values['opcode'] = int(opcode.encode('hex'), 16)
 			values['size'] = size
 			values['mnem'] = mnem
@@ -871,7 +871,8 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 			try:
 				sql.append_record(tables['binary_opcode_usage'], values)
 			except Exception as e:
-				logging.info(prefix)
+				logging.info(e)
+				logging.info(prefix.encode('hex'))
 				logging.info(opcode)
 				logging.info(int(opcode.encode('hex'),16))
 				logging.info(size)
@@ -932,7 +933,7 @@ if __name__ == "__main__":
 					print "    call: %s" % (call)
 
 		for (prefix, opcode, size, mnem), count in opcodes.items():
-			print prefix.encode('prefix'), opcode.encode('hex'), size, mnem, count
+			print prefix.encode('hex'), opcode.encode('hex'), size, mnem, count
 
 	print "-----------"
 	print "Dynamic Symbols: %d" % (len(codes.dynsyms))
