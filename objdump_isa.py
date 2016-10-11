@@ -130,7 +130,7 @@ class Instr:
 
 	def get_instr(self):
 		splitdism = self.dism.split()
-		if splitdism[0] == 'repz':
+		if splitdism[0] == 'repz' or splitdism[0] == "rep" or splitdism[0] == "repnz":
 			return (splitdism[0]+" "+splitdism[1])
 		return self.dism.split()[0]
 
