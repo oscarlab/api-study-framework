@@ -10,28 +10,30 @@ import os
 import sys
 import re
 
-tables['instr_list'] = Table('instr_list', [
-		('opcode', 'BIGINT', 'NOT NULL'),
-		('mnem', 'VARCHAR', 'NOT NULL'),
-		('size', 'INT', 'NULL')],
-		None, # NO PRIMARY KEY. TABLE WILL HAVE DUPLICATES. REMOVE LATER.
-		[['opcode']])
+# tables['instr_list'] = Table('instr_list', [
+# 		('opcode', 'BIGINT', 'NOT NULL'),
+# 		('mnem', 'VARCHAR', 'NOT NULL'),
+# 		('size', 'INT', 'NULL')],
+# 		None, # NO PRIMARY KEY. TABLE WILL HAVE DUPLICATES. REMOVE LATER.
+# 		[['opcode']])
 
-tables['prefix_counts'] = Table('prefix_counts', [
-		('pkg_id', 'INT', 'NOT NULL'),
-		('bin_id', 'INT', 'NOT NULL'),
-		('func_addr', 'INT', 'NOT NULL'),
-		('prefix', 'BIGINT', 'NOT NULL'),
-		('count', 'INT', 'NOT NULL')],
-		['pkg_id', 'bin_id', 'func_addr', 'prefix'],
-		[['prefix']])
+# tables['prefix_counts'] = Table('prefix_counts', [
+# 		('pkg_id', 'INT', 'NOT NULL'),
+# 		('bin_id', 'INT', 'NOT NULL'),
+# 		('func_addr', 'INT', 'NOT NULL'),
+# 		('prefix', 'BIGINT', 'NOT NULL'),
+# 		('count', 'INT', 'NOT NULL')],
+# 		['pkg_id', 'bin_id', 'func_addr', 'prefix'],
+# 		[['prefix']])
 
 tables['binary_opcode_usage'] = Table('binary_opcode_usage', [
 		('pkg_id', 'INT', 'NOT NULL'),
 		('bin_id', 'INT', 'NOT NULL'),
 		('func_addr', 'INT', 'NOT NULL'),
+		('prefix', 'BIGINT', 'NULL'),
 		('opcode', 'BIGINT', 'NOT NULL'),
-		('size', 'INT', 'NULL'),
+		('size', 'INT', 'NOT NULL'),
+		('mnem', 'VARCHAR', 'NOT NULL'),
 		('count', 'INT', 'NOT NULL')],
 		['pkg_id', 'bin_id', 'func_addr', 'opcode', 'size'],
 		[['pkg_id', 'bin_id'], ['pkg_id', 'bin_id', 'func_addr'], ['opcode', 'size']])
@@ -40,8 +42,8 @@ def BinaryInstr(jmgr, os_target, sql, args):
 	sql.connect_table(tables['binary_call'])
 	sql.connect_table(tables['binary_call_unknown'])
 	sql.connect_table(tables['binary_opcode_usage'])
-	sql.connect_table(tables['instr_list'])
-	sql.connect_table(tables['prefix_counts'])
+	# sql.connect_table(tables['instr_list'])
+	# sql.connect_table(tables['prefix_counts'])
 
 	pkgname = args[0]
 	bin = args[1]
