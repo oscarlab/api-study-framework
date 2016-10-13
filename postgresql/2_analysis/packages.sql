@@ -27,9 +27,9 @@ IF NOT table_exists('package_opcode_usage') THEN
 		pkg_id INT NOT NULL,
 		prefix BIGINT NULL,
 		opcode BIGINT NOT NULL,
-		size INT, NOT NULL,
-		mnem, VARCHAR, NOT NULL,
-		count, INT, NOT NULL,
+		size INT NOT NULL,
+		mnem VARCHAR NOT NULL,
+		count INT NOT NULL,
 		PRIMARY KEY (pkg_id, prefix, opcode, size, mnem)
 	);
 	CREATE INDEX package_opcode_usage_prefix_opcode_size_idx

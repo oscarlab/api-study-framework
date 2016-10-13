@@ -34,9 +34,9 @@ IF NOT table_exists('executable_opcode_usage') THEN
 		bin_id INT NOT NULL,
 		prefix BIGINT NULL,
 		opcode BIGINT NOT NULL,
-		size INT, NOT NULL,
-		mnem, VARCHAR, NOT NULL,
-		count, INT, NOT NULL,
+		size INT NOT NULL,
+		mnem VARCHAR NOT NULL,
+		count INT NOT NULL,
 		PRIMARY KEY (pkg_id, bin_id, prefix, opcode, size, mnem)
 	);
 	CREATE INDEX executable_opcode_usage_pkg_id_bin_id_idx

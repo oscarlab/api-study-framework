@@ -35,9 +35,9 @@ IF NOT table_exists('library_opcode_usage') THEN
 		func_addr INT NOT NULL,
 		prefix BIGINT NULL,
 		opcode BIGINT NOT NULL,
-		size INT, NOT NULL,
-		mnem, VARCHAR, NOT NULL,
-		count, INT, NOT NULL,
+		size INT NOT NULL,
+		mnem VARCHAR NOT NULL,
+		count INT NOT NULL,
 		PRIMARY KEY (pkg_id, bin_id, func_addr, prefix, opcode, size, mnem)
 	);
 	CREATE INDEX library_opcode_usage_pkg_id_bin_id_func_addr_idx
@@ -125,9 +125,10 @@ BEGIN
 	INNER JOIN (
 		SELECT func_addr, prefix, opcode, size, mnem, SUM(count) FROM binary_opcode_usage
 		WHERE pkg_id = p AND bin_id = b
-		GROUP BY func_addr, prefix, opcode, size, mnem;
+		GROUP BY func_addr, prefix, opcode, size, mnem
 	) AS t2
-	ON t1.call_addr = t2.func_addr;
+	ON t1.call_addr = t2.func_addr
+	GROUP BY p, b, t1.func_addr, t2.prefix, t2.opcode, t2.size, t2.mnem;
 
 	UPDATE binary_list SET callgraph = True, linking = False
 	WHERE pkg_id = p AND bin_id = b;
