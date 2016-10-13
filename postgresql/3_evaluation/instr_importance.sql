@@ -2,9 +2,10 @@ DO $$
 BEGIN
 IF NOT table_exists('opcode_importance') THEN
 	CREATE TABLE opcode_importance (
+		prefix BIGINT NULL,
 		opcode BIGINT NOT NULL,
 		opcode_importance_order FLOAT NOT NULL,
-		PRIMARY KEY(opcode)
+		PRIMARY KEY(prefix, opcode)
 	);
 END IF;
 END $$ LANGUAGE plpgsql;
@@ -23,13 +24,15 @@ BEGIN
 	PERFORM (SELECT update_package_install());
 
 	CREATE TEMP TABLE IF NOT EXISTS opcode_tmp (
+		prefix BIGINT NULL,
 		opcode BIGINT NOT NULL,
 		percent_order FLOAT NOT NULL,
-		PRIMARY KEY(opcode));
+		PRIMARY KEY(prefix, opcode));
 
 	CREATE TEMP TABLE IF NOT EXISTS pkg_opcode_tmp (
+		prefix BIGINT NOT NULL,
 		opcode BIGINT NOT NULL,
-		PRIMARY KEY(opcode));
+		PRIMARY KEY(prefix, opcode));
 
 	FOR pkg IN (SELECT DISTINCT pkg_id FROM package_opcode_usage) LOOP
 
@@ -37,21 +40,21 @@ BEGIN
 		count := count + 1;
 
 		INSERT INTO pkg_opcode_tmp
-			SELECT opcode FROM package_opcode_usage
+			SELECT prefix, opcode FROM package_opcode_usage
 			WHERE pkg_id = pkg;
 
 		pkg_order := (SELECT percent_order FROM package_install WHERE pkg_id = pkg);
 
-		for i IN (SELECT * FROM pkg_opcode_tmp) LOOP
+		for p, i IN (SELECT * FROM pkg_opcode_tmp) LOOP
 			IF EXISTS(
 				SELECT * FROM opcode_tmp
-				WHERE opcode = i
+				WHERE prefix = p and opcode = i
 			) THEN
 				UPDATE opcode_tmp
 				SET percent_order = percent_order + pkg_order
-				WHERE opcode = i;
+				WHERE prefix = p and opcode = i;
 			ELSE
-				INSERT INTO opcode_tmp VALUES (i, pkg_order);
+				INSERT INTO opcode_tmp VALUES (p, i, pkg_order);
 			END IF;
 		END LOOP;
 
@@ -60,7 +63,7 @@ BEGIN
 
 	TRUNCATE TABLE opcode_importance;
 	INSERT INTO opcode_importance
-		SELECT opcode, percent_order
+		SELECT prefix, opcode, percent_order
 		FROM opcode_tmp
 		ORDER BY percent_order DESC;
 

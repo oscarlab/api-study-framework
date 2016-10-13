@@ -30,14 +30,19 @@ END IF;
 
 IF NOT table_exists('executable_opcode_usage') THEN
 	CREATE TABLE executable_opcode_usage (
-		pkg_id INT NOT NULL, bin_id INT NOT NULL,
+		pkg_id INT NOT NULL,
+		bin_id INT NOT NULL,
+		prefix BIGINT NULL,
 		opcode BIGINT NOT NULL,
-		PRIMARY KEY (pkg_id, bin_id, opcode)
+		size INT, NOT NULL,
+		mnem, VARCHAR, NOT NULL,
+		count, INT, NOT NULL,
+		PRIMARY KEY (pkg_id, bin_id, prefix, opcode, size, mnem)
 	);
 	CREATE INDEX executable_opcode_usage_pkg_id_bin_id_idx
 		ON executable_opcode_usage (pkg_id, bin_id);
-	CREATE INDEX executable_opcode_usage_opcode_idx
-		ON executable_opcode_usage (opcode);
+	CREATE INDEX executable_opcode_usage_prefix_opcode_size_idx
+		ON executable_opcode_usage (prefix, opcode, size);
 END IF;
 
 END $$ LANGUAGE plpgsql;
@@ -228,17 +233,19 @@ BEGIN
 
 	DELETE FROM executable_opcode_usage WHERE pkg_id = p AND bin_id = b;
 	INSERT INTO executable_opcode_usage
-		SELECT DISTINCT p, b, opcode
+		SELECT p, b, prefix, opcode, size, mnem, SUM(count)
 		FROM binary_opcode_usage
 		WHERE pkg_id = p AND bin_id = b
+		GROUP BY pkg_id, bin_id, prefix, opcode, size, mnem
 		UNION
-		SELECT DISTINCT p, b, t2.opcode
+		SELECT p, b, t2.prefix, t2.opcode, t2.size, t2.mnem, SUM(t2.count)
 		FROM bin_call AS t1
 		INNER JOIN
 		library_opcode_usage AS t2
 		ON  t1.pkg_id = t2.pkg_id
 		AND t1.bin_id = t2.bin_id
-		AND t1.func_addr = t2.func_addr;
+		AND t1.func_addr = t2.func_addr
+		GROUP BY p, b, t2.prefix, t2.opcode, t2.size, t2.mnem;
 
 	time2 := clock_timestamp();
 	RAISE NOTICE '%', time2 - time1;
