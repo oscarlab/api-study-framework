@@ -233,19 +233,23 @@ BEGIN
 
 	DELETE FROM executable_opcode_usage WHERE pkg_id = p AND bin_id = b;
 	INSERT INTO executable_opcode_usage
-		SELECT p, b, prefix, opcode, size, mnem, SUM(count)
+	SELECT pkg_id, bin_id, prefix, opcode, size, mnem, SUM(count)
+	FROM {
+		SELECT pkg_id, bin_id, prefix, opcode, size, mnem, SUM(count)
 		FROM binary_opcode_usage
 		WHERE pkg_id = p AND bin_id = b
 		GROUP BY pkg_id, bin_id, prefix, opcode, size, mnem
 		UNION
-		SELECT p, b, t2.prefix, t2.opcode, t2.size, t2.mnem, SUM(t2.count)
+		SELECT t2.pkg_id, t2.bin_id, t2.prefix, t2.opcode, t2.size, t2.mnem, SUM(t2.count)
 		FROM bin_call AS t1
 		INNER JOIN
 		library_opcode_usage AS t2
 		ON  t1.pkg_id = t2.pkg_id
 		AND t1.bin_id = t2.bin_id
 		AND t1.func_addr = t2.func_addr
-		GROUP BY p, b, t2.prefix, t2.opcode, t2.size, t2.mnem;
+		GROUP BY t2.pkg_id, t2.bin_id, t2.prefix, t2.opcode, t2.size, t2.mnem
+	}
+	GROUP BY pkg_id, bin_id, prefix, opcode, size, mnem;
 
 	time2 := clock_timestamp();
 	RAISE NOTICE '%', time2 - time1;
