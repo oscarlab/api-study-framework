@@ -120,15 +120,15 @@ BEGIN
 
 	DELETE FROM library_opcode_usage WHERE pkg_id = p AND bin_id = b;
 	INSERT INTO library_opcode_usage
-	SELECT p, b, t1.func_addr, t2.prefix, t2.opcode, t2.size, t2.mnem, t2.count FROM
+	SELECT t2.pkg_id, t2.bin_id, t1.func_addr, t2.prefix, t2.opcode, t2.size, t2.mnem, SUM(t2.sum_count) FROM
 	lib_callgraph AS t1
 	INNER JOIN (
-		SELECT func_addr, prefix, opcode, size, mnem, SUM(count) FROM binary_opcode_usage
+		SELECT DISTINCT pkg_id, bin_id, func_addr, prefix, opcode, size, mnem, SUM(count) as sum_count FROM binary_opcode_usage
 		WHERE pkg_id = p AND bin_id = b
-		GROUP BY func_addr, prefix, opcode, size, mnem
+		GROUP BY pkg_id, bin_id, func_addr, prefix, opcode, size, mnem
 	) AS t2
-	ON t1.call_addr = t2.func_addr
-	GROUP BY p, b, t1.func_addr, t2.prefix, t2.opcode, t2.size, t2.mnem;
+	ON t1.call_addr = t2.func_addr GROUP BY t2.pkg_id, t2.bin_id, t1.func_addr, t2.prefix, t2.opcode, t2.size, t2.mnem
+	order by t1.func_addr, t2.prefix, t2.opcode, t2.size;
 
 	UPDATE binary_list SET callgraph = True, linking = False
 	WHERE pkg_id = p AND bin_id = b;
