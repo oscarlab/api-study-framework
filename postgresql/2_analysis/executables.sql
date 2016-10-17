@@ -233,23 +233,23 @@ BEGIN
 
 	DELETE FROM executable_opcode_usage WHERE pkg_id = p AND bin_id = b;
 	INSERT INTO executable_opcode_usage
-	SELECT pkg_id, bin_id, prefix, opcode, size, mnem, SUM(count)
-	FROM {
-		SELECT pkg_id, bin_id, prefix, opcode, size, mnem, SUM(count)
+	SELECT t3.pkg_id, t3.bin_id, t3.prefix, t3.opcode, t3.size, t3.mnem, SUM(t3.count)
+	FROM(
+		SELECT pkg_id, bin_id, prefix, opcode, size, mnem, count
 		FROM binary_opcode_usage
 		WHERE pkg_id = p AND bin_id = b
-		GROUP BY pkg_id, bin_id, prefix, opcode, size, mnem
+		--GROUP BY pkg_id, bin_id, prefix, opcode, size, mnem
 		UNION
-		SELECT t2.pkg_id, t2.bin_id, t2.prefix, t2.opcode, t2.size, t2.mnem, SUM(t2.count)
+		SELECT t2.pkg_id, t2.bin_id, t2.prefix, t2.opcode, t2.size, t2.mnem, t2.count
 		FROM bin_call AS t1
 		INNER JOIN
 		library_opcode_usage AS t2
 		ON  t1.pkg_id = t2.pkg_id
 		AND t1.bin_id = t2.bin_id
-		AND t1.func_addr = t2.func_addr
-		GROUP BY t2.pkg_id, t2.bin_id, t2.prefix, t2.opcode, t2.size, t2.mnem
-	}
-	GROUP BY pkg_id, bin_id, prefix, opcode, size, mnem;
+		AND t1.func_addr = t2.func_addr)
+		--GROUP BY t2.pkg_id, t2.bin_id, t2.prefix, t2.opcode, t3.size, t2.mnem)
+	AS t3
+	GROUP BY t3.pkg_id, t3.bin_id, t3.prefix, t3.opcode, t3.size, t3.mnem;
 
 	time2 := clock_timestamp();
 	RAISE NOTICE '%', time2 - time1;
