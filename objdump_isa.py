@@ -132,7 +132,9 @@ class Instr:
 		splitdism = self.dism.split()
 		if splitdism[0] == 'repz' or splitdism[0] == "rep" or splitdism[0] == "repnz":
 			return (splitdism[0]+" "+splitdism[1])
-		return self.dism.split()[0]
+		if splitdism[0] == "lock":
+			return splitdism[1]
+		return splitdism[0]
 
 class InstrJCond(Instr):
 	def __init__(self, bb, addr, dism, target, size, binbytes):
