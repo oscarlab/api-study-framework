@@ -1,7 +1,7 @@
 DO $$
 BEGIN
 IF NOT table_exists('executable_opcode_source') THEN
-	CREATE TABLE executable_opcode_usage (
+	CREATE TABLE executable_opcode_source (
 		pkg_id INT NOT NULL,
 		bin_id INT NOT NULL,
 		source INT NOT NULL,
@@ -12,10 +12,10 @@ IF NOT table_exists('executable_opcode_source') THEN
 		count INT NOT NULL,
 		PRIMARY KEY (pkg_id, bin_id, source, prefix, opcode, size, mnem)
 	);
-	CREATE INDEX executable_opcode_usage_pkg_id_bin_id_source_idx
-		ON executable_opcode_usage (pkg_id, bin_id, source);
-	CREATE INDEX executable_opcode_usage_prefix_opcode_size_idx
-		ON executable_opcode_usage (prefix, opcode, size);
+	CREATE INDEX executable_opcode_source_pkg_id_bin_id_source_idx
+		ON executable_opcode_source (pkg_id, bin_id, source);
+	CREATE INDEX executable_opcode_source_prefix_opcode_size_idx
+		ON executable_opcode_source (prefix, opcode, size);
 END IF;
 
 END $$ LANGUAGE plpgsql;
@@ -208,7 +208,7 @@ BEGIN
 		AND t1.func_addr = t2.func_addr
 		GROUP BY p_id, b_id, source, t2.prefix, t2.opcode, t2.size, t2.mnem)
 	AS t3
-	GROUP BY t3.p_id, t3.b_id, t3.source t3.prefix, t3.opcode, t3.size, t3.mnem;
+	GROUP BY t3.p_id, t3.b_id, t3.source, t3.prefix, t3.opcode, t3.size, t3.mnem;
 
 	time2 := clock_timestamp();
 	RAISE NOTICE '%', time2 - time1;

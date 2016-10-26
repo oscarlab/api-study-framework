@@ -1,7 +1,7 @@
 DO $$
 BEGIN
 IF NOT table_exists('package_opcode_source') THEN
-	CREATE TABLE package_opcode_usage (
+	CREATE TABLE package_opcode_source (
 		pkg_id INT NOT NULL,
 		source INT NOT NULL,
 		prefix BIGINT NULL,
@@ -11,8 +11,8 @@ IF NOT table_exists('package_opcode_source') THEN
 		count INT NOT NULL,
 		PRIMARY KEY (pkg_id, source, prefix, opcode, size, mnem)
 	);
-	CREATE INDEX package_opcode_usage_prefix_opcode_size_idx
-		ON package_opcode_usage (prefix, opcode, size);
+	CREATE INDEX package_opcode_source_prefix_opcode_size_idx
+		ON package_opcode_source (prefix, opcode, size);
 END IF;
 END $$ LANGUAGE plpgsql;
 
