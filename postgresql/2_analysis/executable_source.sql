@@ -214,6 +214,9 @@ BEGIN
 	RAISE NOTICE '%', time2 - time1;
 	time1 := time2;
 
+	UPDATE binary_list SET callgraph = True WHERE pkg_id = p AND bin_id = b;
+	UPDATE package_id SET footprint = False WHERE id = p;
+
 	TRUNCATE TABLE dep_lib;
 	TRUNCATE TABLE dep_sym;
 	TRUNCATE TABLE dep_lib_call;

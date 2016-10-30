@@ -55,6 +55,8 @@ BEGIN
 		ON t1.pkg_id = p AND t1.bin_id = t2.bin_id
 		GROUP BY p, t1.source, t1.prefix, t1.opcode, t1.size, t1.mnem;
 
+	UPDATE package_id SET footprint = True WHERE id = p;
+
 	TRUNCATE TABLE pkg_bin;
 
 	RAISE NOTICE 'package %: source footprint generated', p;
