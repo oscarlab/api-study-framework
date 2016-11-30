@@ -726,8 +726,17 @@ def get_callgraph(binary_name):
 							if arg2.val >= self.start and arg2.val < self.end:
 								self.add_entry(val2ptr(arg2.val, ptr_size))
 
-						self.cur_bb.instrs.append(Instr(self.cur_bb,
-						# self.cur_bb.instrs.append(InstrCall(self.cur_bb,
+						if isinstance(arg1, OpReg):
+							self.cur_bb.instrs.append(InstrMov(self.cur_bb,
+											address,
+											disassembly,
+											arg1.reg, arg2,
+											size, binbytes))
+							if arg2 is not None:
+								self.set_regval(str(arg1.reg), arg2.get_val())
+						else:
+							self.cur_bb.instrs.append(Instr(self.cur_bb,
+							# self.cur_bb.instrs.append(InstrCall(self.cur_bb,
 										address,
 										disassembly,
 										# arg2,
