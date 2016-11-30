@@ -612,7 +612,7 @@ def get_callgraph(binary_name):
 					elif isinstance(arg1, OpReg):
 						target_addr = arg1.get_val(self.regval)
 						print arg1, target_addr
-						if target_addr in rel_entries:	
+						if target_addr in rel_entries:
 							self.cur_bb.instrs.append(InstrCall(self.cur_bb,
 											address,
 											disassembly,
@@ -726,10 +726,11 @@ def get_callgraph(binary_name):
 							if arg2.val >= self.start and arg2.val < self.end:
 								self.add_entry(val2ptr(arg2.val, ptr_size))
 
-						self.cur_bb.instrs.append(InstrCall(self.cur_bb,
+						self.cur_bb.instrs.append(Instr(self.cur_bb,
+						# self.cur_bb.instrs.append(InstrCall(self.cur_bb,
 										address,
 										disassembly,
-										arg2,
+										# arg2,
 										size, binbytes))
 
 					else:
