@@ -64,8 +64,8 @@ class Register:
 		mask = 256
 		size = 1
 		for n in names[::-1]:
-			self.masks.append(mask - 1)
-			self.sizes.append(size)
+			self.masks.insert(0, (mask - 1))
+			self.sizes.insert(0, size)
 			mask = mask * mask
 			size = size + size
 
@@ -204,7 +204,6 @@ class Func:
 
 			if bb.end:
 				if addr > bb.start and addr < bb.end:
-					# print "passed through here %x, %x, %x" % (addr, bb.start, bb.end)
 					new = BBlock(addr, bb.end)
 					bb.end = addr
 
@@ -253,8 +252,8 @@ class OpReg(Op):
 		return "<" + str(self.reg) + ">"
 
 	def get_val(self, regval=None):
-		if regval and isinstance(regval[self.reg], (int, long)):
-			return regval[self.reg] & self.mask
+		if regval and isinstance(regval[str(self.reg)], (int, long)):
+			return regval[str(self.reg)] & self.mask
 		else:
 			return None
 
@@ -408,13 +407,20 @@ def get_callgraph(binary_name):
 			self.cur_bb = None
 			self.nfuncs = 0
 			self.nbblocks = 0
+			self.regval = {}
 
 		def set_range(self,start, end):
 			self.start = start
 			self.end = end
 
+		def set_regval(self, reg, val):
+			if reg in self.regval.keys():
+				# do something to save old_val?
+				self.regval[reg] = val
+			else:
+				self.regval[reg] = val
+
 		def add_entry(self, addr):
-			# print "In add_entry: %x" % (addr)
 			if self.cur_func and self.cur_func.entry == addr:
 				return
 
@@ -430,7 +436,7 @@ def get_callgraph(binary_name):
 		def process_instructions(self, address, size, branch_delay_insn,
 			insn_type, target, target2, disassembly):
 			binbytes = self.content[address - self.start:address - self.start + size]
-			#print "%x: %s" % (address, disassembly)
+			print "%x: %s" % (address, disassembly)
 
 			try:
 				regex = r'^(?P<repz>repz )?(?P<insn>\S+)(\s+(?P<arg1>[^,]+)?(,(?P<arg2>[^#]+)(#(?P<comm>.+))?)?)?$'
@@ -603,6 +609,21 @@ def get_callgraph(binary_name):
 											address,
 											disassembly,
 											target_addr, size, binbytes))
+					elif isinstance(arg1, OpReg):
+						target_addr = arg1.get_val(self.regval)
+						print arg1, target_addr
+						if target_addr in rel_entries:	
+							self.cur_bb.instrs.append(InstrCall(self.cur_bb,
+											address,
+											disassembly,
+											rel_entries[target_addr],
+											size, binbytes))
+						elif target_addr:
+							self.add_entry(val2ptr(target_addr, ptr_size))
+							self.cur_bb.instrs.append(InstrCall(self.cur_bb,
+											address,
+											disassembly,
+											target_addr, size, binbytes))
 
 					if target:
 						bb = self.cur_func.add_bblock(val2ptr(target, ptr_size))
@@ -692,6 +713,8 @@ def get_callgraph(binary_name):
 											disassembly,
 											arg1.reg, arg2,
 											size, binbytes))
+							if arg2 is not None:
+								self.set_regval(str(arg1.reg), arg2.get_val())
 						else:
 							self.cur_bb.instrs.append(Instr(self.cur_bb,
 											address,
