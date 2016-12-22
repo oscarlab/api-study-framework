@@ -436,6 +436,7 @@ def get_callgraph(binary_name):
 		def process_instructions(self, address, size, branch_delay_insn,
 			insn_type, target, target2, disassembly):
 			binbytes = self.content[address - self.start:address - self.start + size]
+			print insn_type,
 			print "%x: %s" % (address, disassembly)
 
 			try:
@@ -571,27 +572,6 @@ def get_callgraph(binary_name):
 
 				if insn == 'data16':
 					logging.info("data16 (nop) instruction Skipping for convenience")
-#					logging.info(insn)
-#					logging.info(disassembly)
-#					logging.info(size)
-#					logging.info("%s", binbytes[0:size].encode('hex'))
-#					regexstr = r'(?P<data>(data16\ )+)\ ?(?P<nop>(nop).*)'
-#					regexop = r'(?P<data>(66)+)\ ?(?P<nop>.*)'
-#					matchstr = re.match(regexstr, disassembly)
-#					matchop = re.match(regexop, binbytes.encode('hex'))
-#					if  matchstr and matchop:
-#						instruction = Instr(
-#							self.cur_bb,
-#							address,
-#							matchstr.group('nop'),
-#							size,
-#							#matchop.group('nop')
-#							binbytes)
-#						instruction.opcode = matchop.group('nop')
-#						instruction.prefixes = matchop.group('data')
-#						self.cur_bb.instrs.append(instruction)
-#						logging.info(instruction.opcode)
-#						logging.info(instruction.prefixes)
 					return opcodes.PYBFD_DISASM_CONTINUE
 
 				if insn_type == opcodes.InstructionType.BRANCH:
@@ -633,6 +613,7 @@ def get_callgraph(binary_name):
 					return opcodes.PYBFD_DISASM_STOP
 
 				if self.cur_bb.end and address >= self.cur_bb.end:
+					print "End of BB"
 					bb = self.cur_func.add_bblock(val2ptr(address, ptr_size))
 					self.cur_bb.targets.add(bb)
 					return opcodes.PYBFD_DISASM_STOP
@@ -722,10 +703,9 @@ def get_callgraph(binary_name):
 											size, binbytes))
 
 					elif insn == 'lea':
-						if arg2.val:
-							if arg2.val >= self.start and arg2.val < self.end:
-								self.add_entry(val2ptr(arg2.val, ptr_size))
-
+						#if arg2.val:
+							#if arg2.val >= self.start and arg2.val < self.end:
+							#	self.add_entry(val2ptr(arg2.val, ptr_size))
 						if isinstance(arg1, OpReg):
 							self.cur_bb.instrs.append(InstrMov(self.cur_bb,
 											address,
