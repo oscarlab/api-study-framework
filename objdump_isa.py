@@ -198,8 +198,12 @@ class Func:
 
 	def add_bblock(self, addr):
 		closest = None
+		print "Adding new BBLOCK %x" %(addr)
 		for bb in self.bblocks + self.new_bblocks:
 			if addr == bb.start:
+				print "Found existing BB with same start addr %x" % (addr)
+				if bb.end:
+					print "BB had %x as end address" % (bb.end)
 				return bb
 
 			if bb.end:
@@ -220,14 +224,18 @@ class Func:
 					else:
 						self.bblocks.append(new)
 					return new
-			else:
-				bb.end = addr
+			#else:
+			#	bb.end = addr
 
 			if bb.start > addr and (closest is None or closest > bb.start):
 				closest = bb.start
 
 		new = BBlock(addr, closest)
 		self.new_bblocks.append(new)
+		if closest == None:
+			print "New BB added: %x -> None" % (addr)
+		else:
+			print "New BB added: %x -> %x" % (addr, closest)
 		return new
 
 class Op:
@@ -575,45 +583,34 @@ def get_callgraph(binary_name):
 					return opcodes.PYBFD_DISASM_CONTINUE
 
 				if insn_type == opcodes.InstructionType.BRANCH:
+					target_addr = 0
 					if isinstance(arg1, OpLoad):
 						target_addr = arg1.addr.get_val()
-						if target_addr in rel_entries:
-							self.cur_bb.instrs.append(InstrCall(self.cur_bb,
-											address,
-											disassembly,
-											rel_entries[target_addr],
-											size, binbytes))
-						elif target_addr:
-							self.add_entry(val2ptr(target_addr, ptr_size))
-							self.cur_bb.instrs.append(InstrCall(self.cur_bb,
-											address,
-											disassembly,
-											target_addr, size, binbytes))
 					elif isinstance(arg1, OpReg):
 						target_addr = arg1.get_val(self.regval)
 						print arg1, target_addr
-						if target_addr in rel_entries:
-							self.cur_bb.instrs.append(InstrCall(self.cur_bb,
-											address,
-											disassembly,
-											rel_entries[target_addr],
-											size, binbytes))
-						elif target_addr:
-							self.add_entry(val2ptr(target_addr, ptr_size))
-							self.cur_bb.instrs.append(InstrCall(self.cur_bb,
-											address,
-											disassembly,
-											target_addr, size, binbytes))
-
+					if target_addr and target_addr in rel_entries:
+						self.cur_bb.instrs.append(InstrCall(self.cur_bb,
+										address,
+										disassembly,
+										rel_entries[target_addr],
+										size, binbytes))
+					elif target_addr:
+						self.add_entry(val2ptr(target_addr, ptr_size))
+						self.cur_bb.instrs.append(InstrCall(self.cur_bb,
+										address,
+										disassembly,
+										target_addr, size, binbytes))
 					if target:
 						bb = self.cur_func.add_bblock(val2ptr(target, ptr_size))
 						self.cur_bb.targets.add(bb)
 
 					self.cur_bb.end = address + size
+					print "End of BB"
 					return opcodes.PYBFD_DISASM_STOP
 
 				if self.cur_bb.end and address >= self.cur_bb.end:
-					print "End of BB"
+					print "End of BB - adress past end"
 					bb = self.cur_func.add_bblock(val2ptr(address, ptr_size))
 					self.cur_bb.targets.add(bb)
 					return opcodes.PYBFD_DISASM_STOP
@@ -630,11 +627,13 @@ def get_callgraph(binary_name):
 									disassembly,
 									target,
 									size, binbytes))
-					self.cur_bb = next_bb
+					#self.cur_bb = next_bb
 
-					if next_bb in self.cur_func.new_bblocks:
-						self.cur_func.new_bblocks.remove(next_bb)
-						self.cur_func.bblocks.append(next_bb)
+					#if next_bb in self.cur_func.new_bblocks:
+					#	self.cur_func.new_bblocks.remove(next_bb)
+					#	self.cur_func.bblocks.append(next_bb)
+					print "End of BB"
+					return opcodes.PYBFD_DISASM_STOP
 
 				elif insn_type == opcodes.InstructionType.JSR:
 					if isinstance(arg1, OpLoad):
@@ -771,6 +770,7 @@ def get_callgraph(binary_name):
 	codes = CodeOpcodes(bfd)
 	codes.dynsyms = dynsyms
 
+	print "We'll be evaluating:"
 	for sym_addr in dynsyms.keys():
 		# Only look at global functions
 		flags = dynsyms[sym_addr].flags
@@ -779,6 +779,7 @@ def get_callgraph(binary_name):
 		if SymbolFlags.FUNCTION not in flags:
 			continue
 		if sym_addr:
+			print dynsyms[sym_addr]
 			codes.add_entry(sym_addr)
 
 	if entry_addr:
@@ -795,6 +796,7 @@ def get_callgraph(binary_name):
 		off = 0
 		while off + ptr_size <= len(init_content):
 			addr = struct.unpack(ptr_fmt, init_content[off:off + ptr_size])[0]
+			codes.add_entry(addr)
 			off += ptr_size
 
 	if '.fini_array' in bfd.sections:
@@ -949,6 +951,8 @@ if __name__ == "__main__":
 
 		for (prefix, opcode, size, mnem), count in opcodes.items():
 			print prefix.encode('hex'), opcode.encode('hex'), size, mnem, count
+		print "End of Function"
+		print "----------------------------------------"
 
 	print "-----------"
 	print "Dynamic Symbols: %d" % (len(codes.dynsyms))
