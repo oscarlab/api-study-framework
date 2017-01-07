@@ -5,6 +5,7 @@ from id import get_binary_id, get_package_id
 import package
 import os_target
 import main
+from utils import null_dev
 
 import os
 import sys
@@ -52,6 +53,13 @@ i386_regs = [
 
 def ishex(str):
 	return str.startswith('0x')
+
+def is_hex(s):
+	try:
+		int(s, 16)
+	        return True
+	except ValueError:
+	        return False
 
 def hex2int(str):
 	return int(str[2:], 16)
@@ -108,13 +116,14 @@ def get_x86_opcodes(binbytes):
 		prefixes += binbytes[i]
 		i += 1
 
-	#opcode = binbytes[0:i]
+	opcode = ''
 	if len(binbytes) > i:
 		opcode = binbytes[i]
 	if len(binbytes) > i + 1 and binbytes[i] in TWOBYTE:
 		opcode += binbytes[i + 1]
 	if len(binbytes) > i + 2 and binbytes[i] in TWOBYTE and binbytes[i + 1] in THREEBYTE:
 		opcode += binbytes[i + 2]
+#	if opcode and prefixes:
 	return opcode, prefixes
 
 class Instr:
@@ -179,10 +188,11 @@ class InstrCall(Instr):
 # 		self.targets = Set()
 
 class Func:
-	def __init__(self, start):
+	def __init__(self, start, end=None):
 		if isinstance(start, long):
 			start = start & 0xffffffffffffffff
 		self.start = start
+		self.end = end
 		self.instrs = []
 		self.targets = Set()
 		# self.bblocks = []
@@ -562,8 +572,8 @@ def get_callgraph(binary_name):
 				# 	self.cur_bb.instrs.append(Instr(self.cur_bb, address, disassembly, size, binbytes))
 				# 	return opcodes.PYBFD_DISASM_STOP
 
-				if self.end and address >= self.end:
-					print "End of Section"
+				if self.cur_func.end and address >= self.cur_func.end:
+					print "End of Function"
 					return opcodes.PYBFD_DISASM_STOP
 
 				if insn == 'data16':
@@ -598,7 +608,8 @@ def get_callgraph(binary_name):
 				# if insn_type == opcodes.InstructionType.COND_BRANCH:
 
 
-				if insn_type == opcodes.InstructionType.JSR or 				insn_type == opcodes.InstructionType.COND_JSR: #CALL
+				if insn_type == opcodes.InstructionType.JSR or insn_type == opcodes.InstructionType.COND_JSR: #CALL
+					target_addr = None
 					if isinstance(arg1, OpLoad):
 						target_addr = arg1.addr.get_val()
 					elif isinstance(arg1, OpReg):
@@ -610,12 +621,12 @@ def get_callgraph(binary_name):
 											rel_entries[target_addr],
 											size, binbytes))
 						else:
-							self.add_entry(val2ptr(target_addr, ptr_size))
+							#self.add_entry(val2ptr(target_addr, ptr_size))
 							self.cur_func.instrs.append(InstrCall(address,
 											disassembly,
 											target_addr, size, binbytes))
 					elif target:
-						self.add_entry(val2ptr(target, ptr_size))
+						#self.add_entry(val2ptr(target, ptr_size))
 						self.cur_func.instrs.append(InstrCall(address,
 											disassembly,
 											target, size, binbytes))
@@ -679,7 +690,7 @@ def get_callgraph(binary_name):
 										size, binbytes))
 
 					else:
-					self.cur_func.instrs.append(Instr(address, disassembly, size, binbytes))
+						self.cur_func.instrs.append(Instr(address, disassembly, size, binbytes))
 
 			except Exception as e:
 				traceback.print_exc()
@@ -687,7 +698,7 @@ def get_callgraph(binary_name):
 
 			return opcodes.PYBFD_DISASM_CONTINUE
 
-		def start_process(self, content):
+		def start_process(self, content, dynsym_list):
 			self.content = content
 			self.initialize_smart_disassemble(content, self.start)
 			cont = True
@@ -700,8 +711,14 @@ def get_callgraph(binary_name):
 
 				if not next:
 					break
-
-				self.cur_func = Func(next)
+				
+				print "Starting new function"
+				if next not in dynsym_list.keys():
+					self.cur_func = Func(next)
+				else:
+					size = dynsym_list[next]
+					size = int(size)
+					self.cur_func = Func(next, next+size)
 				# self.cur_func.add_bblock(next)
 				self.entries.remove(next)
 
@@ -720,13 +737,34 @@ def get_callgraph(binary_name):
 				self.funcs.append(self.cur_func)
 				self.nfuncs += 1
 				# self.nbblocks += len(self.cur_func.bblocks)
-
 	codes = CodeOpcodes(bfd)
 	codes.dynsyms = dynsyms
 
+	process = subprocess.Popen(["readelf", "--dyn-syms","-W", binary_name], stdout=subprocess.PIPE, stderr=null_dev)
+
+	dynsym_list = {}
+	for line in process.stdout:
+		parts = line.strip().split()
+		if len(parts) < 8:
+			continue
+		if not is_hex(parts[1]):
+			continue
+		match = re.match(r"([A-Za-z0-9_]+)(@@?[A-Za-z0-9_\.]+)?$", parts[7])
+		if not match:
+			continue
+		addr = int(parts[1], 16)
+		if not addr:
+			continue
+		symbol_name = match.group(1)
+		size = parts[2]
+		dynsym_list[addr] = size
+
+	if process.wait() != 0:
+		raise Exception('process failed: readelf --dyn-syms')
+
 	for sym_addr in dynsyms.keys():
 		# Only look at global functions
-		flags = dynsyms[sym_addr].flags
+		flags = dynsyms[sym_addr].flags	
 		if SymbolFlags.GLOBAL not in flags:
 			continue
 		if SymbolFlags.FUNCTION not in flags:
@@ -764,10 +802,10 @@ def get_callgraph(binary_name):
 
 		content = sec.content
 		codes.set_range(sec.vma, sec.vma + sec.size)
-		codes.start_process(content)
+		codes.start_process(content, dynsym_list)
 
 	def Func_cmp(x, y):
-		return cmp(x.entry, y.entry)
+		return cmp(x.start, y.start)
 
 	codes.funcs = sorted(codes.funcs, Func_cmp)
 
@@ -851,7 +889,8 @@ if __name__ == "__main__":
 	codes = get_callgraph(sys.argv[1])
 
 	for func in codes.funcs:
-		print "func %x:" % (func.entry)
+		print "-------------"
+		print "func %x:" % (func.start)
 
 		opcodes = dict()
 		calls = []
@@ -865,10 +904,10 @@ if __name__ == "__main__":
 					if not instr.target.val in calls:
 						calls.append(instr.target.val)
 
-			print instr.get_instr(),
-			for item in instr.prefixes:
-				print item.encode('hex'),
-			print instr.opcode.encode('hex'), instr.size
+			#print instr.get_instr(),
+			#for item in instr.prefixes:
+			#	print item.encode('hex'),
+			#print instr.opcode.encode('hex'), instr.size
 
 			opcode = instr.opcode
 			size = instr.size
