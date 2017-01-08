@@ -6,6 +6,7 @@ import popcon
 import elf_binary
 import objdump
 import objdump_isa
+import objdump_linear
 import linux_defs
 from utils import get_config
 
@@ -89,3 +90,6 @@ class Ubuntu64(OS):
 
 	def analysis_binary_instr(self, sql, dir, name, pkg_id, bin_id):
 		objdump_isa.analysis_binary_instr(sql, dir + name, pkg_id, bin_id)
+
+	def analysis_binary_instr_linear(self, sql, dir, name, pkg_id, bin_id):
+		objdump_linear.analysis_binary_instr_linear(sql, dir + name, pkg_id, bin_id)

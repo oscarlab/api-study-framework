@@ -195,6 +195,8 @@ class Func:
 		self.end = end
 		self.instrs = []
 		self.targets = Set()
+		self.num_calls = 0
+		self.num_missed_calls = 0
 		# self.bblocks = []
 		# self.new_bblocks = []
 
@@ -613,6 +615,8 @@ def get_callgraph(binary_name):
 
 				if insn_type == opcodes.InstructionType.JSR or insn_type == opcodes.InstructionType.COND_JSR: #CALL
 					target_addr = None
+					if insn == 'call':
+						self.cur_func.num_calls += 1
 					if isinstance(arg1, OpLoad):
 						target_addr = arg1.addr.get_val()
 					elif isinstance(arg1, OpReg):
@@ -634,7 +638,9 @@ def get_callgraph(binary_name):
 											disassembly,
 											target, size, binbytes))
 					else:
-						logging.info("BRANCH Instruction. Can't calculate target_addr or find a target. What should I do?")
+						#logging.info("JSR or Cond JSR Instruction. Can't calculate target_addr or find a target. What should I do?")
+						if insn == 'call':
+							self.cur_func.num_missed_calls += 1
 
 				# elif insn_type == opcodes.InstructionType.COND_JSR:
 				# 	if isinstance(arg1, OpLoad):
@@ -811,12 +817,11 @@ def get_callgraph(binary_name):
 		return cmp(x.start, y.start)
 
 	codes.funcs = sorted(codes.funcs, Func_cmp)
-	print "Number of Instructions seen: "+str(codes.num_instrs)
-		print addr
+	#print "Number of Instructions seen: "+str(codes.num_instrs)
 
 	return codes
 
-def analysis_binary_instr(sql, binary, pkg_id, bin_id):
+def analysis_binary_instr_linear(sql, binary, pkg_id, bin_id):
 	codes = get_callgraph(binary)
 
 	condition = 'pkg_id=' + Table.stringify(pkg_id) + ' and bin_id=' + Table.stringify(bin_id)
@@ -824,10 +829,19 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 	sql.delete_record(tables['binary_call'], condition)
 	sql.delete_record(tables['binary_call_unknown'], condition_unknown)
 	sql.delete_record(tables['binary_opcode_usage'], condition)
+	sql.delete_record(tables['binary_call_missrate'], condition)
 
 	for func in codes.funcs:
 		opcodes = dict()
 		calls = []
+		if func.num_calls != 0:
+			mrvalues = dict()
+			mrvalues['pkg_id'] = pkg_id
+			mrvalues['bin_id'] = bin_id
+			mrvalues['func_addr'] = func.start
+			miss_rate = func.num_missed_calls / (func.num_calls * 1.0)
+			mrvalues['miss_rate'] = miss_rate * 100
+			sql.append_record(tables['binary_call_missrate'], mrvalues)
 
 		for instr in func.instrs:
 			if isinstance(instr, InstrCall):
@@ -857,7 +871,7 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 			values = dict()
 			values['pkg_id'] = pkg_id
 			values['bin_id'] = bin_id
-			values['func_addr'] = func.entry
+			values['func_addr'] = func.start
 			if isinstance(call, int) or isinstance(call, long):
 				values['call_addr'] = call
 			else:
@@ -872,7 +886,7 @@ def analysis_binary_instr(sql, binary, pkg_id, bin_id):
 			values = dict()
 			values['pkg_id'] = pkg_id
 			values['bin_id'] = bin_id
-			values['func_addr'] = func.entry
+			values['func_addr'] = func.start
 			values['prefix'] = int(prefix.encode('hex'), 16)
 			values['opcode'] = int(opcode.encode('hex'), 16)
 			values['size'] = size

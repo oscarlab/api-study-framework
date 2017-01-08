@@ -26,6 +26,14 @@ import re
 # 		['pkg_id', 'bin_id', 'func_addr', 'prefix'],
 # 		[['prefix']])
 
+tables['binary_call_missrate'] = Table('binary_call_missrate',[
+		('pkg_id', 'INT', 'NOT NULL'),
+		('bin_id', 'INT', 'NOT NULL'),
+		('func_addr', 'INT', 'NOT NULL'),
+		('miss_rate', 'REAL', 'NULL')],
+		['pkg_id', 'bin_id', 'func_addr', 'miss_rate'],
+		[['pkg_id', 'bin_id'], ['pkg_id', 'bin_id', 'func_addr']])
+
 tables['binary_opcode_usage'] = Table('binary_opcode_usage', [
 		('pkg_id', 'INT', 'NOT NULL'),
 		('bin_id', 'INT', 'NOT NULL'),
@@ -42,6 +50,7 @@ def BinaryInstr(jmgr, os_target, sql, args):
 	sql.connect_table(tables['binary_call'])
 	sql.connect_table(tables['binary_call_unknown'])
 	sql.connect_table(tables['binary_opcode_usage'])
+	sql.connect_table(tables['binary_call_missrate'])
 	# sql.connect_table(tables['instr_list'])
 	# sql.connect_table(tables['prefix_counts'])
 
@@ -71,7 +80,7 @@ def BinaryInstr(jmgr, os_target, sql, args):
 			raise Exception('path ' + dir + bin + ' does not exist')
 
 		bin_id = get_binary_id(sql, bin)
-		os_target.analysis_binary_instr(sql, dir, bin, pkg_id, bin_id)
+		os_target.analysis_binary_instr_linear(sql, dir, bin, pkg_id, bin_id)
 
 		condition = 'pkg_id=' + Table.stringify(pkg_id) + ' and bin_id=' + Table.stringify(bin_id)
 		sql.update_record(tables['binary_list'], {'callgraph': False}, condition)
