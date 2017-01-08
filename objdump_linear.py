@@ -404,6 +404,7 @@ def get_callgraph(binary_name):
 					self.end = sec.vma + sec.size
 
 			self.entries = []
+			self.num_instrs = 0
 			self.funcs = []
 			self.cur_func = None
 			# self.cur_bb = None
@@ -438,8 +439,8 @@ def get_callgraph(binary_name):
 		def process_instructions(self, address, size, branch_delay_insn,
 			insn_type, target, target2, disassembly):
 			binbytes = self.content[address - self.start:address - self.start + size]
-			print insn_type,
-			print "%x: %s" % (address, disassembly)
+			#print insn_type,
+			#print "%x: %s" % (address, disassembly)
 
 			try:
 				regex = r'^(?P<repz>repz )?(?P<insn>\S+)(\s+(?P<arg1>[^,]+)?(,(?P<arg2>[^#]+)(#(?P<comm>.+))?)?)?$'
@@ -573,8 +574,10 @@ def get_callgraph(binary_name):
 				# 	return opcodes.PYBFD_DISASM_STOP
 
 				if self.cur_func.end and address >= self.cur_func.end:
-					print "End of Function"
+					#print "End of Function"
 					return opcodes.PYBFD_DISASM_STOP
+				
+				self.num_instrs += 1
 
 				if insn == 'data16':
 					logging.info("data16 (nop) instruction Skipping for convenience")
@@ -712,7 +715,7 @@ def get_callgraph(binary_name):
 				if not next:
 					break
 				
-				print "Starting new function"
+				#print "Starting new function"
 				if next not in dynsym_list.keys():
 					self.cur_func = Func(next)
 				else:
@@ -808,6 +811,8 @@ def get_callgraph(binary_name):
 		return cmp(x.start, y.start)
 
 	codes.funcs = sorted(codes.funcs, Func_cmp)
+	print "Number of Instructions seen: "+str(codes.num_instrs)
+		print addr
 
 	return codes
 
