@@ -10,8 +10,8 @@ import re
 tables['binary_call'] = Table('binary_call', [
 			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
-			('func_addr', 'INT', 'NOT NULL'),
-			('call_addr', 'INT', ''),
+			('func_addr', 'BIGINT', 'NOT NULL'),
+			('call_addr', 'BIGINT', ''),
 			('call_name', 'VARCHAR', '')],
 			[],
 			[['pkg_id', 'bin_id']])
