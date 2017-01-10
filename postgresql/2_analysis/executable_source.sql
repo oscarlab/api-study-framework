@@ -75,7 +75,7 @@ BEGIN
 	IF NOT temp_table_exists('dep_sym') THEN
 		CREATE TEMP TABLE dep_sym (
 			pkg_id INT NOT NULL, bin_id INT NOT NULL,
-			func_addr INT NOT NULL,
+			func_addr BIGINT NOT NULL,
 			symbol_hash INT);
 		CREATE INDEX dep_sym_pkg_id_bin_id_func_addr_idx
 			ON dep_sym(pkg_id, bin_id, func_addr);
@@ -96,7 +96,7 @@ BEGIN
 	IF NOT temp_table_exists('dep_lib_call') THEN
 		CREATE TEMP TABLE dep_lib_call (
 			pkg_id INT NOT NULL, bin_id INT NOT NULL,
-			func_addr INT NOT NULL,
+			func_addr BIGINT NOT NULL,
 			call_hash INT NOT NULL,
 			PRIMARY KEY(pkg_id, bin_id, func_addr, call_hash));
 		CREATE INDEX dep_lib_call_pkg_id_bin_id_func_addr_idx
@@ -118,7 +118,7 @@ BEGIN
 	IF NOT temp_table_exists('init_call') THEN
 		CREATE TEMP TABLE init_call (
 			pkg_id INT NOT NULL, bin_id INT NOT NULL,
-			func_addr INT NOT NULL,
+			func_addr BIGINT NOT NULL,
 			PRIMARY KEY (pkg_id, bin_id, func_addr));
 		CREATE INDEX init_call_pkg_id_bin_id_idx
 			ON init_call(pkg_id, bin_id);
@@ -146,7 +146,7 @@ BEGIN
 	IF NOT temp_table_exists('bin_call') THEN
 		CREATE TEMP TABLE IF NOT EXISTS bin_call (
 			pkg_id INT NOT NULL, bin_id INT NOT NULL,
-			func_addr INT NOT NULL,
+			func_addr BIGINT NOT NULL,
 			PRIMARY KEY(pkg_id, bin_id, func_addr));
 		CREATE INDEX bin_call_pkg_id_bin_id_func_addr_idx
 			ON bin_call(pkg_id, bin_id, func_addr);

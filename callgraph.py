@@ -10,8 +10,8 @@ import re
 tables['binary_call'] = Table('binary_call', [
 			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
-			('func_addr', 'INT', 'NOT NULL'),
-			('call_addr', 'INT', ''),
+			('func_addr', 'BIGINT', 'NOT NULL'),
+			('call_addr', 'BIGINT', ''),
 			('call_name', 'VARCHAR', '')],
 			[],
 			[['pkg_id', 'bin_id']])
@@ -19,10 +19,10 @@ tables['binary_call'] = Table('binary_call', [
 tables['binary_call_unknown'] = Table('binary_call_unknown', [
 			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
-			('func_addr', 'INT', 'NOT NULL'),
+			('func_addr', 'BIGINT', 'NOT NULL'),
 			('target', 'VARCHAR', 'NOT NULL'),
 			('known', 'BOOLEAN', 'NOT NULL DEFAULT false'),
-			('call_addr', 'INT', ''),
+			('call_addr', 'BIGINT', ''),
 			('call_name', 'VARCHAR', '')],
 			['pkg_id', 'bin_id', 'func_addr', 'target', 'known'],
 			[['pkg_id', 'bin_id']])
@@ -30,7 +30,7 @@ tables['binary_call_unknown'] = Table('binary_call_unknown', [
 tables['binary_api_usage'] = Table('binary_api_usage', [
 			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
-			('func_addr', 'INT', 'NOT NULL'),
+			('func_addr', 'BIGINT', 'NOT NULL'),
 			('api_type', 'SMALLINT', 'NOT NULL'),
 			('api_id', 'BIGINT', 'NOT NULL')],
 			['pkg_id', 'bin_id', 'func_addr', 'api_type', 'api_id'],
@@ -39,7 +39,7 @@ tables['binary_api_usage'] = Table('binary_api_usage', [
 tables['binary_api_usage_unknown'] = Table('binary_api_usage_unknown', [
 			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
-			('func_addr', 'INT', 'NOT NULL'),
+			('func_addr', 'BIGINT', 'NOT NULL'),
 			('target', 'VARCHAR', 'NOT NULL'),
 			('known', 'BOOLEAN', 'NOT NULL DEFAULT false'),
 			('api_type', 'SMALLINT', ''),
