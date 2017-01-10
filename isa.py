@@ -29,7 +29,7 @@ import re
 tables['binary_call_missrate'] = Table('binary_call_missrate',[
 		('pkg_id', 'INT', 'NOT NULL'),
 		('bin_id', 'INT', 'NOT NULL'),
-		('func_addr', 'INT', 'NOT NULL'),
+		('func_addr', 'BIGINT', 'NOT NULL'),
 		('miss_rate', 'REAL', 'NULL')],
 		['pkg_id', 'bin_id', 'func_addr', 'miss_rate'],
 		[['pkg_id', 'bin_id'], ['pkg_id', 'bin_id', 'func_addr']])
@@ -37,7 +37,7 @@ tables['binary_call_missrate'] = Table('binary_call_missrate',[
 tables['binary_opcode_usage'] = Table('binary_opcode_usage', [
 		('pkg_id', 'INT', 'NOT NULL'),
 		('bin_id', 'INT', 'NOT NULL'),
-		('func_addr', 'INT', 'NOT NULL'),
+		('func_addr', 'BIGINT', 'NOT NULL'),
 		('prefix', 'BIGINT', 'NULL'),
 		('opcode', 'BIGINT', 'NOT NULL'),
 		('size', 'INT', 'NOT NULL'),
