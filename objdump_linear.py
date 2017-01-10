@@ -621,7 +621,7 @@ def get_callgraph(binary_name):
 						target_addr = arg1.addr.get_val()
 					elif isinstance(arg1, OpReg):
 						target_addr = arg1.get_val(self.regval)
-					if target_addr:
+					if target_addr and target_addr < 0xffffffff:
 						if target_addr in rel_entries:
 							self.cur_func.instrs.append(InstrCall(address,
 											disassembly,
