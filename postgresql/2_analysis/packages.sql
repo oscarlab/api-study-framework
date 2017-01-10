@@ -4,7 +4,7 @@ IF NOT table_exists('package_call') THEN
 	CREATE TABLE package_call (
 		pkg_id INT NOT NULL,
 		dep_bin_id INT NOT NULL,
-		call_addr BIGINT NOT NULL,
+		call_addr INT NOT NULL,
 		PRIMARY KEY(pkg_id, dep_bin_id, call_addr)
 	);
 	CREATE INDEX package_call_pkg_id_idx

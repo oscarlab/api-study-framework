@@ -16,7 +16,7 @@ tables['binary_symbol'] = Table('binary_symbol', [
 			('bin_id', 'INT', 'NOT NULL'),
 			('symbol_name', 'VARCHAR', 'NOT NULL'),
 			('version', 'VARCHAR', ''),
-			('func_addr','BIGINT', '')],
+			('func_addr','INT', '')],
 			['pkg_id', 'bin_id', 'symbol_name', 'version', 'func_addr'],
 			[['symbol_name', 'version'], ['pkg_id', 'bin_id', 'func_addr'], ['pkg_id', 'bin_id']])
 

@@ -3,7 +3,7 @@ BEGIN
 IF NOT table_exists('library_call') THEN
 	CREATE TABLE library_call (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
-		func_addr BIGINT NOT NULL,
+		func_addr INT NOT NULL,
 		call_hash INT NOT NULL,
 		PRIMARY KEY (pkg_id, bin_id, func_addr, call_hash)
 	);
@@ -16,7 +16,7 @@ END IF;
 IF NOT table_exists('library_api_usage') THEN
 	CREATE TABLE library_api_usage (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
-		func_addr BIGINT NOT NULL,
+		func_addr INT NOT NULL,
 		api_type SMALLINT NOT NULL,
 		api_id BIGINT NOT NULL,
 		PRIMARY KEY (pkg_id, bin_id, func_addr, api_type, api_id)
@@ -32,7 +32,7 @@ END IF;
 IF NOT table_exists('library_opcode_usage') THEN
 	CREATE TABLE library_opcode_usage (
 		pkg_id INT NOT NULL, bin_id INT NOT NULL,
-		func_addr BIGINT NOT NULL,
+		func_addr INT NOT NULL,
 		prefix BIGINT NULL,
 		opcode BIGINT NOT NULL,
 		size INT NOT NULL,
@@ -63,7 +63,7 @@ BEGIN
 	END IF;
 
 	CREATE TEMP TABLE IF NOT EXISTS lib_entry (
-		func_addr BIGINT NOT NULL PRIMARY KEY);
+		func_addr INT NOT NULL PRIMARY KEY);
 	INSERT INTO lib_entry
 		SELECT DISTINCT func_addr
 		FROM binary_symbol
@@ -71,8 +71,8 @@ BEGIN
 		AND func_addr != 0;
 
 	CREATE TEMP TABLE IF NOT EXISTS lib_call (
-		func_addr BIGINT NOT NULL,
-		call_addr BIGINT NOT NULL,
+		func_addr INT NOT NULL,
+		call_addr INT NOT NULL,
 		PRIMARY KEY (func_addr, call_addr));
 	INSERT INTO lib_call
 		SELECT DISTINCT func_addr, call_addr
@@ -81,7 +81,7 @@ BEGIN
 		AND call_addr IS NOT NULL;
 
 	CREATE TEMP TABLE IF NOT EXISTS lib_callgraph (
-		func_addr BIGINT NOT NULL, call_addr BIGINT NOT NULL);
+		func_addr INT NOT NULL, call_addr INT NOT NULL);
 
 	WITH RECURSIVE
 	analysis (func_addr, call_addr)
