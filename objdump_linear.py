@@ -585,29 +585,30 @@ def get_callgraph(binary_name):
 					logging.info("data16 (nop) instruction Skipping for convenience")
 					return opcodes.PYBFD_DISASM_CONTINUE
 
-				# if insn_type == opcodes.InstructionType.BRANCH:
-				# 	if isinstance(arg1, OpLoad):
-				# 		target_addr = arg1.addr.get_val()
-				# 	elif isinstance(arg1, OpReg):
-				# 		target_addr = arg1.get_val(self.regval)
-				# 	if target_addr:
-				# 		if target_addr in rel_entries:
-				# 			self.cur_func.instrs.append(InstrCall(address,
-				# 							disassembly,
-				# 							rel_entries[target_addr],
-				# 							size, binbytes))
-				# 		else:
-				# 			self.add_entry(val2ptr(target_addr, ptr_size))
-				# 			self.cur_func.instrs.append(InstrCall(address,
-				# 							disassembly,
-				# 							target_addr, size, binbytes))
-				# 	elif target:
-				# 		self.add_entry(val2ptr(target, ptr_size))
-				# 		self.cur_func.instrs.append(InstrCall(address,
-				# 							disassembly,
-				# 							target, size, binbytes))
-				# 	else:
-				# 		logging.info("BRANCH Instruction. Can't calculate target_addr or find a target. What should I do?")
+				#if insn_type == opcodes.InstructionType.BRANCH:
+				#	target_addr = None
+				#	if isinstance(arg1, OpLoad):
+				#		target_addr = arg1.addr.get_val()
+				#	elif isinstance(arg1, OpReg):
+				#		target_addr = arg1.get_val(self.regval)
+				#	if target_addr and target_addr <0xffffffff:
+				#		if target_addr in rel_entries:
+				#			self.cur_func.instrs.append(InstrCall(address,
+				#						disassembly,
+				#						rel_entries[target_addr],
+				#						size, binbytes))
+				#		else:
+				#			#self.add_entry(val2ptr(target_addr, ptr_size))
+				#			self.cur_func.instrs.append(InstrCall(address,
+				#						disassembly,
+				#						target_addr, size, binbytes))
+				#	elif target:
+				#		#self.add_entry(val2ptr(target, ptr_size))
+				#		self.cur_func.instrs.append(InstrCall(address,
+				#							disassembly,
+				#							target, size, binbytes))
+				#	else:
+				#		logging.info("BRANCH Instruction. Can't calculate target_addr or find a target. What should I do?")
 
 
 				# if insn_type == opcodes.InstructionType.COND_BRANCH:
@@ -628,12 +629,12 @@ def get_callgraph(binary_name):
 											rel_entries[target_addr],
 											size, binbytes))
 						else:
-							#self.add_entry(val2ptr(target_addr, ptr_size))
+							self.add_entry(val2ptr(target_addr, ptr_size))
 							self.cur_func.instrs.append(InstrCall(address,
 											disassembly,
 											target_addr, size, binbytes))
 					elif target:
-						#self.add_entry(val2ptr(target, ptr_size))
+						self.add_entry(val2ptr(target, ptr_size))
 						self.cur_func.instrs.append(InstrCall(address,
 											disassembly,
 											target, size, binbytes))
@@ -700,6 +701,8 @@ def get_callgraph(binary_name):
 
 					else:
 						self.cur_func.instrs.append(Instr(address, disassembly, size, binbytes))
+				else:
+					self.cur_func.instrs.append(Instr(address, disassembly, size, binbytes))
 
 			except Exception as e:
 				traceback.print_exc()
@@ -727,7 +730,10 @@ def get_callgraph(binary_name):
 				else:
 					size = dynsym_list[next]
 					size = int(size)
-					self.cur_func = Func(next, next+size)
+					if size == 0:
+						self.cur_func = Func(next)
+					else:
+						self.cur_func = Func(next, next+size)
 				# self.cur_func.add_bblock(next)
 				self.entries.remove(next)
 
@@ -749,7 +755,7 @@ def get_callgraph(binary_name):
 	codes = CodeOpcodes(bfd)
 	codes.dynsyms = dynsyms
 
-	process = subprocess.Popen(["readelf", "--dyn-syms","-W", binary_name], stdout=subprocess.PIPE, stderr=null_dev)
+	process = subprocess.Popen(["readelf", "--syms", "--dyn-syms","-W", binary_name], stdout=subprocess.PIPE, stderr=null_dev)
 
 	dynsym_list = {}
 	for line in process.stdout:
