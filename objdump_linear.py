@@ -256,7 +256,7 @@ class OpReg(Op):
 		return "<" + str(self.reg) + ">"
 
 	def get_val(self, regval=None):
-		if regval and isinstance(regval[str(self.reg)], (int, long)):
+		if regval and str(self.reg) in regval.keys() and isinstance(regval[str(self.reg)], (int, long)):
 			return regval[str(self.reg)] & self.mask
 		else:
 			return None
@@ -582,7 +582,6 @@ def get_callgraph(binary_name):
 				self.num_instrs += 1
 
 				if insn == 'data16':
-					logging.info("data16 (nop) instruction Skipping for convenience")
 					return opcodes.PYBFD_DISASM_CONTINUE
 
 				#if insn_type == opcodes.InstructionType.BRANCH:
