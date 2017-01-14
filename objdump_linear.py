@@ -176,17 +176,6 @@ class InstrCall(Instr):
 		else:
 			return "%x: call %s" % (self.addr, str(self.target))
 
-# class BBlock:
-# 	def __init__(self, start, end=None):
-# 		if isinstance(start, long):
-# 			start = start & 0xffffffffffffffff
-# 		if isinstance(end, long):
-# 			end = end & 0xffffffffffffffff
-# 		self.start = start
-# 		self.end = end
-# 		self.instrs = []
-# 		self.targets = Set()
-
 class Func:
 	def __init__(self, start, end=None):
 		if isinstance(start, long):
@@ -197,42 +186,6 @@ class Func:
 		self.targets = Set()
 		self.num_calls = 0
 		self.num_missed_calls = 0
-		# self.bblocks = []
-		# self.new_bblocks = []
-
-	# def add_bblock(self, addr):
-	# 	closest = None
-	# 	for bb in self.bblocks + self.new_bblocks:
-	# 		if addr == bb.start:
-	# 			return bb
-
-	# 		if bb.end:
-	# 			if addr > bb.start and addr < bb.end:
-	# 				new = BBlock(addr, bb.end)
-	# 				bb.end = addr
-
-	# 				splice = 0
-	# 				for instr in bb.instrs:
-	# 					if instr.addr >= addr:
-	# 						break
-	# 					splice += 1
-
-	# 				new.instrs = bb.instrs[splice:]
-	# 				bb.instrs = bb.instrs[:splice]
-	# 				if bb in self.new_bblocks:
-	# 					self.new_bblocks.append(new)
-	# 				else:
-	# 					self.bblocks.append(new)
-	# 				return new
-	# 		else:
-	# 			bb.end = addr
-
-	# 		if bb.start > addr and (closest is None or closest > bb.start):
-	# 			closest = bb.start
-
-	# 	new = BBlock(addr, closest)
-	# 	self.new_bblocks.append(new)
-	# 	return new
 
 class Op:
 	def __init__(self, val=None):
@@ -481,11 +434,11 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 				if self.end == None or self.end < sec.vma + sec.size:
 					self.end = sec.vma + sec.size
 
-			self.entries = set()
+			self.entries = []
+			self.processed_entries = []
 			self.num_instrs = 0
 			self.funcs = []
 			self.cur_func = None
-			# self.cur_bb = None
 			self.nfuncs = 0
 			# self.nbblocks = 0
 			self.regval = {}
@@ -506,6 +459,9 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 				return
 
 			if addr in self.entries:
+				return
+
+			if addr in self.processed_entries:
 				return
 
 			for func in self.funcs:
@@ -749,6 +705,7 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 					else:
 						self.cur_func = Func(next, next+size)
 				self.entries.remove(next)
+				self.processed_entries.append(next)
 
 				self.start_smart_disassemble(self.cur_func.start - self.start, self.process_instructions)
 
