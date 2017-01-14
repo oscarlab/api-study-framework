@@ -57,9 +57,9 @@ def ishex(str):
 def is_hex(s):
 	try:
 		int(s, 16)
-	        return True
+			return True
 	except ValueError:
-	        return False
+			return False
 
 def hex2int(str):
 	return int(str[2:], 16)
@@ -395,7 +395,6 @@ def get_callgraph(binary_name):
 			if bfd.target == 'elf64-x86-64':
 				self.regset = RegisterSet(x86_64_regs)
 			elif bfd.target == 'elf32-i386':
-						#logging.info("Hello")
 				self.regset = RegisterSet(i386_regs)
 
 			self.start = self.end = None
@@ -570,46 +569,15 @@ def get_callgraph(binary_name):
 					if ishex(comm):
 						comm = hex2int(comm)
 
-				# if insn == 'ret' or insn == 'hlt':
-				# 	self.cur_bb.end = address + size
-				# 	self.cur_bb.instrs.append(Instr(self.cur_bb, address, disassembly, size, binbytes))
-				# 	return opcodes.PYBFD_DISASM_STOP
-
 				if self.cur_func.end and address >= self.cur_func.end:
-					#print "End of Function"
 					return opcodes.PYBFD_DISASM_STOP
-				
+
 				self.num_instrs += 1
 
 				if insn == 'data16':
 					return opcodes.PYBFD_DISASM_CONTINUE
 
 				#if insn_type == opcodes.InstructionType.BRANCH:
-				#	target_addr = None
-				#	if isinstance(arg1, OpLoad):
-				#		target_addr = arg1.addr.get_val()
-				#	elif isinstance(arg1, OpReg):
-				#		target_addr = arg1.get_val(self.regval)
-				#	if target_addr and target_addr <0xffffffff:
-				#		if target_addr in rel_entries:
-				#			self.cur_func.instrs.append(InstrCall(address,
-				#						disassembly,
-				#						rel_entries[target_addr],
-				#						size, binbytes))
-				#		else:
-				#			#self.add_entry(val2ptr(target_addr, ptr_size))
-				#			self.cur_func.instrs.append(InstrCall(address,
-				#						disassembly,
-				#						target_addr, size, binbytes))
-				#	elif target:
-				#		#self.add_entry(val2ptr(target, ptr_size))
-				#		self.cur_func.instrs.append(InstrCall(address,
-				#							disassembly,
-				#							target, size, binbytes))
-				#	else:
-				#		logging.info("BRANCH Instruction. Can't calculate target_addr or find a target. What should I do?")
-
-
 				# if insn_type == opcodes.InstructionType.COND_BRANCH:
 
 
@@ -638,34 +606,8 @@ def get_callgraph(binary_name):
 											disassembly,
 											target, size, binbytes))
 					else:
-						#logging.info("JSR or Cond JSR Instruction. Can't calculate target_addr or find a target. What should I do?")
 						if insn == 'call':
 							self.cur_func.num_missed_calls += 1
-
-				# elif insn_type == opcodes.InstructionType.COND_JSR:
-				# 	if isinstance(arg1, OpLoad):
-				# 		target_addr = arg1.addr.get_val()
-				# 		if target_addr in rel_entries:
-				# 			self.cur_bb.instrs.append(InstrCall(self.cur_bb,
-				# 							address,
-				# 							disassembly,
-				# 							rel_entries[target_addr],
-				# 							size, binbytes))
-				# 		elif target_addr:
-				# 			self.add_entry(val2ptr(target_addr, ptr_size))
-				# 			self.cur_bb.instrs.append(InstrCall(self.cur_bb,
-				# 							address,
-				# 							disassembly,
-				# 							target_addr,
-				# 							size, binbytes))
-
-				# 	elif target:
-				# 		self.add_entry(val2ptr(target, ptr_size))
-				# 		self.cur_bb.instrs.append(InstrCall(self.cur_bb,
-				# 						address,
-				# 						disassembly,
-				# 						target,
-				# 						size, binbytes))
 
 				elif insn_type == opcodes.InstructionType.NON_BRANCH:
 					if insn == 'mov':
@@ -682,9 +624,6 @@ def get_callgraph(binary_name):
 											size, binbytes))
 
 					elif insn == 'lea':
-						#if arg2.val:
-							#if arg2.val >= self.start and arg2.val < self.end:
-							#	self.add_entry(val2ptr(arg2.val, ptr_size))
 						if isinstance(arg1, OpReg):
 							self.cur_func.instrs.append(InstrMov(address,
 											disassembly,
@@ -722,8 +661,7 @@ def get_callgraph(binary_name):
 
 				if not next:
 					break
-				
-				#print "Starting new function"
+
 				if next not in dynsym_list.keys():
 					self.cur_func = Func(next)
 				else:
@@ -733,24 +671,12 @@ def get_callgraph(binary_name):
 						self.cur_func = Func(next)
 					else:
 						self.cur_func = Func(next, next+size)
-				# self.cur_func.add_bblock(next)
 				self.entries.remove(next)
-
-				# while self.cur_func.new_bblocks:
-				# 	bb = self.cur_func.new_bblocks[0]
-				# 	self.cur_bb = bb
-				# 	self.cur_func.new_bblocks.remove(bb)
-				# 	self.cur_func.bblocks.append(bb)
 
 				self.start_smart_disassemble(self.cur_func.start - self.start, self.process_instructions)
 
-				# def bb_cmp(x, y):
-				# 	return cmp(x.start, y.start)
-
-				# self.cur_func.bblocks = sorted(self.cur_func.bblocks, bb_cmp)
 				self.funcs.append(self.cur_func)
 				self.nfuncs += 1
-				# self.nbblocks += len(self.cur_func.bblocks)
 	codes = CodeOpcodes(bfd)
 	codes.dynsyms = dynsyms
 
@@ -778,7 +704,7 @@ def get_callgraph(binary_name):
 
 	for sym_addr in dynsyms.keys():
 		# Only look at global functions
-		flags = dynsyms[sym_addr].flags	
+		flags = dynsyms[sym_addr].flags
 		if SymbolFlags.GLOBAL not in flags:
 			continue
 		if SymbolFlags.FUNCTION not in flags:
@@ -822,7 +748,6 @@ def get_callgraph(binary_name):
 		return cmp(x.start, y.start)
 
 	codes.funcs = sorted(codes.funcs, Func_cmp)
-	#print "Number of Instructions seen: "+str(codes.num_instrs)
 
 	return codes
 
