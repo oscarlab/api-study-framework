@@ -31,7 +31,7 @@ tables['binary_call_missrate'] = Table('binary_call_missrate',[
 		('bin_id', 'INT', 'NOT NULL'),
 		('func_addr', 'INT', 'NOT NULL'),
 		('miss_rate', 'REAL', 'NULL')],
-		['pkg_id', 'bin_id', 'func_addr', 'miss_rate'],
+		['pkg_id', 'bin_id', 'func_addr'],
 		[['pkg_id', 'bin_id'], ['pkg_id', 'bin_id', 'func_addr']])
 
 tables['binary_opcode_usage'] = Table('binary_opcode_usage', [

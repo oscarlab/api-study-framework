@@ -57,9 +57,9 @@ def ishex(str):
 def is_hex(s):
 	try:
 		int(s, 16)
-			return True
+		return True
 	except ValueError:
-			return False
+		return False
 
 def hex2int(str):
 	return int(str[2:], 16)
@@ -323,7 +323,11 @@ def val2ptr(val, ptr_size):
 
 	return val
 
-def insert_into_db(func, pkg_id, bin_id):
+def insert_into_db(func, sql, pkg_id, bin_id):
+	if sql == None or pkg_id == None or bin_id == None:
+		logging.info("sql, pkg_id or bin_id was None??")
+		traceback.print_exec()
+
 	opcodes = dict()
 	calls = []
 	if func.num_calls != 0:
@@ -396,7 +400,7 @@ def insert_into_db(func, pkg_id, bin_id):
 			logging.info(count)
 			continue
 
-def get_callgraph(binary_name, pkg_id=None, bin_id=None):
+def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 
 	# Initialize BFD instance
 	bfd = Bfd(binary_name)
@@ -477,7 +481,7 @@ def get_callgraph(binary_name, pkg_id=None, bin_id=None):
 				if self.end == None or self.end < sec.vma + sec.size:
 					self.end = sec.vma + sec.size
 
-			self.entries = []
+			self.entries = set()
 			self.num_instrs = 0
 			self.funcs = []
 			self.cur_func = None
@@ -721,7 +725,7 @@ def get_callgraph(binary_name, pkg_id=None, bin_id=None):
 
 			return opcodes.PYBFD_DISASM_CONTINUE
 
-		def start_process(self, content, dynsym_list, pkg_id, bin_id):
+		def start_process(self, content, dynsym_list, sql,  pkg_id, bin_id):
 			self.content = content
 			self.initialize_smart_disassemble(content, self.start)
 			cont = True
@@ -734,7 +738,7 @@ def get_callgraph(binary_name, pkg_id=None, bin_id=None):
 
 				if not next:
 					break
-
+				logging.info(next)
 				if next not in dynsym_list.keys():
 					self.cur_func = Func(next)
 				else:
@@ -749,7 +753,7 @@ def get_callgraph(binary_name, pkg_id=None, bin_id=None):
 				self.start_smart_disassemble(self.cur_func.start - self.start, self.process_instructions)
 
 				# self.funcs.append(self.cur_func)
-				insert_into_db(self.cur_func, pkg_id, bin_id)
+				insert_into_db(self.cur_func, sql, pkg_id, bin_id)
 				self.nfuncs += 1
 	codes = CodeOpcodes(bfd)
 	codes.dynsyms = dynsyms
@@ -816,7 +820,7 @@ def get_callgraph(binary_name, pkg_id=None, bin_id=None):
 
 		content = sec.content
 		codes.set_range(sec.vma, sec.vma + sec.size)
-		codes.start_process(content, dynsym_list)
+		codes.start_process(content, dynsym_list, sql, pkg_id, bin_id)
 
 	# def Func_cmp(x, y):
 	# 	return cmp(x.start, y.start)
@@ -833,7 +837,7 @@ def analysis_binary_instr_linear(sql, binary, pkg_id, bin_id):
 	sql.delete_record(tables['binary_opcode_usage'], condition)
 	sql.delete_record(tables['binary_call_missrate'], condition)
 
-	get_callgraph(binary, pkg_id, bin_id)
+	get_callgraph(binary, sql, pkg_id, bin_id)
 
 if __name__ == "__main__":
 	codes = get_callgraph(sys.argv[1])
