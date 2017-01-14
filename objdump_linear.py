@@ -323,7 +323,80 @@ def val2ptr(val, ptr_size):
 
 	return val
 
-def get_callgraph(binary_name):
+def insert_into_db(func, pkg_id, bin_id):
+	opcodes = dict()
+	calls = []
+	if func.num_calls != 0:
+		mrvalues = dict()
+		mrvalues['pkg_id'] = pkg_id
+		mrvalues['bin_id'] = bin_id
+		mrvalues['func_addr'] = func.start
+		miss_rate = func.num_missed_calls / (func.num_calls * 1.0)
+		mrvalues['miss_rate'] = miss_rate * 100
+		sql.append_record(tables['binary_call_missrate'], mrvalues)
+
+	for instr in func.instrs:
+		if isinstance(instr, InstrCall):
+			if isinstance(instr.target, int) or isinstance(instr.target, long):
+				if not instr.target in calls:
+					calls.append(instr.target)
+			elif isinstance(instr.target, Op) and instr.target.val:
+				if not instr.target.val in calls:
+					calls.append(instr.target.val)
+
+		opcode = instr.opcode
+		size = instr.size
+		prefix = instr.prefixes
+		mnem = instr.get_instr()
+
+		if opcode == '':
+			continue
+		if prefix == '':
+			prefix = chr(0x0)
+		if (prefix, opcode, size, mnem) in opcodes:
+			opcodes[(prefix, opcode, size, mnem)] += 1
+		else:
+			opcodes[(prefix, opcode, size, mnem)] = 1
+
+
+	for call in calls:
+		values = dict()
+		values['pkg_id'] = pkg_id
+		values['bin_id'] = bin_id
+		values['func_addr'] = func.start
+		if isinstance(call, int) or isinstance(call, long):
+			values['call_addr'] = call
+		else:
+			for addr, sym in codes.dynsyms.items():
+				if sym.name == call:
+					values['call_addr'] = sym.value
+					break
+			values['call_name'] = call
+		sql.append_record(tables['binary_call'], values)
+
+	for (prefix, opcode, size, mnem), count in opcodes.items():
+		values = dict()
+		values['pkg_id'] = pkg_id
+		values['bin_id'] = bin_id
+		values['func_addr'] = func.start
+		values['prefix'] = int(prefix.encode('hex'), 16)
+		values['opcode'] = int(opcode.encode('hex'), 16)
+		values['size'] = size
+		values['mnem'] = mnem
+		values['count'] = count
+		try:
+			sql.append_record(tables['binary_opcode_usage'], values)
+		except Exception as e:
+			logging.info(e)
+			logging.info(prefix.encode('hex'))
+			logging.info(opcode)
+			logging.info(int(opcode.encode('hex'),16))
+			logging.info(size)
+			logging.info(mnem)
+			logging.info(count)
+			continue
+
+def get_callgraph(binary_name, pkg_id=None, bin_id=None):
 
 	# Initialize BFD instance
 	bfd = Bfd(binary_name)
@@ -648,7 +721,7 @@ def get_callgraph(binary_name):
 
 			return opcodes.PYBFD_DISASM_CONTINUE
 
-		def start_process(self, content, dynsym_list):
+		def start_process(self, content, dynsym_list, pkg_id, bin_id):
 			self.content = content
 			self.initialize_smart_disassemble(content, self.start)
 			cont = True
@@ -675,7 +748,8 @@ def get_callgraph(binary_name):
 
 				self.start_smart_disassemble(self.cur_func.start - self.start, self.process_instructions)
 
-				self.funcs.append(self.cur_func)
+				# self.funcs.append(self.cur_func)
+				insert_into_db(self.cur_func, pkg_id, bin_id)
 				self.nfuncs += 1
 	codes = CodeOpcodes(bfd)
 	codes.dynsyms = dynsyms
@@ -744,16 +818,14 @@ def get_callgraph(binary_name):
 		codes.set_range(sec.vma, sec.vma + sec.size)
 		codes.start_process(content, dynsym_list)
 
-	def Func_cmp(x, y):
-		return cmp(x.start, y.start)
+	# def Func_cmp(x, y):
+	# 	return cmp(x.start, y.start)
 
-	codes.funcs = sorted(codes.funcs, Func_cmp)
+	# codes.funcs = sorted(codes.funcs, Func_cmp)
 
-	return codes
+	# return codes
 
 def analysis_binary_instr_linear(sql, binary, pkg_id, bin_id):
-	codes = get_callgraph(binary)
-
 	condition = 'pkg_id=' + Table.stringify(pkg_id) + ' and bin_id=' + Table.stringify(bin_id)
 	condition_unknown = condition + ' and known=False'
 	sql.delete_record(tables['binary_call'], condition)
@@ -761,78 +833,7 @@ def analysis_binary_instr_linear(sql, binary, pkg_id, bin_id):
 	sql.delete_record(tables['binary_opcode_usage'], condition)
 	sql.delete_record(tables['binary_call_missrate'], condition)
 
-	for func in codes.funcs:
-		opcodes = dict()
-		calls = []
-		if func.num_calls != 0:
-			mrvalues = dict()
-			mrvalues['pkg_id'] = pkg_id
-			mrvalues['bin_id'] = bin_id
-			mrvalues['func_addr'] = func.start
-			miss_rate = func.num_missed_calls / (func.num_calls * 1.0)
-			mrvalues['miss_rate'] = miss_rate * 100
-			sql.append_record(tables['binary_call_missrate'], mrvalues)
-
-		for instr in func.instrs:
-			if isinstance(instr, InstrCall):
-				if isinstance(instr.target, int) or isinstance(instr.target, long):
-					if not instr.target in calls:
-						calls.append(instr.target)
-				elif isinstance(instr.target, Op) and instr.target.val:
-					if not instr.target.val in calls:
-						calls.append(instr.target.val)
-
-			opcode = instr.opcode
-			size = instr.size
-			prefix = instr.prefixes
-			mnem = instr.get_instr()
-
-			if opcode == '':
-				continue
-			if prefix == '':
-				prefix = chr(0x0)
-			if (prefix, opcode, size, mnem) in opcodes:
-				opcodes[(prefix, opcode, size, mnem)] += 1
-			else:
-				opcodes[(prefix, opcode, size, mnem)] = 1
-
-
-		for call in calls:
-			values = dict()
-			values['pkg_id'] = pkg_id
-			values['bin_id'] = bin_id
-			values['func_addr'] = func.start
-			if isinstance(call, int) or isinstance(call, long):
-				values['call_addr'] = call
-			else:
-				for addr, sym in codes.dynsyms.items():
-					if sym.name == call:
-						values['call_addr'] = sym.value
-						break
-				values['call_name'] = call
-			sql.append_record(tables['binary_call'], values)
-
-		for (prefix, opcode, size, mnem), count in opcodes.items():
-			values = dict()
-			values['pkg_id'] = pkg_id
-			values['bin_id'] = bin_id
-			values['func_addr'] = func.start
-			values['prefix'] = int(prefix.encode('hex'), 16)
-			values['opcode'] = int(opcode.encode('hex'), 16)
-			values['size'] = size
-			values['mnem'] = mnem
-			values['count'] = count
-			try:
-				sql.append_record(tables['binary_opcode_usage'], values)
-			except Exception as e:
-				logging.info(e)
-				logging.info(prefix.encode('hex'))
-				logging.info(opcode)
-				logging.info(int(opcode.encode('hex'),16))
-				logging.info(size)
-				logging.info(mnem)
-				logging.info(count)
-				continue
+	get_callgraph(binary, pkg_id, bin_id)
 
 if __name__ == "__main__":
 	codes = get_callgraph(sys.argv[1])
