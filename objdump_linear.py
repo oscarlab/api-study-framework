@@ -573,7 +573,8 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 									arg1 = op
 						else:
 							(r, _, mask) = self.regset.index_reg(arg1)
-							arg1 = OpReg(r, mask)
+							if r != None and mask !=None:
+								arg1 = OpReg(r, mask)
 
 				if arg2:
 					arg2 = arg2.strip()
@@ -595,7 +596,8 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 									arg2 = op
 						else:
 							(r, _, mask) = self.regset.index_reg(arg2)
-							arg2 = OpReg(r, mask)
+							if r != None and mask != None:
+								arg2 = OpReg(r, mask)
 
 				if comm:
 					comm = comm.strip()
@@ -732,6 +734,9 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 			continue
 		symbol_name = match.group(1)
 		size = parts[2]
+		if ishex(size):
+			size = int(size, 16)
+			print size
 		dynsym_list[addr] = size
 
 	if process.wait() != 0:
