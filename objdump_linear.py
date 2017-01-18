@@ -694,7 +694,7 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 
 				if not next:
 					break
-				logging.info(next)
+				
 				if next not in dynsym_list.keys():
 					self.cur_func = Func(next)
 				else:
