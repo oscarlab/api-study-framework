@@ -14,6 +14,34 @@ import tempfile
 import subprocess
 import logging
 
+def InlineASMAnalysis(jmgr, os_target, sql, args):
+	cmd = ['docker', 'run', '--rm', '-v', '/filer/bin:/filer', '-w',
+		'/filer', '--network=host', 'aakshintala/ubuntu-compiler:gcc', '/filer/run-inlineasm.sh']
+
+	p = subprocess.Popen(cmd + [args[0]], stdout=subprocess.PIPE, stderr=null_dev)
+	(stdout, stderr) = p.communicate()
+	p.wait()
+	if p.returncode != 0:
+		print stderr
+		logging.error(stderr)
+		raise Exception("Cannot run Inline ASM Analysis")
+
+subtasks['InlineASMAnalysis'] = Task(
+	name = "Inline ASM Analysis:",
+	func = InlineASMAnalysis,
+	arg_defs = ["Package Name"],
+	job_name = lambda args: "Inline ASM Analysis: " + args[0])
+
+def ListForInlineASM(jmgr, os_target, sql, args):
+	for pkg in package.pick_packages_from_args(os_target, sql, args):
+		subtasks['InlineASMAnalysis'].create_job(jmgr, [pkg])
+
+tasks['ListForInlineASM'] = Task(
+	name = "Collect data about Inline ASM",
+	func = ListForInlineASM,
+	arg_defs = package.args_to_pick_packages,
+	order = 43)
+
 def PackageCompilationGCC(jmgr, os_target, sql, args):
 	cmd = ['docker', 'run', '--rm', '-v', '/filer/bin:/filer', '-w',
 		'/filer', '--network=host', 'aakshintala/ubuntu-compiler:gcc', '/filer/run-compile-gcc.sh']
