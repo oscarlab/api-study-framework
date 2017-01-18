@@ -142,6 +142,9 @@ def PackageAnalysis(jmgr, os_target, sql, args):
 		ref = reference_dir(dir)
 		subtasks['BinaryInstr'].run_job(jmgr, [pkgname, bin, dir, ref])
 
+		#Clean up the package directory.
+		shutil.rmtree(dir)
+
 subtasks['PackageAnalysis'] = Task(
 	name = "Package Analysis",
 	func = PackageAnalysis,
@@ -151,7 +154,7 @@ subtasks['PackageAnalysis'] = Task(
 
 def pick_packages_from_args(os_target, sql, args):
 	all_packages = []
-	
+
 	if args[0]:
 		packages = get_packages_by_names(os_target, args[0].split())
 		for pkg in packages:
