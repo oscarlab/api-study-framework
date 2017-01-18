@@ -734,9 +734,8 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 			continue
 		symbol_name = match.group(1)
 		size = parts[2]
-		if ishex(size):
+		if is_hex(size):
 			size = int(size, 16)
-			print size
 		dynsym_list[addr] = size
 
 	if process.wait() != 0:
