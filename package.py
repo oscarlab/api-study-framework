@@ -8,6 +8,7 @@ from binary import append_binary_list
 import os
 import sys
 import re
+import shutil
 import tempfile
 
 tables['package_info'] = Table('package_info', [
@@ -143,7 +144,7 @@ def PackageAnalysis(jmgr, os_target, sql, args):
 		subtasks['BinaryInstr'].run_job(jmgr, [pkgname, bin, dir, ref])
 
 		#Clean up the package directory.
-		shutil.rmtree(dir)
+		#shutil.rmtree(dir)
 
 subtasks['PackageAnalysis'] = Task(
 	name = "Package Analysis",
