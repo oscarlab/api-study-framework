@@ -598,6 +598,9 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 							(r, _, mask) = self.regset.index_reg(arg2)
 							if r != None and mask != None:
 								arg2 = OpReg(r, mask)
+							else:
+								logging.info(arg2)
+								traceback.print_exc()
 
 				if comm:
 					comm = comm.strip()
