@@ -127,6 +127,9 @@ def PackageAnalysis(jmgr, os_target, sql, args):
 
 	append_binary_list(sql, pkgname, dir, binaries)
 
+	#Hold an extra reference, so that we don't try to destroy the directory unless it really has no references.
+	global_ref = reference_dir(dir)
+
 	for (bin, type, _) in binaries:
 		if type == 'lnk' or type == 'scr':
 			continue
@@ -143,8 +146,7 @@ def PackageAnalysis(jmgr, os_target, sql, args):
 		ref = reference_dir(dir)
 		subtasks['BinaryInstr'].run_job(jmgr, [pkgname, bin, dir, ref])
 
-		#Clean up the package directory.
-		#shutil.rmtree(dir)
+	remove_dir(dir)
 
 subtasks['PackageAnalysis'] = Task(
 	name = "Package Analysis",
