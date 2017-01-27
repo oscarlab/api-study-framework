@@ -256,7 +256,7 @@ class OpLoad(Op):
 		Op.__init__(self)
 		self.addr = addr
 		self.size = size
-
+	
 	def get_val(self, regval=None):
 		return None
 
@@ -314,7 +314,6 @@ def insert_into_db(func, sql, pkg_id, bin_id):
 			opcodes[(prefix, opcode, size, mnem)] += 1
 		else:
 			opcodes[(prefix, opcode, size, mnem)] = 1
-
 
 	for call in calls:
 		values = dict()
@@ -531,8 +530,8 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 							(r, _, mask) = regset.index_reg(base)
 							if not r:
 								return None
-							if op:
-								op = OpArith(OpReg(r, mask), op, OpArith.ADD)
+							if arith:
+								op = OpArith(OpReg(r, mask), Op(off), OpArith.ADD)
 							else:
 								op = OpReg(r, mask)
 						if reg:
@@ -571,10 +570,13 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 									if load_size:
 										op = OpLoad(op, load_size)
 									arg1 = op
-						else:
+						elif self.regset.is_reg(arg1):
 							(r, _, mask) = self.regset.index_reg(arg1)
 							if r != None and mask !=None:
 								arg1 = OpReg(r, mask)
+						#else:
+						#	logging.info(arg1)
+						#	logging.info('what to do with this?')
 
 				if arg2:
 					arg2 = arg2.strip()
@@ -594,14 +596,10 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 									if load_size:
 										op = OpLoad(op, load_size)
 									arg2 = op
-						else:
+						elif self.regset.is_reg(arg2):
 							(r, _, mask) = self.regset.index_reg(arg2)
 							if r != None and mask != None:
 								arg2 = OpReg(r, mask)
-							else:
-								logging.info(arg2)
-								traceback.print_exc()
-
 				if comm:
 					comm = comm.strip()
 					if ishex(comm):
@@ -627,17 +625,26 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 						target_addr = arg1.addr.get_val()
 					elif isinstance(arg1, OpReg):
 						target_addr = arg1.get_val(self.regval)
-					if target_addr and target_addr < 0xffffffff:
-						if target_addr in rel_entries:
-							self.cur_func.instrs.append(InstrCall(address,
+					if target_addr:
+						if target_addr > 0xff and target_addr < 0x80000000:
+							if target_addr in rel_entries:
+								self.cur_func.instrs.append(InstrCall(address,
 											disassembly,
 											rel_entries[target_addr],
 											size, binbytes))
-						else:
-							self.add_entry(val2ptr(target_addr, ptr_size))
-							self.cur_func.instrs.append(InstrCall(address,
+							else:
+								self.add_entry(val2ptr(target_addr, ptr_size))
+								self.cur_func.instrs.append(InstrCall(address,
 											disassembly,
 											target_addr, size, binbytes))
+						else:
+							logging.info("Target_addr out of valid bounds")
+							logging.info(disassembly)
+							logging.info(insn)
+							logging.info(arg1)
+							logging.info(arg2)
+							logging.info(target_addr)
+							logging.info(" ")
 					elif target:
 						self.add_entry(val2ptr(target, ptr_size))
 						self.cur_func.instrs.append(InstrCall(address,
@@ -654,7 +661,7 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 											disassembly,
 											arg1.reg, arg2,
 											size, binbytes))
-							if arg2 is not None:
+							if isinstance(arg2,Op) and not isinstance(arg2,OpLoad):
 								self.set_regval(str(arg1.reg), arg2.get_val())
 						else:
 							self.cur_func.instrs.append(Instr(address,
@@ -667,12 +674,11 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 											disassembly,
 											arg1.reg, arg2,
 											size, binbytes))
-							if arg2 is not None:
+							if isinstance(arg2,Op):
 								self.set_regval(str(arg1.reg), arg2.get_val())
 						else:
 							self.cur_func.instrs.append(Instr(address,
 										disassembly,
-										# arg2,
 										size, binbytes))
 
 					else:
