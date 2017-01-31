@@ -69,6 +69,8 @@ class Register:
 		self.names = names
 		self.masks = []
 		self.sizes = []
+		self.concrete = False
+		self.value = 0
 		mask = 256
 		size = 1
 		for n in names[::-1]:
@@ -88,6 +90,32 @@ class Register:
 			i += 1
 		return (None, None)
 
+	def get_val(self, regname):
+		i = 0
+		while i < len(self.names):
+			if regname == self.names[i]:
+				if self.concrete == True:
+					return self.value & self.masks[i]
+			i += 1
+		return None
+
+	def set_val(self, regname, value):
+		i = 0
+		while i < len(self.names):
+			if regname == self.names[i]:
+				# if self.concrete == True:
+				self.value = value
+				return
+			i += 1
+
+	def set_concreteness(self, regname, concreteness):
+		i = 0
+		while i < len(self.names):
+			if regname == self.names[i]:
+				self.concrete = concreteness
+				return
+			i += 1
+
 class RegisterSet:
 	def __init__(self, regs):
 		self.regs = [Register(reg) for reg in regs]
@@ -104,6 +132,21 @@ class RegisterSet:
 			if size is not None:
 				return (reg, size, mask)
 		return (None, None, None)
+
+	def get_val(self, regname):
+		for reg in self.regs:
+			val = reg.get_val(regname)
+			if val is not None:
+				return val
+		return None
+
+	def set_val(self,regname, value):
+		for reg in self.regs:
+			reg.set_val(regname, value)
+
+	def set_concreteness(self, regname, concreteness):
+		for reg in self.regs:
+			reg.set_concreteness(regname, concreteness)
 
 def get_x86_opcodes(binbytes):
 	PREFIX = range(0x40, 0x50) + [0xf3, 0xf2, 0xf0, 0x2e, 0x36, 0x3e, 0x26] + range(0x64, 0x68)
@@ -196,7 +239,7 @@ class Op:
 	def __str__(self):
 		return str(self.val)
 
-	def get_val(self, regval=None):
+	def get_val(self, regset=None):
 		return self.val
 
 class OpReg(Op):
@@ -208,11 +251,9 @@ class OpReg(Op):
 	def __str__(self):
 		return "<" + str(self.reg) + ">"
 
-	def get_val(self, regval=None):
-		if regval and str(self.reg) in regval.keys() and isinstance(regval[str(self.reg)], (int, long)):
-			return regval[str(self.reg)] & self.mask
-		else:
-			return None
+	def get_val(self, regset=None):
+		if regset:
+			return regset.get_val(self.reg)
 
 class OpArith(Op):
 	ADD = 0
@@ -237,9 +278,9 @@ class OpArith(Op):
 			return "(" + str(self.op1) + "/" + str(self.op2) + ")"
 		return "unknown"
 
-	def get_val(self, regval=None):
-		val1 = self.op1.get_val(regval)
-		val2 = self.op2.get_val(regval)
+	def get_val(self, regset=None):
+		val1 = self.op1.get_val(regset)
+		val2 = self.op2.get_val(regset)
 		if val1 and val2:
 			if self.arith == self.ADD:
 				return val1 + val2
@@ -256,8 +297,8 @@ class OpLoad(Op):
 		Op.__init__(self)
 		self.addr = addr
 		self.size = size
-	
-	def get_val(self, regval=None):
+
+	def get_val(self, regset=None):
 		return None
 
 def val2ptr(val, ptr_size):
@@ -439,19 +480,24 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 			self.funcs = []
 			self.cur_func = None
 			self.nfuncs = 0
+			self.mem = Memory()
 			# self.nbblocks = 0
-			self.regval = {}
+			# self.regval = {}
+			# self.regconcreteness = {}
 
 		def set_range(self,start, end):
 			self.start = start
 			self.end = end
 
 		def set_regval(self, reg, val):
-			if reg in self.regval.keys():
-				# do something to save old_val?
-				self.regval[reg] = val
-			else:
-				self.regval[reg] = val
+			self.regset.set_regval(reg,val)
+
+		def set_regconcrete(self, reg, concreteness):
+			self.regset.set_concreteness(reg,concreteness)
+
+		def set_nonconcrete(self):
+			for reg in ['rax','rcx','rdx','rsi','rdi','r8','r9','r10','r11']:
+				self.set_regconcrete(reg,False)
 
 		def add_entry(self, addr):
 			if self.cur_func and self.cur_func.start == addr:
@@ -574,9 +620,6 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 							(r, _, mask) = self.regset.index_reg(arg1)
 							if r != None and mask !=None:
 								arg1 = OpReg(r, mask)
-						#else:
-						#	logging.info(arg1)
-						#	logging.info('what to do with this?')
 
 				if arg2:
 					arg2 = arg2.strip()
@@ -616,15 +659,20 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 				#if insn_type == opcodes.InstructionType.BRANCH:
 				# if insn_type == opcodes.InstructionType.COND_BRANCH:
 
-
+				# rbp, rbx, r12, r13, r14, r15 are callee-preserved,
+				# so they will always be concrete
+				# On a call the rest must be set to non-concrete
+				# Must implement push and pop
+				# Popping a register makes it concrete
 				if insn_type == opcodes.InstructionType.JSR or insn_type == opcodes.InstructionType.COND_JSR: #CALL
 					target_addr = None
 					if insn == 'call':
 						self.cur_func.num_calls += 1
+						self.set_nonconcrete()
 					if isinstance(arg1, OpLoad):
 						target_addr = arg1.addr.get_val()
 					elif isinstance(arg1, OpReg):
-						target_addr = arg1.get_val(self.regval)
+						target_addr = arg1.get_val(self.regset)
 					if target_addr:
 						if target_addr > 0xff and target_addr < 0x80000000:
 							if target_addr in rel_entries:
@@ -662,6 +710,7 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 											arg1.reg, arg2,
 											size, binbytes))
 							if isinstance(arg2,Op) and not isinstance(arg2,OpLoad):
+								self.set_regconcrete(str(arg1.reg), True)
 								self.set_regval(str(arg1.reg), arg2.get_val())
 						else:
 							self.cur_func.instrs.append(Instr(address,
@@ -675,6 +724,7 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 											arg1.reg, arg2,
 											size, binbytes))
 							if isinstance(arg2,Op):
+								self.set_regconcrete(str(arg1.reg), True)
 								self.set_regval(str(arg1.reg), arg2.get_val())
 						else:
 							self.cur_func.instrs.append(Instr(address,
@@ -705,7 +755,7 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 
 				if not next:
 					break
-				
+
 				if next not in dynsym_list.keys():
 					self.cur_func = Func(next)
 				else:
