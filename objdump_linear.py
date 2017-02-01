@@ -508,15 +508,9 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 			self.start = start
 			self.end = end
 
-		def set_regval(self, reg, val):
-			self.regset.set_regval(reg,val)
-
-		def set_regconcrete(self, reg, concreteness):
-			self.regset.set_concreteness(reg,concreteness)
-
 		def set_nonconcrete(self):
 			for reg in ['rax','rcx','rdx','rsi','rdi','r8','r9','r10','r11']:
-				self.set_regconcrete(reg,False)
+				self.regset.set_concreteness(reg,False)
 
 		def add_entry(self, addr):
 			if self.cur_func and self.cur_func.start == addr:
@@ -732,8 +726,8 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 											arg1.reg, arg2,
 											size, binbytes))
 							if isinstance(arg2,Op) and not isinstance(arg2,OpLoad):
-								self.set_regconcrete(str(arg1.reg), True)
-								self.set_regval(str(arg1.reg), arg2.get_val())
+								self.regset.set_concreteness(str(arg1.reg), True)
+								self.regset.set_val(str(arg1.reg), arg2.get_val())
 						else:
 							logging.info(disassembly)
 							logging.info(type(arg1))
@@ -751,8 +745,8 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 											arg1.reg, arg2,
 											size, binbytes))
 							if isinstance(arg2,Op):
-								self.set_regconcrete(str(arg1.reg), True)
-								self.set_regval(str(arg1.reg), arg2.get_val())
+								self.regset.set_concreteness(str(arg1.reg), True)
+								self.regset.set_val(str(arg1.reg), arg2.get_val())
 						else:
 							self.cur_func.instrs.append(Instr(address,
 										disassembly,
@@ -767,8 +761,8 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 					elif insn == 'pop':
 						if isinstance(arg1, OpReg):
 							val = self.mem.pop(arg1.reg)
-							self.regset.set_regconcrete(arg1.reg, True)
-							self.regset.set_regval(arg1.reg, val)
+							self.regset.set_concreteness(arg1.reg, True)
+							self.regset.set_val(arg1.reg, val)
 						else:
 							logging.info(disassembly)
 
