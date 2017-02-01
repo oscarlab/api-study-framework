@@ -313,10 +313,10 @@ class Memory:
 		if address in self.memory.keys():
 			return self.memory[address]
 
-	def push(key, val):
+	def push(self, key, val):
 		self.stack[key] = val
 
-	def pop(key):
+	def pop(self, key):
 		return self.stack.pop(key)
 
 
