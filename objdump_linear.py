@@ -301,6 +301,25 @@ class OpLoad(Op):
 	def get_val(self, regset=None):
 		return None
 
+class Memory:
+	def __init__(self):
+		self.memory = {}
+		self.stack = {}
+
+	def set_val(self, address, val):
+		self.memory[address] = val
+
+	def get_val(self, address, val):
+		if address in self.memory.keys():
+			return self.memory[address]
+
+	def push(key, val):
+		self.stack[key] = val
+
+	def pop(key):
+		return self.stack.pop(key)
+
+
 def val2ptr(val, ptr_size):
 	if ptr_size == 8:
 		max = 0xffffffffffffffff
@@ -632,7 +651,7 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 							if pc:
 								arg2 = Op(pc)
 								if load_size:
-									arg2 = OpLoad(arg1, load_size)
+									arg2 = OpLoad(arg2, load_size)
 							else:
 								op = match_fmt(addr_op, self.regset)
 								if op:
@@ -666,9 +685,6 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 				# Popping a register makes it concrete
 				if insn_type == opcodes.InstructionType.JSR or insn_type == opcodes.InstructionType.COND_JSR: #CALL
 					target_addr = None
-					if insn == 'call':
-						self.cur_func.num_calls += 1
-						self.set_nonconcrete()
 					if isinstance(arg1, OpLoad):
 						target_addr = arg1.addr.get_val()
 					elif isinstance(arg1, OpReg):
@@ -701,6 +717,12 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 					else:
 						if insn == 'call':
 							self.cur_func.num_missed_calls += 1
+					# Not redundant. Looks kinda odd, but
+					# setting registers to non-concrete
+					# has to be at the end
+					if insn == 'call':
+						self.cur_func.num_calls += 1
+						self.set_nonconcrete()
 
 				elif insn_type == opcodes.InstructionType.NON_BRANCH:
 					if insn == 'mov':
@@ -713,6 +735,11 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 								self.set_regconcrete(str(arg1.reg), True)
 								self.set_regval(str(arg1.reg), arg2.get_val())
 						else:
+							logging.info(disassembly)
+							logging.info(type(arg1))
+							logging.info(arg1)
+							logging.info(type(arg2))
+							loging.info(arg2)
 							self.cur_func.instrs.append(Instr(address,
 											disassembly,
 											size, binbytes))
@@ -730,6 +757,20 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 							self.cur_func.instrs.append(Instr(address,
 										disassembly,
 										size, binbytes))
+
+					elif insn == 'push':
+						if isinstance(arg1, OpReg):
+							self.mem.push(arg1.reg, arg1.get_val(self.regset))
+						else:
+							logging.info(disassembly)
+
+					elif insn == 'pop':
+						if isinstance(arg1, OpReg):
+							val = self.mem.pop(arg1.reg)
+							self.regset.set_regconcrete(arg1.reg, True)
+							self.regset.set_regval(arg1.reg, val)
+						else:
+							logging.info(disassembly)
 
 					else:
 						self.cur_func.instrs.append(Instr(address, disassembly, size, binbytes))
