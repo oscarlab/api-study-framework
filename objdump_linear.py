@@ -317,7 +317,10 @@ class Memory:
 		self.stack[key] = val
 
 	def pop(self, key):
-		return self.stack.pop(key)
+		if key in self.stack.keys():
+			return self.stack.pop(key)
+		else:
+			return None
 
 
 def val2ptr(val, ptr_size):
@@ -733,7 +736,7 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 							logging.info(type(arg1))
 							logging.info(arg1)
 							logging.info(type(arg2))
-							loging.info(arg2)
+							logging.info(arg2)
 							self.cur_func.instrs.append(Instr(address,
 											disassembly,
 											size, binbytes))
