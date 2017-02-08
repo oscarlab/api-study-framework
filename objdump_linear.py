@@ -95,6 +95,7 @@ class Register:
 		while i < len(self.names):
 			if regname == self.names[i]:
 				if self.concrete == True:
+					logging.info('match and concrete')
 					return self.value & self.masks[i]
 			i += 1
 		return None
@@ -104,6 +105,9 @@ class Register:
 		while i < len(self.names):
 			if regname == self.names[i]:
 				# if self.concrete == True:
+				if value is None:
+					logging.info(regname)
+					logging.info('being set to None')
 				self.value = value
 				return
 			i += 1
@@ -111,9 +115,18 @@ class Register:
 	def set_concreteness(self, regname, concreteness):
 		i = 0
 		while i < len(self.names):
-			if regname == self.names[i]:
+			if str(regname) == self.names[i]:
+				if concreteness != True and concreteness != False:
+					return
 				self.concrete = concreteness
 				return
+			i += 1
+
+	def isconcrete(self, regname):
+		i = 0
+		while i < len(self.names):
+			if str(regname) == self.names[i]:
+				return self.concrete
 			i += 1
 
 class RegisterSet:
@@ -135,7 +148,7 @@ class RegisterSet:
 
 	def get_val(self, regname):
 		for reg in self.regs:
-			val = reg.get_val(regname)
+			val = reg.get_val(str(regname))
 			if val is not None:
 				return val
 		return None
@@ -147,6 +160,10 @@ class RegisterSet:
 	def set_concreteness(self, regname, concreteness):
 		for reg in self.regs:
 			reg.set_concreteness(regname, concreteness)
+	
+	def isconcrete(self, regname):
+		for reg in self.regs:
+			return reg.isconcrete(regname)
 
 def get_x86_opcodes(binbytes):
 	PREFIX = range(0x40, 0x50) + [0xf3, 0xf2, 0xf0, 0x2e, 0x36, 0x3e, 0x26] + range(0x64, 0x68)
@@ -281,7 +298,7 @@ class OpArith(Op):
 	def get_val(self, regset=None):
 		val1 = self.op1.get_val(regset)
 		val2 = self.op2.get_val(regset)
-		if val1 and val2:
+		if val1 is not None and val2 is not None:
 			if self.arith == self.ADD:
 				return val1 + val2
 			if self.arith == self.SUB:
@@ -290,6 +307,7 @@ class OpArith(Op):
 				return val1 * val2
 			if self.arith == self.DIV:
 				return val1 / val2
+		logging.info('val1 and/or 2 is/are None')
 		return None
 
 class OpLoad(Op):
@@ -301,6 +319,9 @@ class OpLoad(Op):
 	def get_val(self, regset=None):
 		return None
 
+	def get_addr(self, regset=None):
+		return self.addr.get_val(regset)
+
 class Memory:
 	def __init__(self):
 		self.memory = {}
@@ -309,12 +330,13 @@ class Memory:
 	def set_val(self, address, val):
 		self.memory[address] = val
 
-	def get_val(self, address, val):
+	def get_val(self, address):
 		if address in self.memory.keys():
 			return self.memory[address]
 
 	def push(self, key, val):
-		self.stack[key] = val
+		if val is not None:
+			self.stack[key] = val
 
 	def pop(self, key):
 		if key in self.stack.keys():
@@ -534,8 +556,9 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 		def process_instructions(self, address, size, branch_delay_insn,
 			insn_type, target, target2, disassembly):
 			binbytes = self.content[address - self.start:address - self.start + size]
-			#print insn_type,
-			#print "%x: %s" % (address, disassembly)
+			#logging.info(insn_type)
+			#logging.info(address)
+			#logging.info(disassembly)
 
 			try:
 				regex = r'^(?P<repz>repz )?(?P<insn>\S+)(\s+(?P<arg1>[^,]+)?(,(?P<arg2>[^#]+)(#(?P<comm>.+))?)?)?$'
@@ -592,18 +615,22 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 							(r, _, mask) = regset.index_reg(base)
 							if not r:
 								return None
-							if arith:
-								op = OpArith(OpReg(r, mask), Op(off), OpArith.ADD)
-							else:
-								op = OpReg(r, mask)
+							op = OpReg(r, mask)
 						if reg:
 							(r, _, mask) = regset.index_reg(reg)
 							if not r:
 								return None
-							op = OpReg(r, mask)
-							if scale:
-								scale = int(scale)
-								op = OpArith(op, Op(scale), OpArith.MUL)
+							if op is not None:
+								op2 = OpReg(r, mask)
+								if scale:
+									scale = int(scale)
+									op2 = OpArith(op2, Op(scale), OpArith.MUL)
+								op = OpArith(op, op2, OpArith.ADD)
+							else: #Op is still None? How
+								op = OpReg(r,mask)
+								if scale:
+									scale = int(scale)
+									op = OpArith(op, Op(scale), OpArith.MUL)
 						if off:
 							off = hex2int(off)
 							if m.group('arith') == '-':
@@ -724,19 +751,26 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 				elif insn_type == opcodes.InstructionType.NON_BRANCH:
 					if insn == 'mov':
 						if isinstance(arg1, OpReg):
+							val = None
 							self.cur_func.instrs.append(InstrMov(address,
 											disassembly,
 											arg1.reg, arg2,
 											size, binbytes))
 							if isinstance(arg2,Op) and not isinstance(arg2,OpLoad):
+								val = arg2.get_val(self.regset)
+							elif isinstance(arg2,OpLoad):
+								addr = arg2.get_addr(self.regset)
+								if addr is not None:
+									val = self.mem.get_val(addr)
+							if val is not None:
 								self.regset.set_concreteness(str(arg1.reg), True)
-								self.regset.set_val(str(arg1.reg), arg2.get_val())
+								self.regset.set_val(str(arg1.reg), val)
 						else:
-							logging.info(disassembly)
-							logging.info(type(arg1))
-							logging.info(arg1)
-							logging.info(type(arg2))
-							logging.info(arg2)
+							addr = arg1.get_addr(self.regset)
+							val = arg2.get_val(self.regset)
+							if addr is not None and val is not None:
+								logging.info(disassembly)
+								self.mem.set_val(addr, val)
 							self.cur_func.instrs.append(Instr(address,
 											disassembly,
 											size, binbytes))
@@ -747,9 +781,15 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 											disassembly,
 											arg1.reg, arg2,
 											size, binbytes))
-							if isinstance(arg2,Op):
+							if isinstance(arg2,Op) and not isinstance(arg2, OpLoad):
+								val = arg2.get_val(self.regset)
+							elif isinstance(arg2,OpLoad):
+								addr = arg2.get_addr(self.regset)
+								if addr is not None:
+									val = self.mem.get_val(addr)
+							if val is not None:
 								self.regset.set_concreteness(str(arg1.reg), True)
-								self.regset.set_val(str(arg1.reg), arg2.get_val())
+								self.regset.set_val(str(arg1.reg), val)
 						else:
 							self.cur_func.instrs.append(Instr(address,
 										disassembly,
@@ -757,21 +797,23 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 
 					elif insn == 'push':
 						if isinstance(arg1, OpReg):
-							self.mem.push(arg1.reg, arg1.get_val(self.regset))
-						else:
-							logging.info(disassembly)
+							if self.regset.isconcrete(str(arg1.reg)):
+								self.mem.push(arg1.reg, arg1.get_val(self.regset))
 
 					elif insn == 'pop':
 						if isinstance(arg1, OpReg):
 							val = self.mem.pop(arg1.reg)
-							self.regset.set_concreteness(arg1.reg, True)
-							self.regset.set_val(arg1.reg, val)
+							if val is not None:
+								self.regset.set_concreteness(arg1.reg, True)
+								self.regset.set_val(arg1.reg, val)
 						else:
 							logging.info(disassembly)
 
 					else:
+						logging.info(disassembly)
 						self.cur_func.instrs.append(Instr(address, disassembly, size, binbytes))
 				else:
+					logging.info(disassembly)
 					self.cur_func.instrs.append(Instr(address, disassembly, size, binbytes))
 
 			except Exception as e:
