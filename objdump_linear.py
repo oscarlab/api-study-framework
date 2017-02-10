@@ -806,7 +806,7 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 							if val is not None:
 								self.regset.set_concreteness(arg1.reg, True)
 								self.regset.set_val(arg1.reg, val)
-						else:
+						#else:
 							#logging.info(disassembly)
 
 					else:
