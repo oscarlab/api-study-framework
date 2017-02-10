@@ -95,7 +95,7 @@ class Register:
 		while i < len(self.names):
 			if regname == self.names[i]:
 				if self.concrete == True:
-					logging.info('match and concrete')
+					#logging.info('match and concrete')
 					return self.value & self.masks[i]
 			i += 1
 		return None
@@ -106,8 +106,8 @@ class Register:
 			if regname == self.names[i]:
 				# if self.concrete == True:
 				if value is None:
-					logging.info(regname)
-					logging.info('being set to None')
+					#logging.info(regname)
+					#logging.info('being set to None')
 				self.value = value
 				return
 			i += 1
@@ -307,7 +307,7 @@ class OpArith(Op):
 				return val1 * val2
 			if self.arith == self.DIV:
 				return val1 / val2
-		logging.info('val1 and/or 2 is/are None')
+		#logging.info('val1 and/or 2 is/are None')
 		return None
 
 class OpLoad(Op):
@@ -769,7 +769,7 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 							addr = arg1.get_addr(self.regset)
 							val = arg2.get_val(self.regset)
 							if addr is not None and val is not None:
-								logging.info(disassembly)
+								#logging.info(disassembly)
 								self.mem.set_val(addr, val)
 							self.cur_func.instrs.append(Instr(address,
 											disassembly,
@@ -807,13 +807,13 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 								self.regset.set_concreteness(arg1.reg, True)
 								self.regset.set_val(arg1.reg, val)
 						else:
-							logging.info(disassembly)
+							#logging.info(disassembly)
 
 					else:
-						logging.info(disassembly)
+						#logging.info(disassembly)
 						self.cur_func.instrs.append(Instr(address, disassembly, size, binbytes))
 				else:
-					logging.info(disassembly)
+					#logging.info(disassembly)
 					self.cur_func.instrs.append(Instr(address, disassembly, size, binbytes))
 
 			except Exception as e:
