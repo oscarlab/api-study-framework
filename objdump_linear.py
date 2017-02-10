@@ -106,8 +106,8 @@ class Register:
 			if regname == self.names[i]:
 				# if self.concrete == True:
 				if value is None:
-					#logging.info(regname)
-					#logging.info('being set to None')
+					logging.info(regname)
+					logging.info('being set to None')
 				self.value = value
 				return
 			i += 1
