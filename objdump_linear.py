@@ -364,7 +364,7 @@ def val2ptr(val, ptr_size):
 def insert_into_db(func, sql, pkg_id, bin_id):
 	if sql == None or pkg_id == None or bin_id == None:
 		logging.info("sql, pkg_id or bin_id was None??")
-		traceback.print_exec()
+		traceback.print_exc()
 
 	opcodes = dict()
 	calls = []
