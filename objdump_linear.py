@@ -766,11 +766,11 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 								self.regset.set_concreteness(str(arg1.reg), True)
 								self.regset.set_val(str(arg1.reg), val)
 						else:
-							addr = arg1.get_addr(self.regset)
-							val = arg2.get_val(self.regset)
-							if addr is not None and val is not None:
-								#logging.info(disassembly)
-								self.mem.set_val(addr, val)
+							if isinstance(arg1, OpLoad):
+								addr = arg1.get_addr(self.regset)
+								val = arg2.get_val(self.regset)
+								if addr is not None and val is not None:
+									self.mem.set_val(addr, val)
 							self.cur_func.instrs.append(Instr(address,
 											disassembly,
 											size, binbytes))
