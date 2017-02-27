@@ -160,7 +160,7 @@ class RegisterSet:
 	def set_concreteness(self, regname, concreteness):
 		for reg in self.regs:
 			reg.set_concreteness(regname, concreteness)
-	
+
 	def isconcrete(self, regname):
 		for reg in self.regs:
 			return reg.isconcrete(regname)
@@ -530,10 +530,11 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 			# self.regval = {}
 			# self.regconcreteness = {}
 
-		def set_range(self,start, end):
+		def set_range(self,start, end, executable):
 			self.start = start
 			self.end = end
-			self.add_entry(start)
+			if executable is True:
+				self.add_entry(start)
 
 		def set_nonconcrete(self):
 			for reg in ['rax','rcx','rdx','rsi','rdi','r8','r9','r10','r11']:
@@ -890,6 +891,22 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 	if process.wait() != 0:
 		raise Exception('process failed: readelf --dyn-syms')
 
+	process = subprocess.Popen(["readelf", "--program-headers", "-W", binary_name], stdout=subprocess.PIPE, stderr=null_dev)
+
+	executable = None
+	for line in process.stdout:
+		parts = line.strip().split()
+		if len(parts) < 6:
+			continue
+		if parts[0] == 'INTERP':
+			executable = True
+
+	if executable is None:
+		executable = False
+
+	if process.wait() != 0:
+		raise Exception('process failed: readelf --program-headers')
+
 	for sym_addr in dynsyms.keys():
 		# Only look at global functions
 		flags = dynsyms[sym_addr].flags
@@ -929,7 +946,7 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 			continue
 
 		content = sec.content
-		codes.set_range(sec.vma, sec.vma + sec.size)
+		codes.set_range(sec.vma, sec.vma + sec.size, executable)
 		codes.start_process(content, dynsym_list, sql, pkg_id, bin_id)
 
 	# def Func_cmp(x, y):
