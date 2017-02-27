@@ -365,6 +365,7 @@ def insert_into_db(func, sql, pkg_id, bin_id):
 	if sql == None or pkg_id == None or bin_id == None:
 		logging.info("sql, pkg_id or bin_id was None??")
 		traceback.print_exc()
+		return
 
 	opcodes = dict()
 	calls = []
@@ -532,6 +533,7 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 		def set_range(self,start, end):
 			self.start = start
 			self.end = end
+			self.add_entry(start)
 
 		def set_nonconcrete(self):
 			for reg in ['rax','rcx','rdx','rsi','rdi','r8','r9','r10','r11']:
@@ -721,7 +723,9 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 											rel_entries[target_addr],
 											size, binbytes))
 							else:
-								self.add_entry(val2ptr(target_addr, ptr_size))
+								val2p = val2ptr(target_addr, ptr_size)
+								if val2p < self.start or val2p >= self.end:
+									self.add_entry(val2ptr(target_addr, ptr_size))
 								self.cur_func.instrs.append(InstrCall(address,
 											disassembly,
 											target_addr, size, binbytes))
@@ -734,7 +738,9 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 							logging.info(target_addr)
 							logging.info(" ")
 					elif target:
-						self.add_entry(val2ptr(target, ptr_size))
+						val2p = val2ptr(target,ptr_size)
+						if val2p < self.start or val2p >= self.end:
+							self.add_entry(val2p)
 						self.cur_func.instrs.append(InstrCall(address,
 											disassembly,
 											target, size, binbytes))
@@ -777,6 +783,7 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 
 					elif insn == 'lea':
 						if isinstance(arg1, OpReg):
+							val = None
 							self.cur_func.instrs.append(InstrMov(address,
 											disassembly,
 											arg1.reg, arg2,
@@ -838,13 +845,16 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 
 				if next not in dynsym_list.keys():
 					self.cur_func = Func(next)
+					#print hex(next), hex(self.start), hex(self.end)
 				else:
 					size = dynsym_list[next]
 					size = int(size)
 					if size == 0:
 						self.cur_func = Func(next)
+					#	print hex(next), hex(self.start), hex(self.end)
 					else:
 						self.cur_func = Func(next, next+size)
+					#	print hex(next), hex(self.start), hex(next+size)
 				self.entries.remove(next)
 				self.processed_entries.append(next)
 
@@ -890,8 +900,8 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 		if sym_addr:
 			codes.add_entry(sym_addr)
 
-	if entry_addr:
-		codes.add_entry(entry_addr)
+#	if entry_addr:
+#		codes.add_entry(entry_addr)
 
 	if '.init' in bfd.sections:
 		codes.add_entry(bfd.sections.get('.init').vma)
