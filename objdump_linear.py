@@ -202,6 +202,12 @@ class Instr:
 			return (splitdism[0]+" "+splitdism[1])
 		if splitdism[0] == "lock":
 			return splitdism[1]
+		rege = r'rex\.[rwxbRWXB]*'
+		if re.match(rege, splitdism[0]):
+			if len(splitdism) > 1:
+				return splitdism[1]
+			else:
+				return None
 		return splitdism[0]
 
 class InstrJCond(Instr):
@@ -391,6 +397,8 @@ def insert_into_db(func, sql, pkg_id, bin_id):
 		size = instr.size
 		prefix = instr.prefixes
 		mnem = instr.get_instr()
+		if mnem is None:
+			continue
 
 		if opcode == '':
 			continue
@@ -564,12 +572,12 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 			#logging.info(disassembly)
 
 			try:
-				regex = r'^(?P<repz>repz )?(?P<insn>\S+)(\s+(?P<arg1>[^,]+)?(,(?P<arg2>[^#]+)(#(?P<comm>.+))?)?)?$'
+				regex = r'^(?P<rex>rex\.[wrWR]+ )?(?P<repz>repz )?(?P<insn>\S+)(\s+(?P<arg1>[^,]+)?(,(?P<arg2>[^#]+)(#(?P<comm>.+))?)?)?$'
 				m = re.match(regex, disassembly)
 
 				if not m:
 					return opcodes.PYBFD_DISASM_CONTINUE
-
+				rex = m.group('rex')
 				repz = (m.group('repz') is not None)
 				insn = m.group('insn')
 				arg1 = m.group('arg1')
@@ -994,6 +1002,9 @@ if __name__ == "__main__":
 			size = instr.size
 			prefix = instr.prefixes
 			mnem = instr.get_instr()
+
+			if mnem is None:
+				continue
 
 			if opcode == '':
 				continue
