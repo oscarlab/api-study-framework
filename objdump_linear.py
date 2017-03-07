@@ -367,7 +367,7 @@ def val2ptr(val, ptr_size):
 
 	return val
 
-def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
+def get_callgraph(binary_name, print_screen=False sql=None, pkg_id=None, bin_id=None):
 
 	# Initialize BFD instance
 	bfd = Bfd(binary_name)
@@ -761,6 +761,63 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 
 			return opcodes.PYBFD_DISASM_CONTINUE
 
+		def print_to_screen(func):
+			print "-------------"
+			print "func %x:" % (func.start)
+
+			opcodes = dict()
+			calls = []
+
+			if func.num_calls != 0:
+				print "Function_address:", func.start,
+				miss_rate = func.num_missed_calls / (func.num_calls * 1.0)
+				print "miss_rate", miss_rate * 100
+
+			for instr in func.instrs:
+				if isinstance(instr, InstrCall):
+					if isinstance(instr.target, int) or isinstance(instr.target, long):
+						if not instr.target in calls:
+							calls.append(instr.target)
+					elif isinstance(instr.target, Op) and instr.target.val:
+						if not instr.target.val in calls:
+							calls.append(instr.target.val)
+
+				opcode = instr.opcode
+				size = instr.size
+				prefix = instr.prefixes
+				mnem = instr.get_instr()
+
+				if mnem is None:
+					continue
+
+				if opcode == '':
+					continue
+				if prefix == '':
+					prefix = chr(0x0)
+				if (prefix, opcode, size, mnem) in opcodes:
+					opcodes[(prefix, opcode, size, mnem)] += 1
+				else:
+					opcodes[(prefix, opcode, size, mnem)] = 1
+
+			for call in calls:
+				if isinstance(call, int) or isinstance(call, long):
+					print "    call: %x" % (call)
+				else:
+					call_addr = None
+					for addr, sym in codes.dynsyms.items():
+						if sym.name == call:
+							call_addr = sym.value
+							break
+					if call_addr:
+						print "    call: %s (%x)" % (call, call_addr)
+					else:
+						print "    call: %s" % (call)
+
+			for (prefix, opcode, size, mnem), count in opcodes.items():
+				print prefix.encode('hex'), opcode.encode('hex'), size, mnem, count
+
+
+
 		def insert_into_db(func, sql, pkg_id, bin_id):
 			if sql == None or pkg_id == None or bin_id == None:
 				logging.info("sql, pkg_id or bin_id was None??")
@@ -840,7 +897,7 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 					logging.info(count)
 					continue
 
-		def start_process(self, content, dynsym_list, sql,  pkg_id, bin_id):
+		def start_process(self, content, dynsym_list, print_screen, sql,  pkg_id, bin_id):
 			self.content = content
 			self.initialize_smart_disassemble(content, self.start)
 			cont = True
@@ -868,9 +925,17 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 
 				self.start_smart_disassemble(self.cur_func.start - self.start, self.process_instructions)
 
-				# self.funcs.append(self.cur_func)
-				insert_into_db(self.cur_func, sql, pkg_id, bin_id)
+				if print_screen is True:
+					print_to_screen(self.cur_func)
+				else:
+					insert_into_db(self.cur_func, sql, pkg_id, bin_id)
 				self.nfuncs += 1
+
+			if print_screen is True:
+				print "-----------"
+				print "Dynamic Symbols: %d" % (len(codes.dynsyms))
+				print "Functions: %d" % (codes.nfuncs)
+
 	codes = CodeOpcodes(bfd)
 	codes.dynsyms = dynsyms
 
@@ -955,7 +1020,7 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 
 		content = sec.content
 		codes.set_range(sec.vma, sec.vma + sec.size, executable)
-		codes.start_process(content, dynsym_list, sql, pkg_id, bin_id)
+		codes.start_process(content, print_screen, dynsym_list, sql, pkg_id, bin_id)
 
 	# def Func_cmp(x, y):
 	# 	return cmp(x.start, y.start)
@@ -972,67 +1037,7 @@ def analysis_binary_instr_linear(sql, binary, pkg_id, bin_id):
 	sql.delete_record(tables['binary_opcode_usage'], condition)
 	sql.delete_record(tables['binary_call_missrate'], condition)
 
-	get_callgraph(binary, sql, pkg_id, bin_id)
+	get_callgraph(binary, False, sql, pkg_id, bin_id)
 
 if __name__ == "__main__":
-	codes = get_callgraph(sys.argv[1])
-
-	for func in codes.funcs:
-		print "-------------"
-		print "func %x:" % (func.start)
-
-		opcodes = dict()
-		calls = []
-
-		for instr in func.instrs:
-			if isinstance(instr, InstrCall):
-				if isinstance(instr.target, int) or isinstance(instr.target, long) or isinstance(instr.target, str):
-					if not instr.target in calls:
-						calls.append(instr.target)
-				elif isinstance(instr.target, Op) and instr.target.val:
-					if not instr.target.val in calls:
-						calls.append(instr.target.val)
-
-			#print instr.get_instr(),
-			#for item in instr.prefixes:
-			#	print item.encode('hex'),
-			#print instr.opcode.encode('hex'), instr.size
-
-			opcode = instr.opcode
-			size = instr.size
-			prefix = instr.prefixes
-			mnem = instr.get_instr()
-
-			if mnem is None:
-				continue
-
-			if opcode == '':
-				continue
-			if prefix == '':
-				prefix = chr(0x0)
-			if (prefix, opcode, size, mnem) in opcodes:
-				opcodes[(prefix, opcode, size, mnem)] += 1
-			else:
-				opcodes[(prefix, opcode, size, mnem)] = 1
-
-		for call in calls:
-			if isinstance(call, int) or isinstance(call, long):
-				print "    call: %x" % (call)
-			else:
-				call_addr = None
-				for addr, sym in codes.dynsyms.items():
-					if sym.name == call:
-						call_addr = sym.value
-						break
-				if call_addr:
-					print "    call: %s (%x)" % (call, call_addr)
-				else:
-					print "    call: %s" % (call)
-
-		for (prefix, opcode, size, mnem), count in opcodes.items():
-			print prefix.encode('hex'), opcode.encode('hex'), size, mnem, count
-
-	print "-----------"
-	print "Dynamic Symbols: %d" % (len(codes.dynsyms))
-	print "Functions: %d" % (codes.nfuncs)
-	# print "Basic Blocks: %d" % (codes.nbblocks)
+	get_callgraph(sys.argv[1], True)
