@@ -367,85 +367,6 @@ def val2ptr(val, ptr_size):
 
 	return val
 
-def insert_into_db(func, sql, pkg_id, bin_id):
-	if sql == None or pkg_id == None or bin_id == None:
-		logging.info("sql, pkg_id or bin_id was None??")
-		traceback.print_exc()
-		return
-
-	opcodes = dict()
-	calls = []
-	if func.num_calls != 0:
-		mrvalues = dict()
-		mrvalues['pkg_id'] = pkg_id
-		mrvalues['bin_id'] = bin_id
-		mrvalues['func_addr'] = func.start
-		miss_rate = func.num_missed_calls / (func.num_calls * 1.0)
-		mrvalues['miss_rate'] = miss_rate * 100
-		sql.append_record(tables['binary_call_missrate'], mrvalues)
-
-	for instr in func.instrs:
-		if isinstance(instr, InstrCall):
-			if isinstance(instr.target, int) or isinstance(instr.target, long):
-				if not instr.target in calls:
-					calls.append(instr.target)
-			elif isinstance(instr.target, Op) and instr.target.val:
-				if not instr.target.val in calls:
-					calls.append(instr.target.val)
-
-		opcode = instr.opcode
-		size = instr.size
-		prefix = instr.prefixes
-		mnem = instr.get_instr()
-		if mnem is None:
-			continue
-
-		if opcode == '':
-			continue
-		if prefix == '':
-			prefix = chr(0x0)
-		if (prefix, opcode, size, mnem) in opcodes:
-			opcodes[(prefix, opcode, size, mnem)] += 1
-		else:
-			opcodes[(prefix, opcode, size, mnem)] = 1
-
-	for call in calls:
-		values = dict()
-		values['pkg_id'] = pkg_id
-		values['bin_id'] = bin_id
-		values['func_addr'] = func.start
-		if isinstance(call, int) or isinstance(call, long):
-			values['call_addr'] = call
-		else:
-			for addr, sym in codes.dynsyms.items():
-				if sym.name == call:
-					values['call_addr'] = sym.value
-					break
-			values['call_name'] = call
-		sql.append_record(tables['binary_call'], values)
-
-	for (prefix, opcode, size, mnem), count in opcodes.items():
-		values = dict()
-		values['pkg_id'] = pkg_id
-		values['bin_id'] = bin_id
-		values['func_addr'] = func.start
-		values['prefix'] = int(prefix.encode('hex'), 16)
-		values['opcode'] = int(opcode.encode('hex'), 16)
-		values['size'] = size
-		values['mnem'] = mnem
-		values['count'] = count
-		try:
-			sql.append_record(tables['binary_opcode_usage'], values)
-		except Exception as e:
-			logging.info(e)
-			logging.info(prefix.encode('hex'))
-			logging.info(opcode)
-			logging.info(int(opcode.encode('hex'),16))
-			logging.info(size)
-			logging.info(mnem)
-			logging.info(count)
-			continue
-
 def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 
 	# Initialize BFD instance
@@ -839,6 +760,85 @@ def get_callgraph(binary_name, sql=None, pkg_id=None, bin_id=None):
 				return opcodes.PYBFD_DISASM_STOP
 
 			return opcodes.PYBFD_DISASM_CONTINUE
+
+		def insert_into_db(func, sql, pkg_id, bin_id):
+			if sql == None or pkg_id == None or bin_id == None:
+				logging.info("sql, pkg_id or bin_id was None??")
+				traceback.print_exc()
+				return
+
+			opcodes = dict()
+			calls = []
+			if func.num_calls != 0:
+				mrvalues = dict()
+				mrvalues['pkg_id'] = pkg_id
+				mrvalues['bin_id'] = bin_id
+				mrvalues['func_addr'] = func.start
+				miss_rate = func.num_missed_calls / (func.num_calls * 1.0)
+				mrvalues['miss_rate'] = miss_rate * 100
+				sql.append_record(tables['binary_call_missrate'], mrvalues)
+
+			for instr in func.instrs:
+				if isinstance(instr, InstrCall):
+					if isinstance(instr.target, int) or isinstance(instr.target, long):
+						if not instr.target in calls:
+							calls.append(instr.target)
+					elif isinstance(instr.target, Op) and instr.target.val:
+						if not instr.target.val in calls:
+							calls.append(instr.target.val)
+
+				opcode = instr.opcode
+				size = instr.size
+				prefix = instr.prefixes
+				mnem = instr.get_instr()
+				if mnem is None:
+					continue
+
+				if opcode == '':
+					continue
+				if prefix == '':
+					prefix = chr(0x0)
+				if (prefix, opcode, size, mnem) in opcodes:
+					opcodes[(prefix, opcode, size, mnem)] += 1
+				else:
+					opcodes[(prefix, opcode, size, mnem)] = 1
+
+			for call in calls:
+				values = dict()
+				values['pkg_id'] = pkg_id
+				values['bin_id'] = bin_id
+				values['func_addr'] = func.start
+				if isinstance(call, int) or isinstance(call, long):
+					values['call_addr'] = call
+				else:
+					for addr, sym in codes.dynsyms.items():
+						if sym.name == call:
+							values['call_addr'] = sym.value
+							break
+					values['call_name'] = call
+				sql.append_record(tables['binary_call'], values)
+
+			for (prefix, opcode, size, mnem), count in opcodes.items():
+				values = dict()
+				values['pkg_id'] = pkg_id
+				values['bin_id'] = bin_id
+				values['func_addr'] = func.start
+				values['prefix'] = int(prefix.encode('hex'), 16)
+				values['opcode'] = int(opcode.encode('hex'), 16)
+				values['size'] = size
+				values['mnem'] = mnem
+				values['count'] = count
+				try:
+					sql.append_record(tables['binary_opcode_usage'], values)
+				except Exception as e:
+					logging.info(e)
+					logging.info(prefix.encode('hex'))
+					logging.info(opcode)
+					logging.info(int(opcode.encode('hex'),16))
+					logging.info(size)
+					logging.info(mnem)
+					logging.info(count)
+					continue
 
 		def start_process(self, content, dynsym_list, sql,  pkg_id, bin_id):
 			self.content = content
