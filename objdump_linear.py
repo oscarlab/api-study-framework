@@ -265,6 +265,16 @@ class Op:
 	def get_val(self, regset=None):
 		return self.val
 
+class OpBogus(Op):
+	def __init__(self, originalval):
+		self.strval = originalval
+
+	def __str__(self):
+		return self.strval
+
+	def get_val(self, regset=None):
+		return None
+
 class OpReg(Op):
 	def __init__(self, reg, mask):
 		Op.__init__(self)
@@ -595,6 +605,8 @@ def get_callgraph(binary_name, print_screen=False, sql=None, pkg_id=None, bin_id
 							(r, _, mask) = self.regset.index_reg(arg1)
 							if r != None and mask !=None:
 								arg1 = OpReg(r, mask)
+						else:
+							arg1 = OpBogus(arg1)
 
 				if arg2:
 					arg2 = arg2.strip()
@@ -618,6 +630,8 @@ def get_callgraph(binary_name, print_screen=False, sql=None, pkg_id=None, bin_id
 							(r, _, mask) = self.regset.index_reg(arg2)
 							if r != None and mask != None:
 								arg2 = OpReg(r, mask)
+						else:
+							arg2 = OpBogus(arg2)
 				if comm:
 					comm = comm.strip()
 					if ishex(comm):
@@ -738,6 +752,7 @@ def get_callgraph(binary_name, print_screen=False, sql=None, pkg_id=None, bin_id
 						if isinstance(arg1, OpReg):
 							if self.regset.isconcrete(str(arg1.reg)):
 								self.mem.push(arg1.reg, arg1.get_val(self.regset))
+						self.cur_func.instrs.append(Instr(address, disassembly, size, binbytes))
 
 					elif insn == 'pop':
 						if isinstance(arg1, OpReg):
@@ -745,14 +760,11 @@ def get_callgraph(binary_name, print_screen=False, sql=None, pkg_id=None, bin_id
 							if val is not None:
 								self.regset.set_concreteness(arg1.reg, True)
 								self.regset.set_val(arg1.reg, val)
-						#else:
-							#logging.info(disassembly)
+						self.cur_func.instrs.append(Instr(address, disassembly, size, binbytes))
 
 					else:
-						#logging.info(disassembly)
 						self.cur_func.instrs.append(Instr(address, disassembly, size, binbytes))
 				else:
-					#logging.info(disassembly)
 					self.cur_func.instrs.append(Instr(address, disassembly, size, binbytes))
 
 			except Exception as e:
