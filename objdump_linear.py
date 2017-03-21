@@ -976,6 +976,16 @@ def get_callgraph(binary_name, print_screen=False, sql=None, pkg_id=None, bin_id
 	if process.wait() != 0:
 		raise Exception('process failed: readelf --program-headers')
 
+	process = subprocess.Popen(["readelf", "--file-header", "-W", binary_name], stdout=subprocess.PIPE, stderr=null_dev)
+
+	for line in process.stdout:
+		parts = line.strip().split()
+		if parts[1] == 'EXEC':
+			executable = True
+
+	if process.wait() != 0:
+		raise Exception('process failed: readelf --program-headers')
+
 	for sym_addr in dynsyms.keys():
 		# Only look at global functions
 		flags = dynsyms[sym_addr].flags
