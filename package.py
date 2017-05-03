@@ -207,7 +207,7 @@ def EmitCorpus(jmgr, os_target, sql, args):
 
 	corpusDir = '/filer/corpus/'+str(pkgname)
 	if os.path.exists(corpusDir):
-    	shutil.rmtree(corpusDir)
+		shutil.rmtree(corpusDir)
 	os.mkdir(corpusDir)
 
 	binaries = os_target.get_binaries(dir, find_script=True)
