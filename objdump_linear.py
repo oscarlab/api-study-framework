@@ -198,7 +198,7 @@ class Instr:
 		return "%x:        (%s)" % (self.addr, self.dism)
 
 	def get_binbytes(self):
-		return "%x " % (self.binbytes)
+		return self.binbytes
 
 	def get_instr(self):
 		splitdism = self.dism.split()
@@ -364,6 +364,7 @@ class Memory:
 		else:
 			return None
 
+fileToPrintTo = None
 
 def val2ptr(val, ptr_size):
 	if ptr_size == 8:
@@ -381,7 +382,7 @@ def val2ptr(val, ptr_size):
 
 	return val
 
-def get_callgraph(binary_name, print_screen=False, sql=None, pkg_id=None, bin_id=None):
+def get_callgraph(binary_name, print_screen=False, analysis=False, print_corpus=False sql=None, pkg_id=None, bin_id=None):
 
 	# Initialize BFD instance
 	bfd = Bfd(binary_name)
@@ -790,51 +791,58 @@ def get_callgraph(binary_name, print_screen=False, sql=None, pkg_id=None, bin_id
 				print "miss_rate", miss_rate * 100
 
 			for instr in func.instrs:
-				print instr.get_binbytes() + " ",
+				if isinstance(instr, InstrCall):
+					if isinstance(instr.target, int) or isinstance(instr.target, long):
+						if not instr.target in calls:
+							calls.append(instr.target)
+					elif isinstance(instr.target, Op) and instr.target.val:
+						if not instr.target.val in calls:
+							calls.append(instr.target.val)
 
-			# for instr in func.instrs:
-			# 	if isinstance(instr, InstrCall):
-			# 		if isinstance(instr.target, int) or isinstance(instr.target, long):
-			# 			if not instr.target in calls:
-			# 				calls.append(instr.target)
-			# 		elif isinstance(instr.target, Op) and instr.target.val:
-			# 			if not instr.target.val in calls:
-			# 				calls.append(instr.target.val)
+				opcode = instr.opcode
+				size = instr.size
+				prefix = instr.prefixes
+				mnem = instr.get_instr()
 
-			# 	opcode = instr.opcode
-			# 	size = instr.size
-			# 	prefix = instr.prefixes
-			# 	mnem = instr.get_instr()
+				if mnem is None:
+					continue
 
-			# 	if mnem is None:
-			# 		continue
+				if opcode == '':
+					continue
+				if prefix == '':
+					prefix = chr(0x0)
+				if (prefix, opcode, size, mnem) in opcodes:
+					opcodes[(prefix, opcode, size, mnem)] += 1
+				else:
+					opcodes[(prefix, opcode, size, mnem)] = 1
 
-			# 	if opcode == '':
-			# 		continue
-			# 	if prefix == '':
-			# 		prefix = chr(0x0)
-			# 	if (prefix, opcode, size, mnem) in opcodes:
-			# 		opcodes[(prefix, opcode, size, mnem)] += 1
-			# 	else:
-			# 		opcodes[(prefix, opcode, size, mnem)] = 1
+			for call in calls:
+				if isinstance(call, int) or isinstance(call, long):
+					print "    call: %x" % (call)
+				else:
+					call_addr = None
+					for addr, sym in codes.dynsyms.items():
+						if sym.name == call:
+							call_addr = sym.value
+							break
+					if call_addr:
+						print "    call: %s (%x)" % (call, call_addr)
+					else:
+						print "    call: %s" % (call)
 
-			# for call in calls:
-			# 	if isinstance(call, int) or isinstance(call, long):
-			# 		print "    call: %x" % (call)
-			# 	else:
-			# 		call_addr = None
-			# 		for addr, sym in codes.dynsyms.items():
-			# 			if sym.name == call:
-			# 				call_addr = sym.value
-			# 				break
-			# 		if call_addr:
-			# 			print "    call: %s (%x)" % (call, call_addr)
-			# 		else:
-			# 			print "    call: %s" % (call)
+			for (prefix, opcode, size, mnem), count in opcodes.items():
+				print prefix.encode('hex'), opcode.encode('hex'), size, mnem, count
 
-			# for (prefix, opcode, size, mnem), count in opcodes.items():
-			# 	print prefix.encode('hex'), opcode.encode('hex'), size, mnem, count
+		def print_corpus(self, func):
+			for instr in func.instrs:
+				print instr.get_binbytes().encode('hex') + " ",
+			print "\n"
 
+		def print_corpus_to_file(self, func):
+			file = fileToPrintTo
+			for instr in func.instrs:
+				file.write(instr.get_binbytes().encode('hex') + " ")
+			file.write('\n')
 
 
 		def insert_into_db(self, func, sql, pkg_id, bin_id):
@@ -862,7 +870,6 @@ def get_callgraph(binary_name, print_screen=False, sql=None, pkg_id=None, bin_id
 					elif isinstance(instr.target, Op) and instr.target.val:
 						if not instr.target.val in calls:
 							calls.append(instr.target.val)
-
 				opcode = instr.opcode
 				size = instr.size
 				prefix = instr.prefixes
@@ -916,7 +923,7 @@ def get_callgraph(binary_name, print_screen=False, sql=None, pkg_id=None, bin_id
 					logging.info(count)
 					continue
 
-		def start_process(self, content, print_screen, dynsym_list, sql,  pkg_id, bin_id):
+		def start_process(self, content, print_screen, analysis, emit_corpus, dynsym_list, sql,  pkg_id, bin_id):
 			self.content = content
 			self.initialize_smart_disassemble(content, self.start)
 			cont = True
@@ -944,10 +951,17 @@ def get_callgraph(binary_name, print_screen=False, sql=None, pkg_id=None, bin_id
 
 				self.start_smart_disassemble(self.cur_func.start - self.start, self.process_instructions)
 
-				if print_screen is True:
-					self.print_to_screen(self.cur_func)
-				else:
-					self.insert_into_db(self.cur_func, sql, pkg_id, bin_id)
+				if emit_corpus is True:
+					if print_screen is True:
+						print_corpus(self.cur_func)
+					else:
+						print_corpus_to_file(self.cur_func)
+
+				if analysis is True:
+					if print_screen is True:
+						self.print_to_screen(self.cur_func)
+					else:
+						self.insert_into_db(self.cur_func, sql, pkg_id, bin_id)
 				self.nfuncs += 1
 
 
@@ -1045,7 +1059,7 @@ def get_callgraph(binary_name, print_screen=False, sql=None, pkg_id=None, bin_id
 
 		content = sec.content
 		codes.set_range(sec.vma, sec.vma + sec.size, executable)
-		codes.start_process(content, print_screen, dynsym_list, sql, pkg_id, bin_id)
+		codes.start_process(content, print_screen, analysis, emit_corpus, dynsym_list, sql, pkg_id, bin_id)
 
 
 	if print_screen is True:
@@ -1068,7 +1082,15 @@ def analysis_binary_instr_linear(sql, binary, pkg_id, bin_id):
 	sql.delete_record(tables['binary_opcode_usage'], condition)
 	sql.delete_record(tables['binary_call_missrate'], condition)
 
-	get_callgraph(binary, False, sql, pkg_id, bin_id)
+	get_callgraph(binary, False, True, False, sql, pkg_id, bin_id)
+
+def emit_corpus(pkg_name, binary, file):
+	fileToPrintTo = file
+	get_callgraph(binary, False, False, True)
 
 if __name__ == "__main__":
-	get_callgraph(sys.argv[1], True)
+	if sys.argc == 3:
+		if sys.argv[2] == 'emit-corpus':
+			get_callgraph(sys.argv[1], True, False, True)
+	else:
+	get_callgraph(sys.argv[1], True, True, False)

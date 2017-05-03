@@ -93,3 +93,5 @@ class Ubuntu64(OS):
 
 	def analysis_binary_instr_linear(self, sql, dir, name, pkg_id, bin_id):
 		objdump_linear.analysis_binary_instr_linear(sql, dir + name, pkg_id, bin_id)
+	def emit_corpus(self, bin, file):
+		objdump_linear.emit_corpus(bin, file)

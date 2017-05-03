@@ -199,6 +199,52 @@ tasks['ListForPackageAnalysis'] = Task(
 	arg_defs = args_to_pick_packages,
 	order = 10)
 
+
+def EmitCorpus(jmgr, os_target, sql, args):
+	(dir, pkgname, _) = unpack_package(os_target, args[0])
+	if not dir:
+		return
+
+	os.mkdir('/filer/corpus/'+str(pkgname))
+
+	binaries = os_target.get_binaries(dir, find_script=True)
+	if not binaries:
+		remove_dir(dir)
+		return
+
+	append_binary_list(sql, pkgname, dir, binaries)
+
+	#Hold an extra reference, so that we don't try to destroy the directory unless it really has no references.
+	global_ref = reference_dir(dir)
+
+	for (bin, type, _) in binaries:
+		if type == 'lnk' or type == 'scr':
+			continue
+
+		bin_id = get_binary_id(sql, bin)
+		file = open('/filer/corpus/'+str(pkgname)+"/"+str(bin), 'w+')
+		if not file:
+			return
+		os_target.emit_corpus(dir + bin, file)
+
+	remove_dir(dir)
+
+subtasks['EmitCorpus'] = Task(
+	name = "Emit the word2vec corpus",
+	func = EmitCorpus,
+	arg_defs = ["Package Name"],
+	job_name = lambda args: "Emit Corpus: " + args[0])
+
+def ListForEmitCorpus(jmgr, os_target, sql, args):
+	for pkg in package.pick_packages_from_args(os_target, sql, args):
+		subtasks['EmitCorpus'].create_job(jmgr, [pkg])
+
+tasks['ListForEmitCorpus'] = Task(
+	name = "Collect Corpus",
+	func = ListForEmitCorpus,
+	arg_defs = package.args_to_pick_packages,
+	order = 44)
+
 def PackagePopularity(jmgr, os_target, sql, args):
 	sql.connect_table(tables['package_popularity'])
 
