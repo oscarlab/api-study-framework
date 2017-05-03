@@ -2,7 +2,7 @@
 
 from task import tasks, subtasks, Task
 from sql import tables, Table
-from id import get_package_id
+from id import get_package_id, get_binary_id
 from binary import append_binary_list
 
 import os
