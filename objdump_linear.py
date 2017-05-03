@@ -381,7 +381,7 @@ def val2ptr(val, ptr_size):
 
 	return val
 
-def get_callgraph(binary_name, print_screen=False, analysis=False, print_corpus=False, sql=None, pkg_id=None, bin_id=None, fileToPrintTo=None):
+def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=False, sql=None, pkg_id=None, bin_id=None, fileToPrintTo=None):
 
 	# Initialize BFD instance
 	bfd = Bfd(binary_name)
