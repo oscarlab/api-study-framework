@@ -382,7 +382,7 @@ def val2ptr(val, ptr_size):
 
 	return val
 
-def get_callgraph(binary_name, print_screen=False, analysis=False, print_corpus=False sql=None, pkg_id=None, bin_id=None):
+def get_callgraph(binary_name, print_screen=False, analysis=False, print_corpus=False, sql=None, pkg_id=None, bin_id=None):
 
 	# Initialize BFD instance
 	bfd = Bfd(binary_name)
@@ -1093,4 +1093,4 @@ if __name__ == "__main__":
 		if sys.argv[2] == 'emit-corpus':
 			get_callgraph(sys.argv[1], True, False, True)
 	else:
-	get_callgraph(sys.argv[1], True, True, False)
+		get_callgraph(sys.argv[1], True, True, False)

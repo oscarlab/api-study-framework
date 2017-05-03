@@ -236,13 +236,13 @@ subtasks['EmitCorpus'] = Task(
 	job_name = lambda args: "Emit Corpus: " + args[0])
 
 def ListForEmitCorpus(jmgr, os_target, sql, args):
-	for pkg in package.pick_packages_from_args(os_target, sql, args):
+	for pkg in pick_packages_from_args(os_target, sql, args):
 		subtasks['EmitCorpus'].create_job(jmgr, [pkg])
 
 tasks['ListForEmitCorpus'] = Task(
 	name = "Collect Corpus",
 	func = ListForEmitCorpus,
-	arg_defs = package.args_to_pick_packages,
+	arg_defs = args_to_pick_packages,
 	order = 44)
 
 def PackagePopularity(jmgr, os_target, sql, args):
