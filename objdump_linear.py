@@ -954,9 +954,9 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 
 				if emit_corpus is True:
 					if print_screen is True:
-						print_corpus(self.cur_func)
+						self.print_corpus(self.cur_func)
 					else:
-						print_corpus_to_file(self.cur_func, fileToPrintTo)
+						self.print_corpus_to_file(self.cur_func, fileToPrintTo)
 
 				if analysis is True:
 					if print_screen is True:
