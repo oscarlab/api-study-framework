@@ -841,6 +841,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, print_corpus=
 
 		def print_corpus_to_file(self, func):
 			if fileToPrintTo is None:
+				logging.info("file is none?")
 				return
 			for instr in func.instrs:
 				fileToPrintTo.write(instr.get_binbytes().encode('hex') + " ")
