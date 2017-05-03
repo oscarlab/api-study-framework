@@ -1086,9 +1086,10 @@ def analysis_binary_instr_linear(sql, binary, pkg_id, bin_id):
 
 	get_callgraph(binary, False, True, False, sql, pkg_id, bin_id)
 
-def emit_corpus(binary, corpusFile):
-	fileToPrintTo = corpusFile
-	get_callgraph(binary, False, False, True)
+def emit_corpus(binary, corpusFileName):
+	with open(corpusFileName, 'w+') as fileToPrintTo:
+		get_callgraph(binary, False, False, True)
+		fileToPrintTo.close()
 
 if __name__ == "__main__":
 	if sys.argc == 3:

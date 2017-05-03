@@ -225,11 +225,8 @@ def EmitCorpus(jmgr, os_target, sql, args):
 			continue
 
 		bin_id = get_binary_id(sql, bin)
-		corpusFile = open(corpusDir+"/"+str(bin_id), 'w+')
-		if not file:
-			return
-		os_target.emit_corpus(dir + bin, corpusFile)
-		corpusFile.close()
+		corpusFileName = corpusDir+"/"+str(bin_id)
+		os_target.emit_corpus(dir + bin, corpusFileName)
 
 	remove_dir(dir)
 
