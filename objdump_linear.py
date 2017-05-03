@@ -381,9 +381,7 @@ def val2ptr(val, ptr_size):
 
 	return val
 
-fileToPrintTo = None
-
-def get_callgraph(binary_name, print_screen=False, analysis=False, print_corpus=False, sql=None, pkg_id=None, bin_id=None):
+def get_callgraph(binary_name, print_screen=False, analysis=False, print_corpus=False, sql=None, pkg_id=None, bin_id=None, fileToPrintTo=None):
 
 	# Initialize BFD instance
 	bfd = Bfd(binary_name)
@@ -839,7 +837,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, print_corpus=
 				print instr.get_binbytes().encode('hex') + " ",
 			print "\n"
 
-		def print_corpus_to_file(self, func):
+		def print_corpus_to_file(self, func, fileToPrintTo):
 			if fileToPrintTo is None:
 				logging.info("file is none?")
 				return
@@ -926,7 +924,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, print_corpus=
 					logging.info(count)
 					continue
 
-		def start_process(self, content, print_screen, analysis, emit_corpus, dynsym_list, sql,  pkg_id, bin_id):
+		def start_process(self, content, print_screen, analysis, emit_corpus, dynsym_list, sql,  pkg_id, bin_id, fileToPrintTo):
 			self.content = content
 			self.initialize_smart_disassemble(content, self.start)
 			cont = True
@@ -958,7 +956,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, print_corpus=
 					if print_screen is True:
 						print_corpus(self.cur_func)
 					else:
-						print_corpus_to_file(self.cur_func)
+						print_corpus_to_file(self.cur_func, fileToPrintTo)
 
 				if analysis is True:
 					if print_screen is True:
@@ -1062,7 +1060,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, print_corpus=
 
 		content = sec.content
 		codes.set_range(sec.vma, sec.vma + sec.size, executable)
-		codes.start_process(content, print_screen, analysis, emit_corpus, dynsym_list, sql, pkg_id, bin_id)
+		codes.start_process(content, print_screen, analysis, emit_corpus, dynsym_list, sql, pkg_id, bin_id, fileToPrintTo)
 
 
 	if print_screen is True:
@@ -1089,7 +1087,7 @@ def analysis_binary_instr_linear(sql, binary, pkg_id, bin_id):
 
 def emit_corpus(binary, corpusFileName):
 	with open(corpusFileName, 'w+') as fileToPrintTo:
-		get_callgraph(binary, False, False, True)
+		get_callgraph(binary, False, False, True, None, None, None, fileToPrintTo)
 		fileToPrintTo.close()
 
 if __name__ == "__main__":
