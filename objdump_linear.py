@@ -364,7 +364,6 @@ class Memory:
 		else:
 			return None
 
-fileToPrintTo = None
 
 def val2ptr(val, ptr_size):
 	if ptr_size == 8:
@@ -381,6 +380,8 @@ def val2ptr(val, ptr_size):
 		return max + val - 1
 
 	return val
+
+fileToPrintTo = None
 
 def get_callgraph(binary_name, print_screen=False, analysis=False, print_corpus=False, sql=None, pkg_id=None, bin_id=None):
 
@@ -839,10 +840,11 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, print_corpus=
 			print "\n"
 
 		def print_corpus_to_file(self, func):
-			file = fileToPrintTo
+			if fileToPrintTo is None:
+				return
 			for instr in func.instrs:
-				file.write(instr.get_binbytes().encode('hex') + " ")
-			file.write('\n')
+				fileToPrintTo.write(instr.get_binbytes().encode('hex') + " ")
+			fileToPrintTo.write('\n')
 
 
 		def insert_into_db(self, func, sql, pkg_id, bin_id):
@@ -1084,7 +1086,7 @@ def analysis_binary_instr_linear(sql, binary, pkg_id, bin_id):
 
 	get_callgraph(binary, False, True, False, sql, pkg_id, bin_id)
 
-def emit_corpus(pkg_name, binary, file):
+def emit_corpus(binary, file):
 	fileToPrintTo = file
 	get_callgraph(binary, False, False, True)
 

@@ -222,7 +222,7 @@ def EmitCorpus(jmgr, os_target, sql, args):
 			continue
 
 		bin_id = get_binary_id(sql, bin)
-		file = open('/filer/corpus/'+str(pkgname)+"/"+str(bin), 'w+')
+		file = open('/filer/corpus/'+str(pkgname)+"/"+str(bin_id), 'w+')
 		if not file:
 			return
 		os_target.emit_corpus(dir + bin, file)
