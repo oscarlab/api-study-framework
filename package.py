@@ -205,7 +205,10 @@ def EmitCorpus(jmgr, os_target, sql, args):
 	if not dir:
 		return
 
-	os.mkdir('/filer/corpus/'+str(pkgname))
+	corpusDir = '/filer/corpus/'+str(pkgname)
+	if os.path.exists(corpusDir):
+    	shutil.rmtree(corpusDir)
+	os.mkdir(corpusDir)
 
 	binaries = os_target.get_binaries(dir, find_script=True)
 	if not binaries:
@@ -222,7 +225,7 @@ def EmitCorpus(jmgr, os_target, sql, args):
 			continue
 
 		bin_id = get_binary_id(sql, bin)
-		file = open('/filer/corpus/'+str(pkgname)+"/"+str(bin_id), 'w+')
+		file = open(corpusDir"/"+str(bin_id), 'w+')
 		if not file:
 			return
 		os_target.emit_corpus(dir + bin, file)
