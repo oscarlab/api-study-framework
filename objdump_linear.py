@@ -842,6 +842,8 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			dism = re.sub("<.*$","",dism)
 			dism = re.sub(",","_",dism)
 			dism = re.sub("__","_",dism)
+			m = re.match("0x[0-9a-f]+", dism)
+			print m
 			dism = dism.rstrip("_")
 			return dism
 
