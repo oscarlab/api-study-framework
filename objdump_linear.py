@@ -1091,7 +1091,7 @@ def emit_corpus(binary, corpusFileName):
 		fileToPrintTo.close()
 
 if __name__ == "__main__":
-	if sys.argc == 3:
+	if len(sys.argv) == 3:
 		if sys.argv[2] == 'emit-corpus':
 			get_callgraph(sys.argv[1], True, False, True)
 	else:
