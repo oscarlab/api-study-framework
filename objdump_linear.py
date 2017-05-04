@@ -802,16 +802,6 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				size = instr.size
 				prefix = instr.prefixes
 				mnem = instr.get_instr()
-				dism = instr.dism
-				dism = re.sub("QWORD PTR","",dism)
-				dism = re.sub("DWORD PTR","",dism)
-				dism = re.sub("WORD PTR","",dism)
-				dism = re.sub("BYTE PTR","",dism)
-				dism = re.sub("\s+","_", dism)
-				dism = re.sub("#.*$","",dism)
-				dism = re.sub("<.*$","",dism)
-				dism = re.sub(",","_",dism)
-				dism.strip("_")
 
 				if mnem is None:
 					continue
@@ -821,9 +811,9 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				if prefix == '':
 					prefix = chr(0x0)
 				if (prefix, opcode, size, mnem) in opcodes:
-					opcodes[(prefix, opcode, size, mnem, dism)] += 1
+					opcodes[(prefix, opcode, size, mnem)] += 1
 				else:
-					opcodes[(prefix, opcode, size, mnem, dism)] = 1
+					opcodes[(prefix, opcode, size, mnem)] = 1
 
 			for call in calls:
 				if isinstance(call, int) or isinstance(call, long):
@@ -840,11 +830,24 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 						print "    call: %s" % (call)
 
 			for (prefix, opcode, size, mnem, dism), count in opcodes.items():
-				print prefix.encode('hex'), opcode.encode('hex'), size, mnem, dism,  count
+				print prefix.encode('hex'), opcode.encode('hex'), size, mnem,  count
+
+		def clean_dism(self, dism):
+			dism = re.sub("QWORD PTR","",dism)
+			dism = re.sub("DWORD PTR","",dism)
+			dism = re.sub("WORD PTR","",dism)
+			dism = re.sub("BYTE PTR","",dism)
+			dism = re.sub("\s+","_", dism)
+			dism = re.sub("#.*$","",dism)
+			dism = re.sub("<.*$","",dism)
+			dism = re.sub(",","_",dism)
+			dism.strip("_")
+			return dism
 
 		def print_corpus(self, func):
 			for instr in func.instrs:
-				print instr.get_binbytes().encode('hex') + " ",
+				dism = self.clean_dism(instr.dism)
+				print dism + " ",
 			print "\n"
 
 		def print_corpus_to_file(self, func, fileToPrintTo):
@@ -852,9 +855,9 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				logging.info("file is none?")
 				return
 			for instr in func.instrs:
-				fileToPrintTo.write(instr.get_binbytes().encode('hex') + " ")
+				dism = self.clean_dism(instr.dism)
+				fileToPrintTo.write(dism + " ")
 			fileToPrintTo.write('\n')
-
 
 		def insert_into_db(self, func, sql, pkg_id, bin_id):
 			if sql == None or pkg_id == None or bin_id == None:
