@@ -841,7 +841,8 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			dism = re.sub("#.*$","",dism)
 			dism = re.sub("<.*$","",dism)
 			dism = re.sub(",","_",dism)
-			dism.strip("_")
+			dism = re.sub("__","_",dism)
+			dism = dism.rstrip("_")
 			return dism
 
 		def print_corpus(self, func):
