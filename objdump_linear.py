@@ -802,6 +802,16 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				size = instr.size
 				prefix = instr.prefixes
 				mnem = instr.get_instr()
+				dism = instr.dism
+				dism = re.sub("QWORD PTR","",dism)
+				dism = re.sub("DWORD PTR","",dism)
+				dism = re.sub("WORD PTR","",dism)
+				dism = re.sub("BYTE PTR","",dism)
+				dism = re.sub("\s+","_", dism)
+				dism = re.sub("#.*$","",dism)
+				dism = re.sub("<.*$","",dism)
+				dism = re.sub(",","_",dism)
+				dism.strip("_")
 
 				if mnem is None:
 					continue
@@ -811,9 +821,9 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				if prefix == '':
 					prefix = chr(0x0)
 				if (prefix, opcode, size, mnem) in opcodes:
-					opcodes[(prefix, opcode, size, mnem)] += 1
+					opcodes[(prefix, opcode, size, mnem, dism)] += 1
 				else:
-					opcodes[(prefix, opcode, size, mnem)] = 1
+					opcodes[(prefix, opcode, size, mnem, dism)] = 1
 
 			for call in calls:
 				if isinstance(call, int) or isinstance(call, long):
@@ -829,8 +839,8 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					else:
 						print "    call: %s" % (call)
 
-			for (prefix, opcode, size, mnem), count in opcodes.items():
-				print prefix.encode('hex'), opcode.encode('hex'), size, mnem, count
+			for (prefix, opcode, size, mnem, dism), count in opcodes.items():
+				print prefix.encode('hex'), opcode.encode('hex'), size, mnem, dism,  count
 
 		def print_corpus(self, func):
 			for instr in func.instrs:
