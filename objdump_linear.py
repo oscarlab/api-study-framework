@@ -842,8 +842,12 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			dism = re.sub("<.*$","",dism)
 			dism = re.sub(",","_",dism)
 			dism = re.sub("__","_",dism)
-			m = re.match("0x[0-9a-f]+", dism)
-			print m
+			m = re.search(r"0x[0-9a-f]+", dism)
+			if m:
+				value = int(m.group(0), 16)
+				print value
+				if value > 0x100 or value < -0x100:
+					dism = re.sub("0x[a-f0-9]+","addr",dism)
 			dism = dism.rstrip("_")
 			return dism
 
