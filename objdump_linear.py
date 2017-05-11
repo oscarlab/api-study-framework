@@ -833,6 +833,9 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				print prefix.encode('hex'), opcode.encode('hex'), size, mnem,  count
 
 		def clean_dism(self, dism):
+			m = re.search(r'(bad)',dism)
+			if m:
+				return None
 			dism = re.sub("QWORD PTR","",dism)
 			dism = re.sub("DWORD PTR","",dism)
 			dism = re.sub("WORD PTR","",dism)
@@ -849,12 +852,24 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				if value > 0x100 or value < -0x100:
 					dism = re.sub("0x[a-f0-9]+","addr",dism)
 			dism = dism.rstrip("_")
+			dism = re.sub('nop.*','nop',dism)
+			parts = dism.split('_')
+			if parts[-1] == parts[-2]:
+				if parts[-1] in ['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15']:
+					dism = dism.sub(parts[-1], 'r64', dism)
+				elif parts[-1] in ['eax','ebx','ecx','edx','esi','edi','ebp','esp','r8d','r9d','r10d','r11d','r12d','r13d','r14d','r15d']:
+					dism = dism.sub(parts[-1], 'r32', dism)
+				elif parts[-1] in ['ax','bx','cx','dx','si','di','bp','sp',,'r8w','r9w','r10w','r11w','r12w','r13w','r14w','r15w']:
+					dism = dism.sub(parts[-1], 'r16', dism)
+				elif parts[-1] in ['al','ah','bl','bh','cl','ch','dl','dh','sil','sih','dil','dih','bpl','bph','spl','sph','r8b','r9b','r10b','r11b','r12b','r13b','r14b','r15b']:
+					dism = dism.sub(parts[-1], 'r8', dism)
 			return dism
 
 		def print_corpus(self, func):
 			for instr in func.instrs:
 				dism = self.clean_dism(instr.dism)
-				print dism + " ",
+				if dism is not None:
+					print dism + " ",
 			print "\n"
 
 		def print_corpus_to_file(self, func, fileToPrintTo):
@@ -863,7 +878,8 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				return
 			for instr in func.instrs:
 				dism = self.clean_dism(instr.dism)
-				fileToPrintTo.write(dism + " ")
+				if dism is not None:
+					fileToPrintTo.write(dism + " ")
 			fileToPrintTo.write('\n')
 
 		def insert_into_db(self, func, sql, pkg_id, bin_id):
