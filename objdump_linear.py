@@ -833,6 +833,23 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				print prefix.encode('hex'), opcode.encode('hex'), size, mnem,  count
 
 		def clean_dism(self, dism):
+			def getRegSize(reg):
+				if reg in ['ZMM0','ZMM1','ZMM2','ZMM3','ZMM4','ZMM5','ZMM6','ZMM7','ZMM8','ZMM9','ZMM10','ZMM11','ZMM12','ZMM13','ZMM14','ZMM15','ZMM16','ZMM17','ZMM18','ZMM19','ZMM20','ZMM21','ZMM22','ZMM23','ZMM24','ZMM25','ZMM26','ZMM27','ZMM28','ZMM29','ZMM30','ZMM31']:
+					return 'v512'
+				elif reg in ['YMM0','YMM1','YMM2','YMM3','YMM4','YMM5','YMM6','YMM7','YMM8','YMM9','YMM10','YMM11','YMM12','YMM13','YMM14','YMM15','YMM16','YMM17','YMM18','YMM19','YMM20','YMM21','YMM22','YMM23','YMM24','YMM25','YMM26','YMM27','YMM28','YMM29','YMM30','YMM31']:
+					return 'v256'
+				elif reg in ['XMM0','XMM1','XMM2','XMM3','XMM4','XMM5','XMM6','XMM7','XMM8','XMM9','XMM10','XMM11','XMM12','XMM13','XMM14','XMM15','XMM16','XMM17','XMM18','XMM19','XMM20','XMM21','XMM22','XMM23','XMM24','XMM25','XMM26','XMM27','XMM28','XMM29','XMM30','XMM31']:
+					return 'v128'
+				elif reg in ['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15']:
+					return 'r64'
+				elif reg in ['eax','ebx','ecx','edx','esi','edi','ebp','esp','r8d','r9d','r10d','r11d','r12d','r13d','r14d','r15d']:
+					return 'r32'
+				elif reg in ['ax','bx','cx','dx','si','di','bp','sp',,'r8w','r9w','r10w','r11w','r12w','r13w','r14w','r15w']:
+					return 'r16'
+				elif reg in ['al','ah','bl','bh','cl','ch','dl','dh','sil','sih','dil','dih','bpl','bph','spl','sph','r8b','r9b','r10b','r11b','r12b','r13b','r14b','r15b']:
+					return 'r8'
+				else:
+					return None
 			m = re.search(r'(bad)',dism)
 			if m:
 				return None
@@ -851,18 +868,22 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				print value
 				if value > 0x100 or value < -0x100:
 					dism = re.sub("0x[a-f0-9]+","addr",dism)
+				else:
+					dism = re.sub("0x[a-f0-9]+","imm8",dism)
 			dism = dism.rstrip("_")
 			dism = re.sub('nop.*','nop',dism)
+			dism = re.sub('\[(r(s|b)p)\+(imm8|addr)?\]','stackVal',dism)
+			dism = re.sub('\[([rabcdesiplh0-9wx]{3})[bwd]?(\+(imm8|addr))?\]','memVal',dism)
 			parts = dism.split('_')
-			if parts[-1] == parts[-2]:
-				if parts[-1] in ['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15']:
-					dism = dism.sub(parts[-1], 'r64', dism)
-				elif parts[-1] in ['eax','ebx','ecx','edx','esi','edi','ebp','esp','r8d','r9d','r10d','r11d','r12d','r13d','r14d','r15d']:
-					dism = dism.sub(parts[-1], 'r32', dism)
-				elif parts[-1] in ['ax','bx','cx','dx','si','di','bp','sp',,'r8w','r9w','r10w','r11w','r12w','r13w','r14w','r15w']:
-					dism = dism.sub(parts[-1], 'r16', dism)
-				elif parts[-1] in ['al','ah','bl','bh','cl','ch','dl','dh','sil','sih','dil','dih','bpl','bph','spl','sph','r8b','r9b','r10b','r11b','r12b','r13b','r14b','r15b']:
-					dism = dism.sub(parts[-1], 'r8', dism)
+			if parts[0] in ['JA','JAE','JB','JBE','JC','JCXZ','JE','JECXZ','JG','JGE','JL','JLE','JMP','JNA','JNAE','JNB','JNBE','JNC','JNE','JNG','JNGE','JNL','JNLE','JNO','JNP','JNS','JNZ','JO','JP','JPE','JPO','JRCXZ','JS','JZ']:
+				dism = re.sub(parts[0], 'jcc', dism)
+			if parts[0] in ['push', 'pop']:
+				regsize = getRegSize[parts[1]]
+				if regsize is not None:
+					dism = re.sub(parts[1], regSize, dism)
+			if len(parts) >= 3 and parts[-1] == parts[-2]:
+				regSize = getRegSize(parts[-1])
+				dism = re.sub(parts[-1], regSize, dism)
 			return dism
 
 		def print_corpus(self, func):
