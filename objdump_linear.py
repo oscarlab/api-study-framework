@@ -880,10 +880,19 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			if parts[0] in ['push', 'pop']:
 				regsize = getRegSize[parts[1]]
 				if regsize is not None:
-					dism = re.sub(parts[1], regSize, dism)
-			if len(parts) >= 3 and parts[-1] == parts[-2]:
-				regSize = getRegSize(parts[-1])
-				dism = re.sub(parts[-1], regSize, dism)
+					dism = re.sub(parts[1], regsize, dism)
+			if len(parts) >= 3:
+				if parts[-1] == parts[-2]:
+					regsize = getRegSize(parts[-1])
+					if regsize is not None:
+						dism = re.sub(parts[-1], regsize, dism)
+				else:
+					regsize = getRegSize(parts[-1])
+					if regsize is not None:
+						dism = re.sub(parts[-1], regsize, dism)
+					regsize = getRegSize(parts[-2])
+					if regsize is not None:
+						dism = re.sub(parts[-2], regsize, dism)
 			return dism
 
 		def print_corpus(self, func):
