@@ -844,7 +844,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					return 'r64'
 				elif reg in ['eax','ebx','ecx','edx','esi','edi','ebp','esp','r8d','r9d','r10d','r11d','r12d','r13d','r14d','r15d']:
 					return 'r32'
-				elif reg in ['ax','bx','cx','dx','si','di','bp','sp',,'r8w','r9w','r10w','r11w','r12w','r13w','r14w','r15w']:
+				elif reg in ['ax','bx','cx','dx','si','di','bp','sp','r8w','r9w','r10w','r11w','r12w','r13w','r14w','r15w']:
 					return 'r16'
 				elif reg in ['al','ah','bl','bh','cl','ch','dl','dh','sil','sih','dil','dih','bpl','bph','spl','sph','r8b','r9b','r10b','r11b','r12b','r13b','r14b','r15b']:
 					return 'r8'
@@ -874,11 +874,12 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			dism = re.sub('nop.*','nop',dism)
 			dism = re.sub('\[(r(s|b)p)\+(imm8|addr)?\]','stackVal',dism)
 			dism = re.sub('\[([rabcdesiplh0-9wx]{3})[bwd]?(\+(imm8|addr))?\]','memVal',dism)
+			dism = re.sub('\[([rabcdesiplh0-9wx]{3})[bwd]?(\+(imm8|addr))?\]','memVal',dism)
 			parts = dism.split('_')
 			if parts[0] in ['JA','JAE','JB','JBE','JC','JCXZ','JE','JECXZ','JG','JGE','JL','JLE','JMP','JNA','JNAE','JNB','JNBE','JNC','JNE','JNG','JNGE','JNL','JNLE','JNO','JNP','JNS','JNZ','JO','JP','JPE','JPO','JRCXZ','JS','JZ']:
 				dism = re.sub(parts[0], 'jcc', dism)
 			if parts[0] in ['push', 'pop']:
-				regsize = getRegSize[parts[1]]
+				regsize = getRegSize(parts[1])
 				if regsize is not None:
 					dism = re.sub(parts[1], regsize, dism)
 			if len(parts) >= 3:
