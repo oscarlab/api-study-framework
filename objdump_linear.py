@@ -865,7 +865,6 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			m = re.search(r"0x[0-9a-f]+", dism)
 			if m:
 				value = int(m.group(0), 16)
-				print value
 				if value > 0x100 or value < -0x100:
 					dism = re.sub("0x[a-f0-9]+","addr",dism)
 				else:
@@ -874,7 +873,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			dism = re.sub('nop.*','nop',dism)
 			dism = re.sub('\[(r(s|b)p)\+(imm8|addr)?\]','stackVal',dism)
 			dism = re.sub('\[([rabcdesiplh0-9wx]{3})[bwd]?((\+|\-|\*)(imm8|addr))?\]','memVal',dism)
-			dism = re.sub('\[([rabcdesiplh0-9wx]{3})[bwd]?((\+|\-|\*)(imm8|addr|(([rabcdesiplh0-9wx]{3})[bwd]?)))?((\+|\-)[0-9]+)\]','memVal',dism)
+			dism = re.sub('\[([rabcdesiplh0-9wx]{3})[bwd]?((\+|\-|\*)(imm8|addr|(([rabcdesiplh0-9wx]{3})[bwd]?)))?((\+|\-)[0-9]+)?\]','memVal',dism)
 			parts = dism.split('_')
 			if parts[0] in ['JA','JAE','JB','JBE','JC','JCXZ','JE','JECXZ','JG','JGE','JL','JLE','JMP','JNA','JNAE','JNB','JNBE','JNC','JNE','JNG','JNGE','JNL','JNLE','JNO','JNP','JNS','JNZ','JO','JP','JPE','JPO','JRCXZ','JS','JZ']:
 				dism = re.sub(parts[0], 'jcc', dism)
