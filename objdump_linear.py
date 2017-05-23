@@ -834,11 +834,11 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 
 		def clean_dism(self, dism):
 			def getRegSize(reg):
-				if reg in ['ZMM0','ZMM1','ZMM2','ZMM3','ZMM4','ZMM5','ZMM6','ZMM7','ZMM8','ZMM9','ZMM10','ZMM11','ZMM12','ZMM13','ZMM14','ZMM15','ZMM16','ZMM17','ZMM18','ZMM19','ZMM20','ZMM21','ZMM22','ZMM23','ZMM24','ZMM25','ZMM26','ZMM27','ZMM28','ZMM29','ZMM30','ZMM31']:
+				if reg in ['zmm0','zmm1','zmm2','zmm3','zmm4','zmm5','zmm6','zmm7','zmm8','zmm9','zmm10','zmm11','zmm12','zmm13','zmm14','zmm15','zmm16','zmm17','zmm18','zmm19','zmm20','zmm21','zmm22','zmm23','zmm24','zmm25','zmm26','zmm27','zmm28','zmm29','zmm30','zmm31']:
 					return 'v512'
-				elif reg in ['YMM0','YMM1','YMM2','YMM3','YMM4','YMM5','YMM6','YMM7','YMM8','YMM9','YMM10','YMM11','YMM12','YMM13','YMM14','YMM15','YMM16','YMM17','YMM18','YMM19','YMM20','YMM21','YMM22','YMM23','YMM24','YMM25','YMM26','YMM27','YMM28','YMM29','YMM30','YMM31']:
+				elif reg in ['ymm0','ymm1','ymm2','ymm3','ymm4','ymm5','ymm6','ymm7','ymm8','ymm9','ymm10','ymm11','ymm12','ymm13','ymm14','ymm15','ymm16','ymm17','ymm18','ymm19','ymm20','ymm21','ymm22','ymm23','ymm24','ymm25','ymm26','ymm27','ymm28','ymm29','ymm30','ymm31']:
 					return 'v256'
-				elif reg in ['XMM0','XMM1','XMM2','XMM3','XMM4','XMM5','XMM6','XMM7','XMM8','XMM9','XMM10','XMM11','XMM12','XMM13','XMM14','XMM15','XMM16','XMM17','XMM18','XMM19','XMM20','XMM21','XMM22','XMM23','XMM24','XMM25','XMM26','XMM27','XMM28','XMM29','XMM30','XMM31']:
+				elif reg in ['xmm0','xmm1','xmm2','xmm3','xmm4','xmm5','xmm6','xmm7','xmm8','xmm9','xmm10','xmm11','xmm12','xmm13','xmm14','xmm15','xmm16','xmm17','xmm18','xmm19','xmm20','xmm21','xmm22','xmm23','xmm24','xmm25','xmm26','xmm27','xmm28','xmm29','xmm30','xmm31']:
 					return 'v128'
 				elif reg in ['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15']:
 					return 'r64'
@@ -873,15 +873,15 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			dism = re.sub('nop.*','nop',dism)
 			dism = re.sub('\[(r(s|b)p)\+(imm8|addr)?\]','stackVal',dism)
 			dism = re.sub('\[([rabcdesiplh0-9wx]{3})[bwd]?((\+|\-|\*)(imm8|addr))?\]','memVal',dism)
-			dism = re.sub('\[([rabcdesiplh0-9wx]{2}[rabcdesiplh0-9wx]?)[bwd]?((\+|\-|\*)(imm8|addr|(([rabcdesiplh0-9wx]{3})[bwd]?)))?((\+|\-|\*)[0-9]+)?\]','memVal',dism)
+			dism = re.sub('\[([rabcdesiplh0-9wx]{2}[rabcdesiplh0-9wx]?)[bwd]?((\+|\-|\*)(imm8|addr|(([rabcdesiplh0-9wx]{3})[bwd]?)))?((\+|\-|\*)[0-9]+)?((\+|\-)(imm8|addr))?\]','memVal',dism)
 			parts = dism.split('_')
-			if parts[0] in ['JA','JAE','JB','JBE','JC','JCXZ','JE','JECXZ','JG','JGE','JL','JLE','JMP','JNA','JNAE','JNB','JNBE','JNC','JNE','JNG','JNGE','JNL','JNLE','JNO','JNP','JNS','JNZ','JO','JP','JPE','JPO','JRCXZ','JS','JZ']:
-				dism = re.sub(parts[0], 'jcc', dism)
+			# if parts[0] in ['ja','jae','jb','jbe','jc','jcxz','je','jecxz','jg','jge','jl','jle','jmp','jna','jnae','jnb','jnbe','jnc','jne','jng','jnge','jnl','jnle','jno','jnp','jns','jnz','jo','jp','jpe','jpo','jrcxz','js','jz']:
+			# 	dism = re.sub(parts[0], 'jcc', dism)
 			if parts[0] in ['push', 'pop']:
 				regsize = getRegSize(parts[1])
 				if regsize is not None:
 					dism = re.sub(parts[1], regsize, dism)
-			if len(parts) >= 3:
+			if len(parts) == 3:
 				if parts[-1] == parts[-2]:
 					regsize = getRegSize(parts[-1])
 					if regsize is not None:
@@ -893,6 +893,20 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					regsize = getRegSize(parts[-2])
 					if regsize is not None:
 						dism = re.sub(parts[-2], regsize, dism)
+			elif len(parts) == 2:
+				regsize = getRegSize(parts[-1])
+				if regsize is not None:
+					dism = re.sub(parts[-1], regsize, dism)
+			elif len(parts) == 4:
+				regsize = getRegSize(parts[-1])
+				if regsize is not None:
+					dism = re.sub(parts[-1], regsize, dism)
+				regsize = getRegSize(parts[-2])
+				if regsize is not None:
+					dism = re.sub(parts[-1], regsize, dism)
+				regsize = getRegSize(parts[-3])
+				if regsize is not None:
+					dism = re.sub(parts[-2], regsize, dism)
 			return dism
 
 		def print_corpus(self, func):
