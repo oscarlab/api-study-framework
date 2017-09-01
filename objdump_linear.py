@@ -873,7 +873,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			dism = re.sub('nop.*','nop',dism)
 			dism = re.sub('\[(r(s|b)p)\+(imm8|addr)?\]','stackVal',dism)
 			dism = re.sub('\[([rabcdesiplh0-9wx]{3})[bwd]?((\+|\-|\*)(imm8|addr))?\]','memVal',dism)
-			dism = re.sub('\[([rabcdesiplh0-9wx]{2}[rabcdesiplh0-9wx]?)[bwd]?((\+|\-|\*)(imm8|addr|(([rabcdesiplh0-9wx]{3})[bwd]?)))?((\+|\-|\*)[0-9]+)?((\+|\-)(imm8|addr))?\]','memVal',dism)
+			dism = re.sub('\[([rabcdesiplh0-9wx]{2}[rabcdesiplh0-9wx]?)[bwd]?((\+|\-|\*)(imm8|addr|(([rabcdesiplh0-9wx]{2}[rabcdesiplh0-9wx]?)[bwd]?)))?((\+|\-|\*)[0-9]+)?((\+|\-)(imm8|addr))?\]','memVal',dism)
 			parts = dism.split('_')
 			# if parts[0] in ['ja','jae','jb','jbe','jc','jcxz','je','jecxz','jg','jge','jl','jle','jmp','jna','jnae','jnb','jnbe','jnc','jne','jng','jnge','jnl','jnle','jno','jnp','jns','jnz','jo','jp','jpe','jpo','jrcxz','js','jz']:
 			# 	dism = re.sub(parts[0], 'jcc', dism)
