@@ -23,3 +23,4 @@ class GetSentences(object):
 sentences = GetSentences('/filer/corpus')
 
 model = gensim.models.Word2Vec(sentences, min_count=5, sg=1, iter=5, size=100, window=5, workers=3)
+model.save('model.out')
