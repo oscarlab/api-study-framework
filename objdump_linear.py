@@ -906,7 +906,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					dism = re.sub(parts[-1], regsize, dism)
 				regsize = getRegSize(parts[-3])
 				if regsize is not None:
-					dism = re.sub(parts[-2], regsize, dism)
+					dism = re.sub(parts[-3], regsize, dism)
 			return dism
 
 		def print_corpus(self, func):
