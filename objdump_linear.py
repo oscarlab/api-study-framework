@@ -853,6 +853,9 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			m = re.search(r'(bad)',dism)
 			if m:
 				return None
+			dism = re.sub("ZMMWORD PTR","",dism)
+			dism = re.sub("YMMWORD PTR","",dism)
+			dism = re.sub("XMMWORD PTR","",dism)
 			dism = re.sub("QWORD PTR","",dism)
 			dism = re.sub("DWORD PTR","",dism)
 			dism = re.sub("WORD PTR","",dism)
@@ -871,42 +874,27 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					dism = re.sub("0x[a-f0-9]+","imm8",dism)
 			dism = dism.rstrip("_")
 			dism = re.sub('nop.*','nop',dism)
+			dism = re.sub("rex(\.[WRXB]+)?\_","", dism)
 			dism = re.sub('\[(r(s|b)p)\+(imm8|addr)?\]','stackVal',dism)
 			dism = re.sub('\[([rabcdesiplh0-9wx]{3})[bwd]?((\+|\-|\*)(imm8|addr))?\]','memVal',dism)
 			dism = re.sub('\[([rabcdesiplh0-9wx]{2}[rabcdesiplh0-9wx]?)[bwd]?((\+|\-|\*)(imm8|addr|(([rabcdesiplh0-9wx]{2}[rabcdesiplh0-9wx]?)[bwd]?)))?((\+|\-|\*)[0-9]+)?((\+|\-)(imm8|addr))?\]','memVal',dism)
 			parts = dism.split('_')
-			# if parts[0] in ['ja','jae','jb','jbe','jc','jcxz','je','jecxz','jg','jge','jl','jle','jmp','jna','jnae','jnb','jnbe','jnc','jne','jng','jnge','jnl','jnle','jno','jnp','jns','jnz','jo','jp','jpe','jpo','jrcxz','js','jz']:
-			# 	dism = re.sub(parts[0], 'jcc', dism)
 			if parts[0] in ['push', 'pop']:
 				regsize = getRegSize(parts[1])
 				if regsize is not None:
 					dism = re.sub(parts[1], regsize, dism)
-			if len(parts) == 3:
-				if parts[-1] == parts[-2]:
-					regsize = getRegSize(parts[-1])
-					if regsize is not None:
-						dism = re.sub(parts[-1], regsize, dism)
-				else:
-					regsize = getRegSize(parts[-1])
-					if regsize is not None:
-						dism = re.sub(parts[-1], regsize, dism)
-					regsize = getRegSize(parts[-2])
-					if regsize is not None:
-						dism = re.sub(parts[-2], regsize, dism)
-			elif len(parts) == 2:
-				regsize = getRegSize(parts[-1])
-				if regsize is not None:
-					dism = re.sub(parts[-1], regsize, dism)
-			elif len(parts) == 4:
-				regsize = getRegSize(parts[-1])
-				if regsize is not None:
-					dism = re.sub(parts[-1], regsize, dism)
-				regsize = getRegSize(parts[-2])
-				if regsize is not None:
-					dism = re.sub(parts[-1], regsize, dism)
+			if len(parts) >= 4:
 				regsize = getRegSize(parts[-3])
 				if regsize is not None:
 					dism = re.sub(parts[-3], regsize, dism)
+			if len(parts) >= 3:
+				regsize = getRegSize(parts[-2])
+				if regsize is not None:
+					dism = re.sub(parts[-2], regsize, dism)
+			if len(parts) >= 2:
+				regsize = getRegSize(parts[-1])
+				if regsize is not None:
+					dism = re.sub(parts[-1], regsize, dism)
 			return dism
 
 		def print_corpus(self, func):
