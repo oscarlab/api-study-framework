@@ -957,13 +957,12 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			AMs = {}
 			for instr in func.instrs:
 				addressingMode = self.clean_dism(instr.dism, True)
-				if addressingMode != "":
-					if addressingMode in AMs.keys():
-						AMs[addressingMode] += 1
-					else:
-						AMs[addressingMode] = 1
+				if addressingMode == "":
+					addressingMode = "None"
+				if addressingMode in AMs.keys():
+					AMs[addressingMode] += 1
 				else:
-					print instr.dism
+					AMs[addressingMode] = 1
 			for addressingMode, count in AMs.items():
 				print addressingMode, str(count)
 
@@ -974,11 +973,12 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			AMs = {}
 			for instr in func.instrs:
 				addressingMode = self.clean_dism(instr.dism, True)
-				if addressingMode != "":
-					if addressingMode in AMs.keys():
-						AMs[addressingMode] += 1
-					else:
-						AMs[addressingMode] = 1
+				if addressingMode == "":
+					addressingMode = "None"
+				if addressingMode in AMs.keys():
+					AMs[addressingMode] += 1
+				else:
+					AMs[addressingMode] = 1
 			for addressingMode, count in AMs.items():
 				fileToPrintTo.write(addressingMode + ": " + str(count))
 
