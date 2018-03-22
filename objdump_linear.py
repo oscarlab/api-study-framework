@@ -984,7 +984,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				else:
 					AMs[addressingMode] = 1
 			for addressingMode, count in AMs.items():
-				fileToPrintTo.write(addressingMode + ": " + str(count))
+				fileToPrintTo.write(addressingMode + ": " + str(count) + "\n")
 
 		def insert_into_db(self, func, sql, pkg_id, bin_id):
 			if sql == None or pkg_id == None or bin_id == None:
