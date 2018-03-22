@@ -882,9 +882,6 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				return addressingMode
 
 			def common_clean(dism):
-				m = re.search(r'(bad)',dism)
-				if m:
-					return None
 				dism = re.sub("ZMMWORD PTR","",dism)
 				dism = re.sub("YMMWORD PTR","",dism)
 				dism = re.sub("XMMWORD PTR","",dism)
@@ -911,6 +908,9 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				dism = re.sub("rex(\.[WRXB]+)?\_","", dism)
 				return dism
 
+			m = re.search(r'(bad)',dism)
+			if m:
+				return None
 			dism = common_clean(dism)
 			if addressing_modes is True:
 				return parseAddressingmode(dism)
