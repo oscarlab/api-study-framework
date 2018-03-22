@@ -246,6 +246,53 @@ tasks['ListForEmitCorpus'] = Task(
 	arg_defs = args_to_pick_packages,
 	order = 44)
 
+# addressing_modes(self, bin, file)
+def AddresingModes(jmgr, os_target, sql, args):
+	(dir, pkgname, _) = unpack_package(os_target, args[0])
+	if not dir:
+		return
+
+	corpusDir = '/filer/addressingmode/'+str(pkgname)
+	if os.path.exists(corpusDir):
+		shutil.rmtree(corpusDir)
+	os.mkdir(corpusDir)
+
+	binaries = os_target.get_binaries(dir, find_script=True)
+	if not binaries:
+		remove_dir(dir)
+		return
+
+	append_binary_list(sql, pkgname, dir, binaries)
+
+	#Hold an extra reference, so that we don't try to destroy the directory unless it really has no references.
+	global_ref = reference_dir(dir)
+
+	for (bin, type, _) in binaries:
+		if type == 'lnk' or type == 'scr':
+			continue
+
+		bin_id = get_binary_id(sql, bin)
+		corpusFileName = corpusDir+"/"+str(bin_id)
+		os_target.addressing_modess(dir + bin, corpusFileName)
+
+	remove_dir(dir)
+
+subtasks['AddresingModes'] = Task(
+	name = "Classify instructions by Addressing Mode",
+	func = AddresingModes,
+	arg_defs = ["Package Name"],
+	job_name = lambda args: "Addressing Modes: " + args[0])
+
+def ListForAddressingModes(jmgr, os_target, sql, args):
+	for pkg in pick_packages_from_args(os_target, sql, args):
+		subtasks['AddresingModes'].create_job(jmgr, [pkg])
+
+tasks['ListForAddressingModes'] = Task(
+	name = "Collect Addressing Modes Info",
+	func = ListForAddressingModes,
+	arg_defs = args_to_pick_packages,
+	order = 45)
+
 def PackagePopularity(jmgr, os_target, sql, args):
 	sql.connect_table(tables['package_popularity'])
 

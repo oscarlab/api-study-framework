@@ -95,3 +95,5 @@ class Ubuntu64(OS):
 		objdump_linear.analysis_binary_instr_linear(sql, dir + name, pkg_id, bin_id)
 	def emit_corpus(self, bin, file):
 		objdump_linear.emit_corpus(bin, file)
+	def addressing_modes(self, bin, file):
+		objdump_linear.addressing_modes(bin, file)

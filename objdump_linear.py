@@ -381,7 +381,7 @@ def val2ptr(val, ptr_size):
 
 	return val
 
-def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=False, sql=None, pkg_id=None, bin_id=None, fileToPrintTo=None):
+def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=False, sql=None, pkg_id=None, bin_id=None, fileToPrintTo=None, addressing_modes=False):
 
 	# Initialize BFD instance
 	bfd = Bfd(binary_name)
@@ -832,7 +832,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			for (prefix, opcode, size, mnem), count in opcodes.items():
 				print prefix.encode('hex'), opcode.encode('hex'), size, mnem,  count
 
-		def clean_dism(self, dism):
+		def clean_dism(self, dism, addressing_modes=False):
 			def getRegSize(reg):
 				if reg in ['zmm0','zmm1','zmm2','zmm3','zmm4','zmm5','zmm6','zmm7','zmm8','zmm9','zmm10','zmm11','zmm12','zmm13','zmm14','zmm15','zmm16','zmm17','zmm18','zmm19','zmm20','zmm21','zmm22','zmm23','zmm24','zmm25','zmm26','zmm27','zmm28','zmm29','zmm30','zmm31']:
 					return 'v512'
@@ -881,34 +881,39 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 						addressingMode += "Scaled"
 				return addressingMode
 
-			m = re.search(r'(bad)',dism)
-			if m:
-				return None
-			dism = re.sub("ZMMWORD PTR","",dism)
-			dism = re.sub("YMMWORD PTR","",dism)
-			dism = re.sub("XMMWORD PTR","",dism)
-			dism = re.sub("QWORD PTR","",dism)
-			dism = re.sub("DWORD PTR","",dism)
-			dism = re.sub("WORD PTR","",dism)
-			dism = re.sub("BYTE PTR","",dism)
-			dism = re.sub("\s+","_", dism)
-			dism = re.sub("#.*$","",dism)
-			dism = re.sub("<.*$","",dism)
-			dism = re.sub(",","_",dism)
-			dism = re.sub("__","_",dism)
-			if re.search(r"(e|r)iz", dism):
-				dism = "nop"
-			m = re.search(r"0x[0-9a-f]+", dism)
-			if m:
-				value = int(m.group(0), 16)
-				if value > 0x100 or value < -0x100:
-					dism = re.sub("0x[a-f0-9]+","addr",dism)
-				else:
-					dism = re.sub("0x[a-f0-9]+","imm8",dism)
-			dism = dism.rstrip("_")
-			dism = re.sub('nop.*','nop',dism)
-			dism = re.sub("rex(\.[WRXB]+)?\_","", dism)
-			addressingMode = parseAddressingmode(dism)
+			def common_clean(dism):
+				m = re.search(r'(bad)',dism)
+				if m:
+					return None
+				dism = re.sub("ZMMWORD PTR","",dism)
+				dism = re.sub("YMMWORD PTR","",dism)
+				dism = re.sub("XMMWORD PTR","",dism)
+				dism = re.sub("QWORD PTR","",dism)
+				dism = re.sub("DWORD PTR","",dism)
+				dism = re.sub("WORD PTR","",dism)
+				dism = re.sub("BYTE PTR","",dism)
+				dism = re.sub("\s+","_", dism)
+				dism = re.sub("#.*$","",dism)
+				dism = re.sub("<.*$","",dism)
+				dism = re.sub(",","_",dism)
+				dism = re.sub("__","_",dism)
+				if re.search(r"(e|r)iz", dism):
+					dism = "nop"
+				m = re.search(r"0x[0-9a-f]+", dism)
+				if m:
+					value = int(m.group(0), 16)
+					if value > 0x100 or value < -0x100:
+						dism = re.sub("0x[a-f0-9]+","addr",dism)
+					else:
+						dism = re.sub("0x[a-f0-9]+","imm8",dism)
+				dism = dism.rstrip("_")
+				dism = re.sub('nop.*','nop',dism)
+				dism = re.sub("rex(\.[WRXB]+)?\_","", dism)
+				return dism
+
+			dism = common_clean(dism)
+			if addressing_modes is True:
+				return parseAddressingmode(dism)
 			dism = re.sub('\[(r(s|b)p)\+(imm8|addr)?\]','stackVal',dism)
 			dism = re.sub('\[([rabcdesiplh0-9wx]{3})[bwd]?((\+|\-|\*)(imm8|addr))?\]','memVal',dism)
 			dism = re.sub('\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?)[bwd]?((\+|\-|\*)(imm8|addr|(([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?)[bwd]?)))?((\+|\-|\*)[0-9]+)?((\+|\-)(imm8|addr))?\]','memVal',dism)
@@ -949,6 +954,33 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				if dism is not None:
 					fileToPrintTo.write(dism + " ")
 			fileToPrintTo.write('\n')
+
+		def print_AM(self, func):
+			AMs = {}
+			for instr in func.instrs:
+				addressingMode = self.clean_dism(instr.dism, True)
+				if addressingMode is not None:
+					if addressingMode in AMs.keys():
+						AMs[addressingMode] += 1
+					else:
+						AMs[addressingMode] = 1
+			for addressingMode, count in AMs:
+				print addressingMode, str(count)
+
+		def print_AM_to_file(self, func, fileToPrintTo):
+			if fileToPrintTo is None:
+				logging.info("file is none?")
+				return
+			AMs = {}
+			for instr in func.instrs:
+				addressingMode = self.clean_dism(instr.dism, True)
+				if addressingMode is not None:
+					if addressingMode in AMs.keys():
+						AMs[addressingMode] += 1
+					else:
+						AMs[addressingMode] = 1
+			for addressingMode, count in AMs:
+				fileToPrintTo.write(addressingMode + ": " + str(count))
 
 		def insert_into_db(self, func, sql, pkg_id, bin_id):
 			if sql == None or pkg_id == None or bin_id == None:
@@ -1028,7 +1060,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					logging.info(count)
 					continue
 
-		def start_process(self, content, print_screen, analysis, emit_corpus, dynsym_list, sql,  pkg_id, bin_id, fileToPrintTo):
+		def start_process(self, content, print_screen, analysis, emit_corpus, dynsym_list, sql,  pkg_id, bin_id, fileToPrintTo, addressing_modes):
 			self.content = content
 			self.initialize_smart_disassemble(content, self.start)
 			cont = True
@@ -1055,6 +1087,12 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				self.processed_entries.append(next)
 
 				self.start_smart_disassemble(self.cur_func.start - self.start, self.process_instructions)
+
+				if addressing_modes is True:
+					if print_screen is True:
+						self.print_AM(self.cur_func)
+					else:
+						self.print_AM_to_file(self.cur_func, fileToPrintTo)
 
 				if emit_corpus is True:
 					if print_screen is True:
@@ -1164,7 +1202,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 
 		content = sec.content
 		codes.set_range(sec.vma, sec.vma + sec.size, executable)
-		codes.start_process(content, print_screen, analysis, emit_corpus, dynsym_list, sql, pkg_id, bin_id, fileToPrintTo)
+		codes.start_process(content, print_screen, analysis, emit_corpus, dynsym_list, sql, pkg_id, bin_id, fileToPrintTo, addressing_modes)
 
 
 	if print_screen is True:
@@ -1191,12 +1229,19 @@ def analysis_binary_instr_linear(sql, binary, pkg_id, bin_id):
 
 def emit_corpus(binary, corpusFileName):
 	with open(corpusFileName, 'w+') as fileToPrintTo:
-		get_callgraph(binary, False, False, True, None, None, None, fileToPrintTo)
+		get_callgraph(binary, False, False, True, None, None, None, fileToPrintTo, False)
+		fileToPrintTo.close()
+
+def addressing_modes(binary, fileName):
+	with open(fileName, 'w+') as fileToPrintTo:
+		get_callgraph(binary, False, False, False, None, None, None, fileToPrintTo, True)
 		fileToPrintTo.close()
 
 if __name__ == "__main__":
 	if len(sys.argv) == 3:
 		if sys.argv[2] == 'emit-corpus':
 			get_callgraph(sys.argv[1], True, False, True)
-	else:
+		elif sys.argv[2] == "addressing-modes":
+			get_callgraph(sys.argv[1], True, False, False, None, None, None, None, True)
+ 	else:
 		get_callgraph(sys.argv[1], True, True, False)
