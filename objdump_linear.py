@@ -879,7 +879,6 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					# scaled = [rbx+roz*4+imm8]
 					elif re.search("\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?[bwd]?)(\+|\-)([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?[bwd]?)(\*(imm8|addr|[0-9]))((\+|\-)(imm8))\]", part):
 						addressingMode += "Scaled"
-				print addressingMode
 				return addressingMode
 
 			m = re.search(r'(bad)',dism)
@@ -930,16 +929,15 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				regsize = getRegSize(parts[-1])
 				if regsize is not None:
 					dism = re.sub(parts[-1], regsize, dism)
-			return dism, addressingMode
+			if addressingMode != "":
+				dism = dism + "(" + addressingMode + ")"
+			return dism
 
 		def print_corpus(self, func):
 			for instr in func.instrs:
-				dism, addressingMode = self.clean_dism(instr.dism)
+				dism = self.clean_dism(instr.dism)
 				if dism is not None:
-					if addressingMode != "":
-						print dism + "(" + addressingMode + ") ",
-					else:
-						print dism + " ",
+					print dism + " ",
 			print "\n"
 
 		def print_corpus_to_file(self, func, fileToPrintTo):
@@ -949,10 +947,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			for instr in func.instrs:
 				dism, addressingMode = self.clean_dism(instr.dism)
 				if dism is not None:
-					if addressingMode != "":
-						fileToPrintTo.write(dism + "(" + addressingMode + ") ")
-					else:
-						fileToPrintTo.write(dism + " ")
+					fileToPrintTo.write(dism + " ")
 			fileToPrintTo.write('\n')
 
 		def insert_into_db(self, func, sql, pkg_id, bin_id):
