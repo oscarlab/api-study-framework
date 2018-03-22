@@ -938,7 +938,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			for instr in func.instrs:
 				dism, addressingMode = self.clean_dism(instr.dism)
 				if dism is not None:
-					if addressingMode is not None:
+					if addressingMode != "":
 						print dism + "(" + addressingMode + ") ",
 					else:
 						print dism + " ",
@@ -951,7 +951,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			for instr in func.instrs:
 				dism, addressingMode = self.clean_dism(instr.dism)
 				if dism is not None:
-					if addressingMode is not None:
+					if addressingMode != ""
 						fileToPrintTo.write(dism + "(" + addressingMode + ") ")
 					else:
 						fileToPrintTo.write(dism + " ")
