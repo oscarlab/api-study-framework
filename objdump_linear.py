@@ -852,7 +852,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					return None
 
 			def parseAddressingmode(dism):
-				addressingMode = None
+				addressingMode = ""
 				parts = dism.split('_')
 				for part in parts:
 					# Register = reg
@@ -880,6 +880,8 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					elif re.search("\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?[bwd]?)(\+|\-)([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?[bwd]?)(\*(imm8|addr|[0-9]))((\+|\-)(imm8))\]", part):
 						addressingMode += "Scaled"
 				print addressingMode
+				if addressingMode == ""
+					return None
 				return addressingMode
 
 			m = re.search(r'(bad)',dism)
