@@ -829,7 +829,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					else:
 						print "    call: %s" % (call)
 
-			for (prefix, opcode, size, mnem, dism), count in opcodes.items():
+			for (prefix, opcode, size, mnem), count in opcodes.items():
 				print prefix.encode('hex'), opcode.encode('hex'), size, mnem,  count
 
 		def clean_dism(self, dism):
@@ -840,16 +840,48 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					return 'v256'
 				elif reg in ['xmm0','xmm1','xmm2','xmm3','xmm4','xmm5','xmm6','xmm7','xmm8','xmm9','xmm10','xmm11','xmm12','xmm13','xmm14','xmm15','xmm16','xmm17','xmm18','xmm19','xmm20','xmm21','xmm22','xmm23','xmm24','xmm25','xmm26','xmm27','xmm28','xmm29','xmm30','xmm31']:
 					return 'v128'
-				elif reg in ['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15']:
+				elif reg in ['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15', 'riz']:
 					return 'r64'
-				elif reg in ['eax','ebx','ecx','edx','esi','edi','ebp','esp','r8d','r9d','r10d','r11d','r12d','r13d','r14d','r15d']:
+				elif reg in ['eax','ebx','ecx','edx','esi','edi','ebp','esp','r8d','r9d','r10d','r11d','r12d','r13d','r14d','r15d', 'eiz']:
 					return 'r32'
 				elif reg in ['ax','bx','cx','dx','si','di','bp','sp','r8w','r9w','r10w','r11w','r12w','r13w','r14w','r15w']:
 					return 'r16'
 				elif reg in ['al','ah','bl','bh','cl','ch','dl','dh','sil','sih','dil','dih','bpl','bph','spl','sph','r8b','r9b','r10b','r11b','r12b','r13b','r14b','r15b']:
-					return 'r8'
+					return 'reg8'
 				else:
 					return None
+
+			def parseAddressingmode(dism):
+				addressingMode = None
+				parts = dism.split('_')
+				for part in parts:
+					# Register = reg
+					if getRegSize(part) is not None:
+						addressingMode += "Register"
+					# Immediate = imm8
+					elif part == "imm8":
+						addressingMode += "Immediate"
+					# Absolute = addr
+					elif part == "addr":
+						addressingMode += "Absolute"
+					# memory_indirect = [addr]
+					elif part == "[addr]":
+						addressingMode += "MemoryIndirect"
+					# register-indirect = [rax]
+					elif re.search("\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?)[bwd]?\]", part):
+						addressingMode += "RegisterIndirect"
+					# Displacement = 0x2dbf48(%rip)
+					elif re.search("\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?)[bwd]?(\+|\-)(imm8|addr)\]", part):
+						addressingMode += "Displacement"
+					# indexed = [rax+rbx*3]
+					elif re.search("\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?[bwd]?)(\+|\-)([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?[bwd]?)(\*(imm8|addr|[0-9]))\]", part):
+						addressingMode += "Indexed"
+					# scaled = [rbx+roz*4+imm8]
+					elif re.search("\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?[bwd]?)(\+|\-)([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?[bwd]?)(\*(imm8|addr|[0-9]))((\+|\-)(imm8))\]", part):
+						addressingMode += "Scaled"
+				print addressingMode
+				return addressingMode
+
 			m = re.search(r'(bad)',dism)
 			if m:
 				return None
@@ -865,6 +897,8 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			dism = re.sub("<.*$","",dism)
 			dism = re.sub(",","_",dism)
 			dism = re.sub("__","_",dism)
+			if re.search(r"(e|r)iz", dism):
+				dism = "nop"
 			m = re.search(r"0x[0-9a-f]+", dism)
 			if m:
 				value = int(m.group(0), 16)
@@ -875,9 +909,10 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			dism = dism.rstrip("_")
 			dism = re.sub('nop.*','nop',dism)
 			dism = re.sub("rex(\.[WRXB]+)?\_","", dism)
+			addressingMode = parseAddressingmode(dism)
 			dism = re.sub('\[(r(s|b)p)\+(imm8|addr)?\]','stackVal',dism)
 			dism = re.sub('\[([rabcdesiplh0-9wx]{3})[bwd]?((\+|\-|\*)(imm8|addr))?\]','memVal',dism)
-			dism = re.sub('\[([rabcdesiplh0-9wx]{2}[rabcdesiplh0-9wx]?)[bwd]?((\+|\-|\*)(imm8|addr|(([rabcdesiplh0-9wx]{2}[rabcdesiplh0-9wx]?)[bwd]?)))?((\+|\-|\*)[0-9]+)?((\+|\-)(imm8|addr))?\]','memVal',dism)
+			dism = re.sub('\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?)[bwd]?((\+|\-|\*)(imm8|addr|(([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?)[bwd]?)))?((\+|\-|\*)[0-9]+)?((\+|\-)(imm8|addr))?\]','memVal',dism)
 			parts = dism.split('_')
 			if parts[0] in ['push', 'pop']:
 				regsize = getRegSize(parts[1])
@@ -895,13 +930,16 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				regsize = getRegSize(parts[-1])
 				if regsize is not None:
 					dism = re.sub(parts[-1], regsize, dism)
-			return dism
+			return dism, addressingMode
 
 		def print_corpus(self, func):
 			for instr in func.instrs:
-				dism = self.clean_dism(instr.dism)
+				dism, addressingMode = self.clean_dism(instr.dism)
 				if dism is not None:
-					print dism + " ",
+					if addressingMode is not None:
+						print dism + "(" + addressingMode + ") ",
+					else:
+						print dism + " ",
 			print "\n"
 
 		def print_corpus_to_file(self, func, fileToPrintTo):
@@ -909,9 +947,12 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				logging.info("file is none?")
 				return
 			for instr in func.instrs:
-				dism = self.clean_dism(instr.dism)
+				dism, addressingMode = self.clean_dism(instr.dism)
 				if dism is not None:
-					fileToPrintTo.write(dism + " ")
+					if addressingMode is not None:
+						fileToPrintTo.write(dism + "(" + addressingMode + ") ")
+					else:
+						fileToPrintTo.write(dism + " ")
 			fileToPrintTo.write('\n')
 
 		def insert_into_db(self, func, sql, pkg_id, bin_id):
