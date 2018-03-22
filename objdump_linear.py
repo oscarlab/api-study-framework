@@ -964,7 +964,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 						AMs[addressingMode] += 1
 					else:
 						AMs[addressingMode] = 1
-			for addressingMode, count in AMs:
+			for addressingMode, count in AMs.items():
 				print addressingMode, str(count)
 
 		def print_AM_to_file(self, func, fileToPrintTo):
@@ -979,7 +979,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 						AMs[addressingMode] += 1
 					else:
 						AMs[addressingMode] = 1
-			for addressingMode, count in AMs:
+			for addressingMode, count in AMs.items():
 				fileToPrintTo.write(addressingMode + ": " + str(count))
 
 		def insert_into_db(self, func, sql, pkg_id, bin_id):
