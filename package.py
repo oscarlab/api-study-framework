@@ -273,7 +273,7 @@ def AddresingModes(jmgr, os_target, sql, args):
 
 		bin_id = get_binary_id(sql, bin)
 		corpusFileName = corpusDir+"/"+str(bin_id)
-		os_target.addressing_modess(dir + bin, corpusFileName)
+		os_target.addressing_modes(dir + bin, corpusFileName)
 
 	remove_dir(dir)
 
