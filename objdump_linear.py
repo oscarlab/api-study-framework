@@ -934,8 +934,6 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				regsize = getRegSize(parts[-1])
 				if regsize is not None:
 					dism = re.sub(parts[-1], regsize, dism)
-			if addressingMode != "":
-				dism = dism + "(" + addressingMode + ")"
 			return dism
 
 		def print_corpus(self, func):
@@ -959,11 +957,13 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			AMs = {}
 			for instr in func.instrs:
 				addressingMode = self.clean_dism(instr.dism, True)
-				if addressingMode is not None:
+				if addressingMode != "":
 					if addressingMode in AMs.keys():
 						AMs[addressingMode] += 1
 					else:
 						AMs[addressingMode] = 1
+				else:
+					print instr.dism
 			for addressingMode, count in AMs.items():
 				print addressingMode, str(count)
 
@@ -974,7 +974,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			AMs = {}
 			for instr in func.instrs:
 				addressingMode = self.clean_dism(instr.dism, True)
-				if addressingMode is not None:
+				if addressingMode != "":
 					if addressingMode in AMs.keys():
 						AMs[addressingMode] += 1
 					else:
