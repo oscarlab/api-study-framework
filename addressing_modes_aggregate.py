@@ -10,13 +10,14 @@ for dir2name in os.listdir(in_dirname):
 		shutil.rmtree(packageDir)
 	os.mkdir(packageDir)
 	with open(os.path.join(packageDir, 'aggregate.csv'), 'w+') as csvFile:
-		AM_dict = {}
+		AMs = {}
 		for fname in os.listdir(os.path.join(in_dirname, dir2name)):
 			for line in open(os.path.join(in_dirname, dir2name, fname)):
-				key, value = line.split(': ')
-				if key in AMs_dict.keys():
+				key, value = line.strip().split(': ')
+				value = int(value)
+				if key in AMs.keys():
 					AMs[key] += value
 				else:
 					AMs[key] = value
-		for key, value in AM_dict.items():
-			csvFile.write(key+","+value)
+		for key, value in AMs.items():
+			csvFile.write(key+","+str(value)+"\n")
