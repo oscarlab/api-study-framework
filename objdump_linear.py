@@ -506,6 +506,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			#logging.info(address)
 			#logging.info(disassembly)
 
+			#print(disassembly)
 			try:
 				regex = r'^(?P<rex>rex\.[wrWR]+ )?(?P<repz>repz )?(?P<insn>\S+)(\s+(?P<arg1>[^,]+)?(,(?P<arg2>[^#]+)(#(?P<comm>.+))?)?)?$'
 				m = re.match(regex, disassembly)
@@ -879,6 +880,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					# scaled = [rbx+roz*4+imm8]
 					elif re.search("\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?[bwd]?)(\+|\-)([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?[bwd]?)(\*(imm8|addr|[0-9]))((\+|\-)(imm8))\]", part):
 						addressingMode += "Scaled"
+				print dism, addressingMode
 				return addressingMode
 
 			def common_clean(dism):
@@ -1091,7 +1093,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				self.processed_entries.append(next)
 
 				self.start_smart_disassemble(self.cur_func.start - self.start, self.process_instructions)
-
+				#print("-------")
 				if addressing_modes is True:
 					if print_screen is True:
 						self.print_AM(self.cur_func)
@@ -1106,6 +1108,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 
 				if analysis is True:
 					if print_screen is True:
+						#print("----")
 						self.print_to_screen(self.cur_func)
 					else:
 						self.insert_into_db(self.cur_func, sql, pkg_id, bin_id)

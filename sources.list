@@ -4,6 +4,7 @@ deb http://us.archive.ubuntu.com/ubuntu xenial-updates main restricted multivers
 deb http://us.archive.ubuntu.com/ubuntu xenial-backports main restricted multiverse universe
 deb http://archive.canonical.com/ubuntu xenial partner
 deb http://us.archive.ubuntu.com/ubuntu xenial-security main restricted multiverse universe
+deb file:///filer/benchmarks/fake-pkgs /
 deb-src http://archive.ubuntu.com/ubuntu xenial main restricted multiverse universe
 deb-src http://us.archive.ubuntu.com/ubuntu xenial-updates main restricted multiverse universe
 deb-src http://us.archive.ubuntu.com/ubuntu xenial-backports main restricted multiverse universe
