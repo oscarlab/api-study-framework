@@ -84,25 +84,26 @@ def get_package_info(pkgname):
 	process = None
 	try:
 		dir = download_package_source(pkgname)
-		for (root, subdirs, files) in os.walk(dir):
-			for f in files:
-				args = None
-				if f.endswith(".tar"):
-					args = "-tf"
-				elif f.endswith(".tar.gz") or f.endswith(".tgz"):
-					args = "-tzf"
-				elif f.endswith(".tar.bz2"):
-					args = "-tjf"
-				elif f.endswith(".tar.xz"):
-					args = "-tJf"
-				if args is None:
-					continue
-				process = subprocess.Popen(["tar", args, root + "/" + f], stdout=subprocess.PIPE, stderr=null_dev)
-				for line in process.stdout:
-					line = line.strip()
-					for ext in extensions:
-						if line.endswith(ext):
-							has_source = True
+		if (dir):
+			for (root, subdirs, files) in os.walk(dir):
+				for f in files:
+					args = None
+					if f.endswith(".tar"):
+						args = "-tf"
+					elif f.endswith(".tar.gz") or f.endswith(".tgz"):
+						args = "-tzf"
+					elif f.endswith(".tar.bz2"):
+						args = "-tjf"
+					elif f.endswith(".tar.xz"):
+						args = "-tJf"
+					if args is None:
+						continue
+					process = subprocess.Popen(["tar", args, root + "/" + f], stdout=subprocess.PIPE, stderr=null_dev)
+					for line in process.stdout:
+						line = line.strip()
+						for ext in extensions:
+							if line.endswith(ext):
+								has_source = True
 	except Exception as e:
 		logging.info(str(e))
 		pass
@@ -263,7 +264,8 @@ def download_package_source(name, unpack=False):
 	except:
 		os.chdir(root_dir)
 		package.remove_dir(dir)
-		raise
+		return None
+		#raise
 
 	os.mkdir(dir + '/refs')
 	os.chdir(root_dir)
