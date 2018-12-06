@@ -10,7 +10,7 @@ import sys
 import re
 import shutil
 import tempfile
-
+import logging
 tables['package_info'] = Table('package_info', [
 		('pkg_id', 'INT', 'NOT NULL'),
 		('arch', 'VARCHAR', 'NOT NULL'),
@@ -227,8 +227,9 @@ def EmitCorpus(jmgr, os_target, sql, args):
 		bin_id = get_binary_id(sql, bin)
 		corpusFileName = corpusDir+"/"+str(bin_id)
 		os_target.emit_corpus(dir + bin, corpusFileName)
-
+	
 	remove_dir(dir)
+	logging.debug("Completed package"+pkgname)
 
 subtasks['EmitCorpus'] = Task(
 	name = "Emit the word2vec corpus",
@@ -237,7 +238,14 @@ subtasks['EmitCorpus'] = Task(
 	job_name = lambda args: "Emit Corpus: " + args[0])
 
 def ListForEmitCorpus(jmgr, os_target, sql, args):
+	completed_package=[]
+	with open('completed_packages',"r") as f:
+		for line in f:
+			filename=line.strip()
+			completed_package.append(filename)
 	for pkg in pick_packages_from_args(os_target, sql, args):
+		if pkg in completed_package:
+			continue
 		subtasks['EmitCorpus'].create_job(jmgr, [pkg])
 
 tasks['ListForEmitCorpus'] = Task(

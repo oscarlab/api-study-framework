@@ -13,7 +13,8 @@ import re
 import tempfile
 import subprocess
 import logging
-
+import namesgenerator
+from threading import Timer
 def InlineASMAnalysis(jmgr, os_target, sql, args):
 	cmd = ['docker', 'run', '--rm', '-v', '/filer/bin:/filer', '-w',
 		'/filer', '--network=host', 'aakshintala/ubuntu-compiler:gcc', '/filer/run-inlineasm.sh']
@@ -41,14 +42,26 @@ tasks['ListForInlineASM'] = Task(
 	func = ListForInlineASM,
 	arg_defs = package.args_to_pick_packages,
 	order = 43)
-
+def kill_and_remove(name):
+	for action in ('kill','rm'):
+		logging.error(name)
+		p=subprocess.Popen('docker %s %s'%(action,name),stdout=subprocess.PIPE,stderr=null_dev)
+		if p.wait()!=0:
+			raise Exception("Cannot kill")
 def PackageCompilationGCC(jmgr, os_target, sql, args):
-	cmd = ['docker', 'run', '--rm', '-v', '/filer/bin:/filer', '-w',
-		'/filer', '--network=host', 'aakshintala/ubuntu-compiler:gcc', '/filer/run-compile-gcc.sh']
+	container_name=namesgenerator.get_random_name()
 
+#	cmd = ['docker', 'run', '--rm', '-v', '/filer/bin:/filer', '-w',
+#		'/filer', '--network=host', 'aakshintala/ubuntu-compiler:gcc', '/filer/run-compile-gcc.sh']
+	cmd = ['timeout','-s','SIGKILL','300','docker', 'run', '--rm','--name',container_name, '-v', '/filer/bin:/filer', '-w',
+		'/filer', '--network=host', 'aakshintala/ubuntu-compiler:gcc', '/filer/run-compile-gcc.sh']
+	logging.error(container_name)
 	p = subprocess.Popen(cmd + [args[0]], stdout=subprocess.PIPE, stderr=null_dev)
 	(stdout, stderr) = p.communicate()
-	p.wait()
+	if p.wait()==-9:
+		kill_and_remove(container_name)
+		logging.error("Cannot compile-timeout")
+		raise Exception("Cannot compile-GCC timeout")
 	if p.returncode != 0:
 		print stderr
 		logging.error(stderr)
@@ -61,7 +74,14 @@ subtasks['PackageCompilationGCC'] = Task(
 	job_name = lambda args: "Package Compilation - GCC: " + args[0])
 
 def ListForPackageCompiltationGCC(jmgr, os_target, sql, args):
+	completed=[]
+	with open('completed','r') as f:
+		for line in f:
+			filename=line.split("\n")[0]
+			completed.append(filename)
 	for pkg in package.pick_packages_from_args(os_target, sql, args):
+		if pkg in completed:
+			continue
 		subtasks['PackageCompilationGCC'].create_job(jmgr, [pkg])
 
 tasks['ListForPackageCompiltationGCC'] = Task(

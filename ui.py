@@ -82,6 +82,9 @@ def print_job(job):
 	(id, name, status) = job
 	if status:
 		if status.success:
+			#f=open("completed","a+")
+			#f.write(name)
+			#f.write("\n")
 			return "*{0}: {1}".format(id, name)
 		else:
 			return "!{0}: {1}".format(id, name)
