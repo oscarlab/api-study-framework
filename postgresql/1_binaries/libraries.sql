@@ -28,6 +28,26 @@ IF NOT table_exists('library_api_usage') THEN
 	CREATE INDEX library_api_usage_api_type_api_id_idx
 		ON library_api_usage (api_type, api_id);
 END IF;
+
+IF NOT table_exists('library_opcode_usage') THEN
+	CREATE TABLE library_opcode_usage (
+		pkg_id INT NOT NULL, bin_id INT NOT NULL,
+		func_addr INT NOT NULL,
+		prefix BIGINT NULL,
+		opcode BIGINT NOT NULL,
+		size INT NOT NULL,
+		mnem VARCHAR NOT NULL,
+		count INT NOT NULL,
+		PRIMARY KEY (pkg_id, bin_id, func_addr, prefix, opcode, size, mnem)
+	);
+	CREATE INDEX library_opcode_usage_pkg_id_bin_id_func_addr_idx
+		ON library_opcode_usage (pkg_id, bin_id, func_addr);
+	CREATE INDEX library_opcode_usage_pkg_id_bin_id_idx
+		ON library_opcode_usage (pkg_id, bin_id);
+	CREATE INDEX library_opcode_usage_prefix_opcode_size_idx
+		ON library_opcode_usage (prefix, opcode, size);
+END IF;
+
 END
 $$ LANGUAGE plpgsql;
 
@@ -97,6 +117,18 @@ BEGIN
 		WHERE pkg_id = p AND bin_id = b
 	) AS t2
 	ON t1.call_addr = t2.func_addr;
+
+	DELETE FROM library_opcode_usage WHERE pkg_id = p AND bin_id = b;
+	INSERT INTO library_opcode_usage
+	SELECT t2.pkg_id, t2.bin_id, t1.func_addr, t2.prefix, t2.opcode, t2.size, t2.mnem, SUM(t2.sum_count) FROM
+	lib_callgraph AS t1
+	INNER JOIN (
+		SELECT DISTINCT pkg_id, bin_id, func_addr, prefix, opcode, size, mnem, SUM(count) as sum_count FROM binary_opcode_usage
+		WHERE pkg_id = p AND bin_id = b
+		GROUP BY pkg_id, bin_id, func_addr, prefix, opcode, size, mnem
+	) AS t2
+	ON t1.call_addr = t2.func_addr GROUP BY t2.pkg_id, t2.bin_id, t1.func_addr, t2.prefix, t2.opcode, t2.size, t2.mnem
+	order by t1.func_addr, t2.prefix, t2.opcode, t2.size;
 
 	UPDATE binary_list SET callgraph = True, linking = False
 	WHERE pkg_id = p AND bin_id = b;

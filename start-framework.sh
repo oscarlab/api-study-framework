@@ -1,3 +1,3 @@
 #!/bin/sh
 
-exec python main.py $@
+exec python2 main.py $@

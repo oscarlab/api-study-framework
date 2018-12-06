@@ -1,0 +1,71 @@
+#!/bin/bash
+
+GCC=/usr/bin/gcc
+
+OLDCMD=$@
+PRECMD=
+GCCCMD=
+
+HAS_DASH_E=no
+IMMEDIATE=
+IMMEDIATE_TMP=
+IMMEDIATE_ASM=
+
+while [ $# -ne 0 ]; do
+	if [ "$1" = "-c" ]; then
+		HAS_DASH_E=yes
+		PRECMD="$PRECMD -E"
+		GCCCMD="$GCCCMD -c"
+		shift
+		continue
+	fi
+
+	if [ "$1" = "-o" ]; then
+		shift
+		IMMEDIATE_TMP=/tmp/$$.c
+		PRECMD="$PRECMD -o $IMMEDIATE_TMP"
+		GCCCMD="$GCCCMD -o $1"
+		shift
+		continue
+	fi
+
+	if [ -f "$1" ]; then
+		FN=${1%.*}
+		EX=${1##*.}
+		if [ $EX == "c" ] || [ $EX == "cpp" ] || [ $EX == "cc" ]; then
+			IMMEDIATE="$FN-$$.$EX"
+			IMMEDIATE_ASM="$FN.$EX.asm"
+			PRECMD="$PRECMD $1"
+			GCCCMD="$GCCCMD $IMMEDIATE"
+			shift
+			continue
+		fi
+	fi
+
+	PRECMD="$PRECMD $1"
+	GCCCMD="$GCCCMD $1"
+	shift
+done
+
+if [ "$IMMEDIATE" != "" ] && [ "$IMMEDIATE_TMP" != "" ]; then
+	if [ "$HAS_DASH_E" = "no" ]; then
+		PRECMD="-E $PRECMD"
+	fi
+	$GCC $PRECMD
+	mv $IMMEDIATE_TMP $IMMEDIATE
+	./parse-inline $IMMEDIATE $IMMEDIATE_ASM
+	if [ ! -s "$IMMEDIATE_ASM" ]; then
+		rm -f $IMMEDIATE_ASM
+	fi
+else
+	GCCCMD=$OLDCMD
+fi
+
+$GCC $GCCCMD
+EXITSTATUS=$?
+
+if [ "$IMMEDIATE" != "" ] && [ "$IMMEDIATE_TMP" != "" ]; then
+	rm -f $IMMEDIATE
+fi
+
+exit $EXITSTATUS

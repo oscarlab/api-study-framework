@@ -1,53 +1,26 @@
 DO $$
 BEGIN
-IF NOT table_exists('executable_call') THEN
-	CREATE TABLE executable_call (
-		pkg_id INT NOT NULL, bin_id INT NOT NULL,
-		dep_bin_id INT NOT NULL,
-		call_addr INT NOT NULL,
-		PRIMARY KEY(pkg_id, bin_id, dep_bin_id, call_addr)
-	);
-	CREATE INDEX executable_call_pkg_id_bin_id_idx
-		ON executable_call (pkg_id, bin_id);
-	CREATE INDEX executable_call_dep_bin_id_call_addr_idx
-		ON executable_call (dep_bin_id, call_addr);
-END IF;
-
-IF NOT table_exists('executable_api_usage') THEN
-	CREATE TABLE executable_api_usage (
-		pkg_id INT NOT NULL, bin_id INT NOT NULL,
-		api_type SMALLINT NOT NULL,
-		api_id BIGINT NOT NULL,
-		PRIMARY KEY (pkg_id, bin_id, api_type, api_id)
-	);
-	CREATE INDEX executable_api_usage_pkg_id_bin_id_idx
-		ON executable_api_usage (pkg_id, bin_id);
-	CREATE INDEX executable_api_usage_api_type_idx
-		ON executable_api_usage (api_type);
-	CREATE INDEX executable_api_usage_api_id_idx
-		ON executable_api_usage (api_id);
-END IF;
-
-IF NOT table_exists('executable_opcode_usage') THEN
-	CREATE TABLE executable_opcode_usage (
+IF NOT table_exists('executable_opcode_source') THEN
+	CREATE TABLE executable_opcode_source (
 		pkg_id INT NOT NULL,
 		bin_id INT NOT NULL,
+		source INT NOT NULL,
 		prefix BIGINT NULL,
 		opcode BIGINT NOT NULL,
 		size INT NOT NULL,
 		mnem VARCHAR NOT NULL,
 		count INT NOT NULL,
-		PRIMARY KEY (pkg_id, bin_id, prefix, opcode, size, mnem)
+		PRIMARY KEY (pkg_id, bin_id, source, prefix, opcode, size, mnem)
 	);
-	CREATE INDEX executable_opcode_usage_pkg_id_bin_id_idx
-		ON executable_opcode_usage (pkg_id, bin_id);
-	CREATE INDEX executable_opcode_usage_prefix_opcode_size_idx
-		ON executable_opcode_usage (prefix, opcode, size);
+	CREATE INDEX executable_opcode_source_pkg_id_bin_id_source_idx
+		ON executable_opcode_source (pkg_id, bin_id, source);
+	CREATE INDEX executable_opcode_source_prefix_opcode_size_idx
+		ON executable_opcode_source (prefix, opcode, size);
 END IF;
 
 END $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION analyze_executable(p INT, b INT)
+CREATE OR REPLACE FUNCTION analyze_executable_source(p INT, b INT)
 RETURNS void AS $$
 
 DECLARE
@@ -217,39 +190,25 @@ BEGIN
 	RAISE NOTICE '%', time2 - time1;
 	time1 := time2;
 
-	DELETE FROM executable_api_usage WHERE pkg_id = p AND bin_id = b;
-	INSERT INTO executable_api_usage
-		SELECT DISTINCT p, b, api_type, api_id
-		FROM binary_api_usage
-		WHERE pkg_id = p AND bin_id = b
-		UNION
-		SELECT DISTINCT p, b, t2.api_type, t2.api_id
-		FROM bin_call AS t1
-		INNER JOIN
-		library_api_usage AS t2
-		ON  t1.pkg_id = t2.pkg_id
-		AND t1.bin_id = t2.bin_id
-		AND t1.func_addr = t2.func_addr;
-
-	DELETE FROM executable_opcode_usage WHERE pkg_id = p AND bin_id = b;
-	INSERT INTO executable_opcode_usage
-	SELECT t3.p_id, t3.b_id, t3.prefix, t3.opcode, t3.size, t3.mnem, SUM(t3.sum_count) as count
+	DELETE FROM executable_opcode_source WHERE pkg_id = p AND bin_id = b;
+	INSERT INTO executable_opcode_source
+	SELECT t3.p_id, t3.b_id, t3.source, t3.prefix, t3.opcode, t3.size, t3.mnem, SUM(t3.sum_count) as count
 	FROM(
-		SELECT p as p_id, b as b_id, prefix, opcode, size, mnem, SUM(count) as sum_count
+		SELECT p as p_id, b as b_id, b as source, prefix, opcode, size, mnem, SUM(count) as sum_count
 		FROM binary_opcode_usage
 		WHERE pkg_id = p AND bin_id = b
-		GROUP BY p_id, b_id, prefix, opcode, size, mnem
+		GROUP BY p_id, b_id, source, prefix, opcode, size, mnem
 		UNION ALL
-		SELECT p as p_id, b as b_id, t2.prefix, t2.opcode, t2.size, t2.mnem, SUM(t2.count) as sum_count
+		SELECT p as p_id, b as b_id, t2.bin_id as source, t2.prefix, t2.opcode, t2.size, t2.mnem, SUM(t2.count) as sum_count
 		FROM bin_call AS t1
 		INNER JOIN
 		library_opcode_usage AS t2
 		ON  t1.pkg_id = t2.pkg_id
 		AND t1.bin_id = t2.bin_id
 		AND t1.func_addr = t2.func_addr
-		GROUP BY p_id, b_id, t2.prefix, t2.opcode, t2.size, t2.mnem)
+		GROUP BY p_id, b_id, source, t2.prefix, t2.opcode, t2.size, t2.mnem)
 	AS t3
-	GROUP BY t3.p_id, t3.b_id, t3.prefix, t3.opcode, t3.size, t3.mnem;
+	GROUP BY t3.p_id, t3.b_id, t3.source, t3.prefix, t3.opcode, t3.size, t3.mnem;
 
 	time2 := clock_timestamp();
 	RAISE NOTICE '%', time2 - time1;
@@ -264,6 +223,6 @@ BEGIN
 	TRUNCATE TABLE init_call;
 	TRUNCATE TABLE bin_call;
 
-	RAISE NOTICE 'binary % of package %: callgraph generated', b, p;
+	RAISE NOTICE 'binary % of package %: source callgraph generated', b, p;
 END
 $$ LANGUAGE plpgsql;

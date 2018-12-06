@@ -45,7 +45,7 @@ class PostgreSQL(SQL):
 			self.db.rollback()
 			raise err
 		cur.close()
-	
+
 	def postgresql_query(self, query):
 		cur = self.db.cursor()
 		try:
@@ -247,3 +247,77 @@ tasks['PostgresqlAnalyzeAllPackages'] = Task(
 		name = "Analyze All Packages by PostgreSQL",
 		func = AnalyzeAllPackages,
 		order = 33)
+
+def AnalyzeExecutableSource(jmgr, os_target, sql, args):
+	pkg_name = args[0]
+	bin = args[1]
+	if len(args) > 2:
+		pkg_id = args[2]
+	else:
+		pkg_id = get_package_id(sql, pkg_name)
+	if len(args) > 3:
+		bin_id = args[3]
+	else:
+		bin_id = get_binary_id(sql, bin)
+
+	sql.postgresql_execute('SELECT analyze_executable_source(%d, %d)' % (pkg_id, bin_id))
+	sql.commit()
+
+subtasks['PostgresqlAnalyzeExecutableSource'] = Task(
+		name = "Source of Opcodes in Executables",
+		func = AnalyzeExecutableSource,
+		arg_defs = ["Package Name", "Binary Name"],
+		job_name = lambda args: "Analyze Executable Source: " + args[1] + " in " + args[0])
+
+def AnalyzeAllExecutablesSources(jmgr, os_target, sql, args):
+	sql.connect_table(tables['binary_list'])
+
+	results = sql.search_record(tables['binary_list'],
+			'callgraph=false AND type=\'exe\'', ['pkg_id', 'bin_id'])
+
+	for r in results:
+		values = r[0][1:-1].split(',')
+		pkg_id = int(values[0])
+		bin_id = int(values[1])
+		pkg_name = get_package_name(sql, pkg_id)
+		bin_name = get_binary_name(sql, bin_id)
+		if pkg_name and bin_name:
+			subtasks['PostgresqlAnalyzeExecutableSource'] \
+				.create_job(jmgr, [pkg_name, bin_name, pkg_id, bin_id]);
+
+tasks['PostgresqlAnalyzeAllExecutablesSources'] = Task(
+		name = "Analyze Sources of Opcodes in all Executables by PostgreSQL",
+		func = AnalyzeAllExecutablesSources,
+		order = 35)
+
+def AnalyzePackageSource(jmgr, os_target, sql, args):
+	pkg_name = args[0]
+	if len(args) > 1:
+		pkg_id = args[1]
+	else:
+		pkg_id = get_package_id(sql, pkg_name)
+
+	sql.postgresql_execute('SELECT analyze_package_source(%d)' % (pkg_id))
+	sql.commit()
+
+subtasks['PostgresqlAnalyzePackageSource'] = Task(
+		name = "Analyze Opcode Sources in a Package",
+		func = AnalyzePackageSource,
+		arg_defs = ["Package Name"],
+		job_name = lambda args: "Analyze Package Source: " + args[0])
+
+def AnalyzeAllPackagesSources(jmgr, os_target, sql, args):
+	sql.connect_table(tables['package_id'])
+
+	results = sql.search_record(tables['package_id'], 'footprint=false', ['id'])
+
+	for r in results:
+		pkg_id = r[0]
+		pkg_name = get_package_name(sql, pkg_id)
+		if pkg_name:
+			subtasks['PostgresqlAnalyzePackageSource'].create_job(jmgr, [pkg_name, pkg_id]);
+
+tasks['PostgresqlAnalyzeAllPackagesSources'] = Task(
+		name = "Analyze Sources in All Packages by PostgreSQL",
+		func = AnalyzeAllPackagesSources,
+		order = 36)

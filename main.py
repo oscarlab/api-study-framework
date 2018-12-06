@@ -11,6 +11,8 @@ import package
 import binary
 import symbol
 import callgraph
+import isa
+import compile
 
 import sys
 import os

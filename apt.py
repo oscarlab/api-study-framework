@@ -84,25 +84,26 @@ def get_package_info(pkgname):
 	process = None
 	try:
 		dir = download_package_source(pkgname)
-		for (root, subdirs, files) in os.walk(dir):
-			for f in files:
-				args = None
-				if f.endswith(".tar"):
-					args = "-tf"
-				elif f.endswith(".tar.gz") or f.endswith(".tgz"):
-					args = "-tzf"
-				elif f.endswith(".tar.bz2"):
-					args = "-tjf"
-				elif f.endswith(".tar.xz"):
-					args = "-tJf"
-				if args is None:
-					continue
-				process = subprocess.Popen(["tar", args, root + "/" + f], stdout=subprocess.PIPE, stderr=null_dev)
-				for line in process.stdout:
-					line = line.strip()
-					for ext in extensions:
-						if line.endswith(ext):
-							has_source = True
+		if (dir):
+			for (root, subdirs, files) in os.walk(dir):
+				for f in files:
+					args = None
+					if f.endswith(".tar"):
+						args = "-tf"
+					elif f.endswith(".tar.gz") or f.endswith(".tgz"):
+						args = "-tzf"
+					elif f.endswith(".tar.bz2"):
+						args = "-tjf"
+					elif f.endswith(".tar.xz"):
+						args = "-tJf"
+					if args is None:
+						continue
+					process = subprocess.Popen(["tar", args, root + "/" + f], stdout=subprocess.PIPE, stderr=null_dev)
+					for line in process.stdout:
+						line = line.strip()
+						for ext in extensions:
+							if line.endswith(ext):
+								has_source = True
 	except Exception as e:
 		logging.info(str(e))
 		pass
@@ -220,8 +221,22 @@ def download_source_from_apt(name, source=None, arch=None, options=None, unpack=
 	if process.returncode != 0:
 		logging.error(stderr)
 		raise Exception("Cannot download \'" + name + "\'")
+		
+def compile_package(name):
+	cmd = ['docker', 'run', '--rm', '-v', '/filer/bin:/filer', '-w',
+		'/filer', '--network=host', 'aakshintala/ubuntu-compiler:gcc', '/filer/run-compile-gcc.sh']
+
+	p = subprocess.Popen(cmd + [name], stdout=subprocess.PIPE, stderr=null_dev)
+	(stdout, stderr) = p.communicate()
+	p.wait()
+	if p.returncode != 0:
+		print stderr
+		logging.error(stderr)
+		raise Exception("Cannot compile - GCC")
 
 def unpack_package(name):
+	
+	
 	package_source = get_config('package_source')
 	package_arch = get_config('package_arch')
 	package_options = get_config('package_options')
@@ -230,15 +245,25 @@ def unpack_package(name):
 	os.chdir(dir)
 
 	try:
-		filename = download_from_apt(name, package_source,
-				package_arch, package_options)
-		result = re.match('([^_]+)_([^_]+)_([^.]+).deb', filename)
-		if not result:
-			raise Exception("\'" + name + "\' is not properly downloaded")
-		name = result.group(1)
-		version = result.group(2)
-		arch = result.group(3)
-		result = subprocess.call(["dpkg", "-x", filename, "."], stdout=null_dev, stderr=null_dev)
+		#filename = download_from_apt(name, package_source,
+		#		package_arch, package_options)
+		#compile_package(name)
+		directoryname="/filer/bin/gcc-nostripopt/"+name
+		filename1=''
+		for filename in (os.listdir(directoryname)):
+			result = re.match('([^_]+)_([^_]+)_([^.]+).deb', filename)
+			if not result:
+				raise Exception("\'" + name + "\' is not properly downloaded")
+			name1 = result.group(1)
+			version = result.group(2)
+			arch = result.group(3)
+			if name1==name:
+				filename1=filename
+				break
+		if filename1!='':
+			result = subprocess.call(["dpkg", "-x", directoryname+"/"+filename1, "."], stdout=null_dev, stderr=null_dev)
+		else:
+			raise Exception("File not found \'"+name+"\'")
 		if result != 0:
 			raise Exception("Cannot unpack \'" + name + "\'")
 	except:
@@ -263,7 +288,8 @@ def download_package_source(name, unpack=False):
 	except:
 		os.chdir(root_dir)
 		package.remove_dir(dir)
-		raise
+		return None
+		#raise
 
 	os.mkdir(dir + '/refs')
 	os.chdir(root_dir)

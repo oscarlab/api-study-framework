@@ -114,7 +114,7 @@ class Opcodes(object):
         """
         Set the binary buffer to disassemble with other related information
         ready for an instruction by instruction disassembly session.
-
+        
         """
         _opcodes.initialize_smart_disassemble(
             self._ptr, data, start_address)
@@ -132,7 +132,7 @@ class Opcodes(object):
         insn_type, target, target2, disassembly):
         """
         Callack on each disassembled instruction to print its information.
-
+        
         """
         print "0x%X SZ=%d BD=%d IT=%d\t%s" % \
             (address, size, branch_delay_insn, insn_type, disassembly)
@@ -143,7 +143,7 @@ class Opcodes(object):
         """
         Return a list containing the virtual memory address, instruction length
         and disassembly code for the given binary buffer.
-
+        
         """
         return _opcodes.disassemble(self._ptr, data, start_address)
 

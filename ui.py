@@ -82,6 +82,9 @@ def print_job(job):
 	(id, name, status) = job
 	if status:
 		if status.success:
+			#f=open("completed","a+")
+			#f.write(name)
+			#f.write("\n")
 			return "*{0}: {1}".format(id, name)
 		else:
 			return "!{0}: {1}".format(id, name)
@@ -163,8 +166,10 @@ def make_screen(scheduler, tasks):
 	screen.addstr(6, 3, "c - Clear finished jobs")
 	screen.addstr(7, 3, "w - List all workers")
 	screen.addstr(8, 3, "n - Create new worker")
-	screen.addstr(9, 3, "e - End execution")
-	screen.addstr(10, 3, "q - Leave")
+	screen.addstr(9, 3, "f - Requeue failed jobs")
+	screen.addstr(10, 3, "p - Print failed jobs and clear")
+	screen.addstr(11, 3, "e - End execution")
+	screen.addstr(12, 3, "q - Leave")
 	while True:
 		c = screen.getch()
 		if c == ord('l'):
@@ -180,7 +185,7 @@ def make_screen(scheduler, tasks):
 						tasks[i]))
 
 			show_list(screen, "Tasks", keys, print_task,
-					task_keys, (scheduler, keys,))
+					task_keys, (scheduler, keys))
 		elif c == ord('r'):
 			(y, x) = center(screen, 3, 30)
 			win = curses.newwin(3, 30, y, x)
@@ -204,6 +209,14 @@ def make_screen(scheduler, tasks):
 		elif c == ord('n'):
 			scheduler.add_worker()
 			show_message(screen, "A new worker is created")
+		elif c == ord('f'):
+			x = scheduler.requeue_failed_jobs()
+			message = "Requeued " + str(x) + "failed jobs"
+			show_message(screen, message)
+		elif c == ord('p'):
+			scheduler.print_failed_jobs()
+			scheduler.clear_failed_jobs()
+			show_message(screen, "Failed jobs logged and cleared")
 		elif c == ord('e'):
 			if confirm_exit(screen):
 				scheduler.exit()

@@ -2,14 +2,15 @@
 
 from task import tasks, subtasks, Task
 from sql import tables, Table
-from id import get_package_id
+from id import get_package_id, get_binary_id
 from binary import append_binary_list
 
 import os
 import sys
 import re
+import shutil
 import tempfile
-
+import logging
 tables['package_info'] = Table('package_info', [
 		('pkg_id', 'INT', 'NOT NULL'),
 		('arch', 'VARCHAR', 'NOT NULL'),
@@ -126,6 +127,9 @@ def PackageAnalysis(jmgr, os_target, sql, args):
 
 	append_binary_list(sql, pkgname, dir, binaries)
 
+	#Hold an extra reference, so that we don't try to destroy the directory unless it really has no references.
+	global_ref = reference_dir(dir)
+
 	for (bin, type, _) in binaries:
 		if type == 'lnk' or type == 'scr':
 			continue
@@ -139,6 +143,11 @@ def PackageAnalysis(jmgr, os_target, sql, args):
 		ref = reference_dir(dir)
 		subtasks['BinaryCall'].run_job(jmgr, [pkgname, bin, dir, ref])
 
+		ref = reference_dir(dir)
+		subtasks['BinaryInstr'].run_job(jmgr, [pkgname, bin, dir, ref])
+
+	remove_dir(dir)
+
 subtasks['PackageAnalysis'] = Task(
 	name = "Package Analysis",
 	func = PackageAnalysis,
@@ -148,7 +157,7 @@ subtasks['PackageAnalysis'] = Task(
 
 def pick_packages_from_args(os_target, sql, args):
 	all_packages = []
-	
+
 	if args[0]:
 		packages = get_packages_by_names(os_target, args[0].split())
 		for pkg in packages:
@@ -189,6 +198,108 @@ tasks['ListForPackageAnalysis'] = Task(
 	func = ListForPackageAnalysis,
 	arg_defs = args_to_pick_packages,
 	order = 10)
+
+
+def EmitCorpus(jmgr, os_target, sql, args):
+	(dir, pkgname, _) = unpack_package(os_target, args[0])
+	if not dir:
+		return
+
+	corpusDir = '/filer/corpus/'+str(pkgname)
+	if os.path.exists(corpusDir):
+		shutil.rmtree(corpusDir)
+	os.mkdir(corpusDir)
+
+	binaries = os_target.get_binaries(dir, find_script=True)
+	if not binaries:
+		remove_dir(dir)
+		return
+
+	append_binary_list(sql, pkgname, dir, binaries)
+
+	#Hold an extra reference, so that we don't try to destroy the directory unless it really has no references.
+	global_ref = reference_dir(dir)
+
+	for (bin, type, _) in binaries:
+		if type == 'lnk' or type == 'scr':
+			continue
+
+		bin_id = get_binary_id(sql, bin)
+		corpusFileName = corpusDir+"/"+str(bin_id)
+		os_target.emit_corpus(dir + bin, corpusFileName)
+	
+	remove_dir(dir)
+	logging.debug("Completed package"+pkgname)
+
+subtasks['EmitCorpus'] = Task(
+	name = "Emit the word2vec corpus",
+	func = EmitCorpus,
+	arg_defs = ["Package Name"],
+	job_name = lambda args: "Emit Corpus: " + args[0])
+
+def ListForEmitCorpus(jmgr, os_target, sql, args):
+	completed_package=[]
+	with open('completed_packages',"r") as f:
+		for line in f:
+			filename=line.strip()
+			completed_package.append(filename)
+	for pkg in pick_packages_from_args(os_target, sql, args):
+		if pkg in completed_package:
+			continue
+		subtasks['EmitCorpus'].create_job(jmgr, [pkg])
+
+tasks['ListForEmitCorpus'] = Task(
+	name = "Collect Corpus",
+	func = ListForEmitCorpus,
+	arg_defs = args_to_pick_packages,
+	order = 44)
+
+# addressing_modes(self, bin, file)
+def AddresingModes(jmgr, os_target, sql, args):
+	(dir, pkgname, _) = unpack_package(os_target, args[0])
+	if not dir:
+		return
+
+	corpusDir = '/filer/addressingmode/'+str(pkgname)
+	if os.path.exists(corpusDir):
+		shutil.rmtree(corpusDir)
+	os.mkdir(corpusDir)
+
+	binaries = os_target.get_binaries(dir, find_script=True)
+	if not binaries:
+		remove_dir(dir)
+		return
+
+	append_binary_list(sql, pkgname, dir, binaries)
+
+	#Hold an extra reference, so that we don't try to destroy the directory unless it really has no references.
+	global_ref = reference_dir(dir)
+
+	for (bin, type, _) in binaries:
+		if type == 'lnk' or type == 'scr':
+			continue
+
+		bin_id = get_binary_id(sql, bin)
+		corpusFileName = corpusDir+"/"+str(bin_id)
+		os_target.addressing_modes(dir + bin, corpusFileName)
+
+	remove_dir(dir)
+
+subtasks['AddresingModes'] = Task(
+	name = "Classify instructions by Addressing Mode",
+	func = AddresingModes,
+	arg_defs = ["Package Name"],
+	job_name = lambda args: "Addressing Modes: " + args[0])
+
+def ListForAddressingModes(jmgr, os_target, sql, args):
+	for pkg in pick_packages_from_args(os_target, sql, args):
+		subtasks['AddresingModes'].create_job(jmgr, [pkg])
+
+tasks['ListForAddressingModes'] = Task(
+	name = "Collect Addressing Modes Info",
+	func = ListForAddressingModes,
+	arg_defs = args_to_pick_packages,
+	order = 45)
 
 def PackagePopularity(jmgr, os_target, sql, args):
 	sql.connect_table(tables['package_popularity'])

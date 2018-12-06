@@ -15,9 +15,10 @@ tables['binary_symbol'] = Table('binary_symbol', [
 			('pkg_id', 'INT', 'NOT NULL'),
 			('bin_id', 'INT', 'NOT NULL'),
 			('symbol_name', 'VARCHAR', 'NOT NULL'),
+			('version', 'VARCHAR', ''),
 			('func_addr','INT', '')],
-			['pkg_id', 'bin_id', 'symbol_name', 'func_addr'],
-			[['symbol_name'], ['pkg_id', 'bin_id', 'func_addr'], ['pkg_id', 'bin_id']])
+			['pkg_id', 'bin_id', 'symbol_name', 'version', 'func_addr'],
+			[['symbol_name', 'version'], ['pkg_id', 'bin_id', 'func_addr'], ['pkg_id', 'bin_id']])
 
 def BinarySymbol(jmgr, os_target, sql, args):
 	sql.connect_table(tables['binary_list'])
@@ -60,6 +61,7 @@ def BinarySymbol(jmgr, os_target, sql, args):
 			values['pkg_id'] = pkg_id
 			values['bin_id'] = bin_id
 			values['symbol_name'] = sym.name
+			values['version'] = sym.version
 			values['func_addr'] = sym.addr
 
 			sql.append_record(tables['binary_symbol'], values)

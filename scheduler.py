@@ -57,6 +57,9 @@ class Job:
 
 	def run(self, jmgr, os_target, sql):
 		self.func(jmgr, os_target, sql, self.args)
+	
+	def get_name(self):
+		return self.name
 
 class JobStatus:
 	def __init__(self, id):
@@ -79,12 +82,16 @@ class WorkerProcess(Process):
 		log = os.open(self.logfile, os.O_RDWR|os.O_CREAT|os.O_TRUNC)
 		os.dup2(log, 1)
 		os.dup2(log, 2)
-
+		logging.info("Hello from the Worker Theread")
 		self.scheduler.sql.connect()
+		logging.info("Connected to the scheduler")
 		while True:
 			try:
+				logging.info("Worker checking queue")
 				j = self.scheduler.worker_queue.get()
+				logging.info("Worker found the following task:"+j.get_name())
 			except Empty:
+				logging.info("Worker found the queue empty")
 				continue
 
 			self.scheduler.workers.update([(self.name, j.id)])
@@ -117,6 +124,7 @@ class SchedulerProcess(Process):
 				while True:
 					try:
 						o = scheduler.submit_queue.get(timeout is None, timeout)
+#						logging.info("Recieved a job "+str(o.get_name()))
 						jobs.append(o)
 						timeout = 0
 					except Empty:
@@ -356,6 +364,7 @@ class SimpleScheduler(Scheduler):
 	def add_job(self, name, func, args):
 		self.connect()
 		j = Job(name, func, args)
+		logging.info("Adding job to submit queue: " + j.get_name())
 		self.submit_queue.put(j)
 
 	def requeue_job(self, id):
@@ -376,6 +385,37 @@ class SimpleScheduler(Scheduler):
 					self.jobs.pop(j.id)
 				except KeyError:
 					pass
+	
+	def requeue_failed_jobs(self):
+		self.connect()
+		i = 0
+		for (id, _, _) in self.get_failed_jobs():
+			self.requeue_job(id)
+			i=i+1
+		return i
+	
+	def get_failed_jobs(self):
+		self.connect()
+		failed_jobs = []
+		for j in self.jobs.values():
+			if j.status is not None and j.status.success is False:
+				failed_jobs.append((j.id, j.name, j.status))
+		return failed_jobs
+
+	def clear_failed_jobs(self):
+		self.connect()
+		for j in self.jobs.values():
+			if j.status is not None and j.status.success is False:
+				try:
+					self.jobs.pop(j.id)
+				except KeyError:
+					pass
+
+	def print_failed_jobs(self):
+		self.connect()
+		logging.info("Failed Jobs:")
+		for (id,name,_) in self.get_failed_jobs():
+			logging.info(str(id) + name)
 
 	def exit(self):
 		self.connect()
