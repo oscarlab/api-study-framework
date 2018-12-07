@@ -499,8 +499,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 
 			self.entries.append(addr)
 
-		def process_instructions(self, address, size, branch_delay_insn,
-			insn_type, target, target2, disassembly):
+		def process_instructions(self, address, size, branch_delay_insn,insn_type, target, target2, disassembly):
 			binbytes = self.content[address - self.start:address - self.start + size]
 			#logging.info(insn_type)
 			#logging.info(address)
@@ -850,7 +849,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				return 'r16'
 			elif reg in ['al','ah','bl','bh','cl','ch','dl','dh','sil','sih','dil','dih','bpl','bph','spl','sph','r8b','r9b','r10b','r11b','r12b','r13b','r14b','r15b']:
 				return 'reg8'
-			elif reg in ['st(0)','st(1)','st(2)','st(3)','st(4)','st(5)','st(6)','st(7)']
+			elif reg in ['st(0)','st(1)','st(2)','st(3)','st(4)','st(5)','st(6)','st(7)']:
 				return 'fp64'
 			else:
 				return None
@@ -1104,28 +1103,50 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 		def start_process(self, content, print_screen, analysis, emit_corpus, dynsym_list, sql,  pkg_id, bin_id, fileToPrintTo, addressing_modes):
 			self.content = content
 			self.initialize_smart_disassemble(content, self.start)
-			cont = True
-			while cont:
-				next = None
-				for entry in self.entries:
-					if entry >= self.start and entry < self.end:
-						next = entry
-						break
-
-				if not next:
-					break
-
-				if next not in dynsym_list.keys():
-					self.cur_func = Func(next)
-				else:
-					size = dynsym_list[next]
-					size = int(size)
-					if size == 0:
-						self.cur_func = Func(next)
+			addressRanges = []
+			self.entries.sort()
+			startIter = self.start
+			lastEntry = 0
+			for entry in self.entries:
+				if entry >= startIter and entry < self.end:
+					if entry > startIter:
+						addressRanges.append([startIter, entry-1])
+						lastEntry = startIter
+					size = 0
+					if entry not in dynsym_list.keys():
+						addressRanges.append([entry, None])
 					else:
-						self.cur_func = Func(next, next+size)
-				self.entries.remove(next)
-				self.processed_entries.append(next)
+						size = dynsym_list[entry]
+						size = int(size)
+						if size == 0:
+							addressRanges.append([entry, None])
+						else:
+							addressRanges.append([entry, entry+size])
+					startIter = entry+size
+					lastEntry = entry
+
+
+			if startIter != lastEntry and startIter < self.end:
+				addressRanges.append([startIter, self.end])
+			#print hex(self.start), hex(self.end)
+			#for entry in self.entries:
+			#	print hex(entry)
+			#for item in addressRanges:
+			#	print hex(item[0]), 
+			#	if item[1] is None:
+			#		print item[1]
+			#	else:
+			#		print hex(item[1])
+
+			for [entry, exit] in addressRanges:
+				if exit is None:
+					self.cur_func = Func(entry)
+				else:
+					self.cur_func = Func(entry,exit)
+
+				if entry in self.entries:
+					self.entries.remove(entry)
+				self.processed_entries.append(entry)
 
 				self.start_smart_disassemble(self.cur_func.start - self.start, self.process_instructions)
 				#print("-------")
@@ -1241,7 +1262,6 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 	for key, sec in bfd.sections.items():
 		if not (sec.flags & section.SectionFlags.CODE):
 			continue
-
 		content = sec.content
 		codes.set_range(sec.vma, sec.vma + sec.size, executable)
 		codes.start_process(content, print_screen, analysis, emit_corpus, dynsym_list, sql, pkg_id, bin_id, fileToPrintTo, addressing_modes)
