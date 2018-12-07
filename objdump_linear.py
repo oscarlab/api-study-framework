@@ -859,7 +859,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			parts = dism.split('_')
 			for part in parts:
 				# Register = reg
-				if getRegSize(part) is not None:
+				if self.getRegSize(part) is not None:
 					addressingMode += "Register"
 				# Immediate = imm8
 				elif part == "imm8":
@@ -915,27 +915,27 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			m = re.search(r'(bad)',dism)
 			if m:
 				return None
-			dism = common_clean(dism)
+			dism = self.common_clean(dism)
 			if addressing_modes is True:
-				return parseAddressingmode(dism)
+				return self.parseAddressingmode(dism)
 			dism = re.sub('\[(r(s|b)p)\+(imm8|addr)?\]','stackVal',dism)
 			dism = re.sub('\[([rabcdesiplh0-9wx]{3})[bwd]?((\+|\-|\*)(imm8|addr))?\]','memVal',dism)
 			dism = re.sub('\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?)[bwd]?((\+|\-|\*)(imm8|addr|(([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?)[bwd]?)))?((\+|\-|\*)[0-9]+)?((\+|\-)(imm8|addr))?\]','memVal',dism)
 			parts = dism.split('_')
 			if parts[0] in ['push', 'pop']:
-				regsize = getRegSize(parts[1])
+				regsize = self.getRegSize(parts[1])
 				if regsize is not None:
 					dism = re.sub(parts[1], regsize, dism)
 			if len(parts) >= 4:
-				regsize = getRegSize(parts[-3])
+				regsize = self.getRegSize(parts[-3])
 				if regsize is not None:
 					dism = re.sub(parts[-3], regsize, dism)
 			if len(parts) >= 3:
-				regsize = getRegSize(parts[-2])
+				regsize = self.getRegSize(parts[-2])
 				if regsize is not None:
 					dism = re.sub(parts[-2], regsize, dism)
 			if len(parts) >= 2:
-				regsize = getRegSize(parts[-1])
+				regsize = self.getRegSize(parts[-1])
 				if regsize is not None:
 					dism = re.sub(parts[-1], regsize, dism)
 			return dism
@@ -944,27 +944,27 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			m = re.search(r'(bad)',dism)
 			if m:
 				return None
-			dism = common_clean(dism)
-			addressingMode = parseAddressingmode(dism)
+			dism = self.common_clean(dism)
+			addressingMode = self.parseAddressingmode(dism)
 			dism = re.sub('\[(r(s|b)p)\+(imm8|addr)?\]','stackVal',dism)
 			dism = re.sub('\[([rabcdesiplh0-9wx]{3})[bwd]?((\+|\-|\*)(imm8|addr))?\]','memVal',dism)
 			dism = re.sub('\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?)[bwd]?((\+|\-|\*)(imm8|addr|(([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?)[bwd]?)))?((\+|\-|\*)[0-9]+)?((\+|\-)(imm8|addr))?\]','memVal',dism)
 			parts = dism.split('_')
 			regSizes = []
 			if parts[0] in ['push', 'pop']:
-				regsize = getRegSize(parts[1])
+				regsize = self.getRegSize(parts[1])
 				if regsize is not None:
 					regSizes.append(regsize)
 			if len(parts) >= 4:
-				regsize = getRegSize(parts[-3])
+				regsize = self.getRegSize(parts[-3])
 				if regsize is not None:
 					regSizes.append(regsize)
 			if len(parts) >= 3:
-				regsize = getRegSize(parts[-2])
+				regsize = self.getRegSize(parts[-2])
 				if regsize is not None:
 					regSizes.append(regsize)
 			if len(parts) >= 2:
-				regsize = getRegSize(parts[-1])
+				regsize = self.getRegSize(parts[-1])
 				if regsize is not None:
 					regSizes.append(regsize)
 			print regSizes, addressingMode
@@ -1132,7 +1132,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			#for entry in self.entries:
 			#	print hex(entry)
 			#for item in addressRanges:
-			#	print hex(item[0]), 
+			#	print hex(item[0]),
 			#	if item[1] is None:
 			#		print item[1]
 			#	else:
