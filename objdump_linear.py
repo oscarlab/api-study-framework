@@ -833,83 +833,86 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			for (prefix, opcode, size, mnem), count in opcodes.items():
 				print prefix.encode('hex'), opcode.encode('hex'), size, mnem,  count
 
-		def clean_dism(self, dism, addressing_modes=False):
-			def getRegSize(reg):
-				if reg in ['zmm0','zmm1','zmm2','zmm3','zmm4','zmm5','zmm6','zmm7','zmm8','zmm9','zmm10','zmm11','zmm12','zmm13','zmm14','zmm15','zmm16','zmm17','zmm18','zmm19','zmm20','zmm21','zmm22','zmm23','zmm24','zmm25','zmm26','zmm27','zmm28','zmm29','zmm30','zmm31']:
-					return 'v512'
-				elif reg in ['ymm0','ymm1','ymm2','ymm3','ymm4','ymm5','ymm6','ymm7','ymm8','ymm9','ymm10','ymm11','ymm12','ymm13','ymm14','ymm15','ymm16','ymm17','ymm18','ymm19','ymm20','ymm21','ymm22','ymm23','ymm24','ymm25','ymm26','ymm27','ymm28','ymm29','ymm30','ymm31']:
-					return 'v256'
-				elif reg in ['xmm0','xmm1','xmm2','xmm3','xmm4','xmm5','xmm6','xmm7','xmm8','xmm9','xmm10','xmm11','xmm12','xmm13','xmm14','xmm15','xmm16','xmm17','xmm18','xmm19','xmm20','xmm21','xmm22','xmm23','xmm24','xmm25','xmm26','xmm27','xmm28','xmm29','xmm30','xmm31']:
-					return 'v128'
-				elif reg in ['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15', 'riz']:
-					return 'r64'
-				elif reg in ['eax','ebx','ecx','edx','esi','edi','ebp','esp','r8d','r9d','r10d','r11d','r12d','r13d','r14d','r15d', 'eiz']:
-					return 'r32'
-				elif reg in ['ax','bx','cx','dx','si','di','bp','sp','r8w','r9w','r10w','r11w','r12w','r13w','r14w','r15w']:
-					return 'r16'
-				elif reg in ['al','ah','bl','bh','cl','ch','dl','dh','sil','sih','dil','dih','bpl','bph','spl','sph','r8b','r9b','r10b','r11b','r12b','r13b','r14b','r15b']:
-					return 'reg8'
+		def getRegSize(reg):
+			if reg in ['zmm0','zmm1','zmm2','zmm3','zmm4','zmm5','zmm6','zmm7','zmm8','zmm9','zmm10','zmm11','zmm12','zmm13','zmm14','zmm15','zmm16','zmm17','zmm18','zmm19','zmm20','zmm21','zmm22','zmm23','zmm24','zmm25','zmm26','zmm27','zmm28','zmm29','zmm30','zmm31']:
+				return 'v512'
+			elif reg in ['ymm0','ymm1','ymm2','ymm3','ymm4','ymm5','ymm6','ymm7','ymm8','ymm9','ymm10','ymm11','ymm12','ymm13','ymm14','ymm15','ymm16','ymm17','ymm18','ymm19','ymm20','ymm21','ymm22','ymm23','ymm24','ymm25','ymm26','ymm27','ymm28','ymm29','ymm30','ymm31']:
+				return 'v256'
+			elif reg in ['xmm0','xmm1','xmm2','xmm3','xmm4','xmm5','xmm6','xmm7','xmm8','xmm9','xmm10','xmm11','xmm12','xmm13','xmm14','xmm15','xmm16','xmm17','xmm18','xmm19','xmm20','xmm21','xmm22','xmm23','xmm24','xmm25','xmm26','xmm27','xmm28','xmm29','xmm30','xmm31']:
+				return 'v128'
+			elif reg in ['mm0','mm1','mm2','mm3','mm4','mm5','mm6','mm7']:
+				return 'v64'
+			elif reg in ['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15', 'riz']:
+				return 'r64'
+			elif reg in ['eax','ebx','ecx','edx','esi','edi','ebp','esp','r8d','r9d','r10d','r11d','r12d','r13d','r14d','r15d', 'eiz']:
+				return 'r32'
+			elif reg in ['ax','bx','cx','dx','si','di','bp','sp','r8w','r9w','r10w','r11w','r12w','r13w','r14w','r15w']:
+				return 'r16'
+			elif reg in ['al','ah','bl','bh','cl','ch','dl','dh','sil','sih','dil','dih','bpl','bph','spl','sph','r8b','r9b','r10b','r11b','r12b','r13b','r14b','r15b']:
+				return 'reg8'
+			elif reg in ['st(0)','st(1)','st(2)','st(3)','st(4)','st(5)','st(6)','st(7)']
+				return 'fp64'
+			else:
+				return None
+
+		def parseAddressingmode(dism):
+			addressingMode = ""
+			parts = dism.split('_')
+			for part in parts:
+				# Register = reg
+				if getRegSize(part) is not None:
+					addressingMode += "Register"
+				# Immediate = imm8
+				elif part == "imm8":
+					addressingMode += "Immediate"
+				# Absolute = addr
+				elif part == "addr":
+					addressingMode += "Absolute"
+				# memory_indirect = [addr]
+				elif part == "[addr]":
+					addressingMode += "MemoryIndirect"
+				# register-indirect = [rax]
+				elif re.search("\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?)[bwd]?\]", part):
+					addressingMode += "RegisterIndirect"
+				# Displacement = 0x2dbf48(%rip)
+				elif re.search("\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?)[bwd]?(\+|\-)(imm8|addr)\]", part):
+					addressingMode += "Displacement"
+				# indexed = [rax+rbx*3]
+				elif re.search("\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?[bwd]?)(\+|\-)([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?[bwd]?)(\*(imm8|addr|[0-9]))\]", part):
+					addressingMode += "Indexed"
+				# scaled = [rbx+roz*4+imm8]
+				elif re.search("\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?[bwd]?)(\+|\-)([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?[bwd]?)(\*(imm8|addr|[0-9]))((\+|\-)(imm8))\]", part):
+					addressingMode += "Scaled"
+			return addressingMode
+
+		def common_clean(dism):
+			dism = re.sub("ZMMWORD PTR","",dism)
+			dism = re.sub("YMMWORD PTR","",dism)
+			dism = re.sub("XMMWORD PTR","",dism)
+			dism = re.sub("QWORD PTR","",dism)
+			dism = re.sub("DWORD PTR","",dism)
+			dism = re.sub("WORD PTR","",dism)
+			dism = re.sub("BYTE PTR","",dism)
+			dism = re.sub("\s+","_", dism)
+			dism = re.sub("#.*$","",dism)
+			dism = re.sub("<.*$","",dism)
+			dism = re.sub(",","_",dism)
+			dism = re.sub("__","_",dism)
+			if re.search(r"(e|r)iz", dism):
+				dism = "nop"
+			m = re.search(r"0x[0-9a-f]+", dism)
+			if m:
+				value = int(m.group(0), 16)
+				if value > 0x100 or value < -0x100:
+					dism = re.sub("0x[a-f0-9]+","addr",dism)
 				else:
-					return None
+					dism = re.sub("0x[a-f0-9]+","imm8",dism)
+			dism = dism.rstrip("_")
+			dism = re.sub('nop.*','nop',dism)
+			dism = re.sub("rex(\.[WRXB]+)?\_","", dism)
+			return dism
 
-			def parseAddressingmode(dism):
-				addressingMode = ""
-				parts = dism.split('_')
-				for part in parts:
-					# Register = reg
-					if getRegSize(part) is not None:
-						addressingMode += "Register"
-					# Immediate = imm8
-					elif part == "imm8":
-						addressingMode += "Immediate"
-					# Absolute = addr
-					elif part == "addr":
-						addressingMode += "Absolute"
-					# memory_indirect = [addr]
-					elif part == "[addr]":
-						addressingMode += "MemoryIndirect"
-					# register-indirect = [rax]
-					elif re.search("\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?)[bwd]?\]", part):
-						addressingMode += "RegisterIndirect"
-					# Displacement = 0x2dbf48(%rip)
-					elif re.search("\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?)[bwd]?(\+|\-)(imm8|addr)\]", part):
-						addressingMode += "Displacement"
-					# indexed = [rax+rbx*3]
-					elif re.search("\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?[bwd]?)(\+|\-)([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?[bwd]?)(\*(imm8|addr|[0-9]))\]", part):
-						addressingMode += "Indexed"
-					# scaled = [rbx+roz*4+imm8]
-					elif re.search("\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?[bwd]?)(\+|\-)([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?[bwd]?)(\*(imm8|addr|[0-9]))((\+|\-)(imm8))\]", part):
-						addressingMode += "Scaled"
-				print dism, addressingMode
-				return addressingMode
-
-			def common_clean(dism):
-				dism = re.sub("ZMMWORD PTR","",dism)
-				dism = re.sub("YMMWORD PTR","",dism)
-				dism = re.sub("XMMWORD PTR","",dism)
-				dism = re.sub("QWORD PTR","",dism)
-				dism = re.sub("DWORD PTR","",dism)
-				dism = re.sub("WORD PTR","",dism)
-				dism = re.sub("BYTE PTR","",dism)
-				dism = re.sub("\s+","_", dism)
-				dism = re.sub("#.*$","",dism)
-				dism = re.sub("<.*$","",dism)
-				dism = re.sub(",","_",dism)
-				dism = re.sub("__","_",dism)
-				if re.search(r"(e|r)iz", dism):
-					dism = "nop"
-				m = re.search(r"0x[0-9a-f]+", dism)
-				if m:
-					value = int(m.group(0), 16)
-					if value > 0x100 or value < -0x100:
-						dism = re.sub("0x[a-f0-9]+","addr",dism)
-					else:
-						dism = re.sub("0x[a-f0-9]+","imm8",dism)
-				dism = dism.rstrip("_")
-				dism = re.sub('nop.*','nop',dism)
-				dism = re.sub("rex(\.[WRXB]+)?\_","", dism)
-				return dism
-
+		def clean_dism(self, dism, addressing_modes=False):
 			m = re.search(r'(bad)',dism)
 			if m:
 				return None
@@ -937,6 +940,36 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				if regsize is not None:
 					dism = re.sub(parts[-1], regsize, dism)
 			return dism
+
+		def split_dism(self, dism):
+			m = re.search(r'(bad)',dism)
+			if m:
+				return None
+			dism = common_clean(dism)
+			addressingMode = parseAddressingmode(dism)
+			dism = re.sub('\[(r(s|b)p)\+(imm8|addr)?\]','stackVal',dism)
+			dism = re.sub('\[([rabcdesiplh0-9wx]{3})[bwd]?((\+|\-|\*)(imm8|addr))?\]','memVal',dism)
+			dism = re.sub('\[([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?)[bwd]?((\+|\-|\*)(imm8|addr|(([rabcdesiplh0-9wxz]{2}[rabcdesiplh0-9wxz]?)[bwd]?)))?((\+|\-|\*)[0-9]+)?((\+|\-)(imm8|addr))?\]','memVal',dism)
+			parts = dism.split('_')
+			regSizes = []
+			if parts[0] in ['push', 'pop']:
+				regsize = getRegSize(parts[1])
+				if regsize is not None:
+					regSizes.append(regsize)
+			if len(parts) >= 4:
+				regsize = getRegSize(parts[-3])
+				if regsize is not None:
+					regSizes.append(regsize)
+			if len(parts) >= 3:
+				regsize = getRegSize(parts[-2])
+				if regsize is not None:
+					regSizes.append(regsize)
+			if len(parts) >= 2:
+				regsize = getRegSize(parts[-1])
+				if regsize is not None:
+					regSizes.append(regsize)
+			print regSizes, addressingMode
+			return regSizes, addressingMode
 
 		def print_corpus(self, func):
 			for instr in func.instrs:
@@ -1006,6 +1039,8 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				sql.append_record(tables['binary_call_missrate'], mrvalues)
 
 			for instr in func.instrs:
+				regSizes, addressingMode = self.split_dism(instr.dism)
+
 				if isinstance(instr, InstrCall):
 					if isinstance(instr.target, int) or isinstance(instr.target, long):
 						if not instr.target in calls:
