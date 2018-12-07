@@ -777,61 +777,6 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 
 			return opcodes.PYBFD_DISASM_CONTINUE
 
-		def print_to_screen(self, func):
-			print "-------------"
-			print "func %x:" % (func.start)
-
-			opcodes = dict()
-			calls = []
-
-			if func.num_calls != 0:
-				print "Function_address:", func.start,
-				miss_rate = func.num_missed_calls / (func.num_calls * 1.0)
-				print "miss_rate", miss_rate * 100
-
-			for instr in func.instrs:
-				if isinstance(instr, InstrCall):
-					if isinstance(instr.target, int) or isinstance(instr.target, long):
-						if not instr.target in calls:
-							calls.append(instr.target)
-					elif isinstance(instr.target, Op) and instr.target.val:
-						if not instr.target.val in calls:
-							calls.append(instr.target.val)
-
-				opcode = instr.opcode
-				size = instr.size
-				prefix = instr.prefixes
-				mnem = instr.get_instr()
-
-				if mnem is None:
-					continue
-
-				if opcode == '':
-					continue
-				if prefix == '':
-					prefix = chr(0x0)
-				if (prefix, opcode, size, mnem) in opcodes:
-					opcodes[(prefix, opcode, size, mnem)] += 1
-				else:
-					opcodes[(prefix, opcode, size, mnem)] = 1
-
-			for call in calls:
-				if isinstance(call, int) or isinstance(call, long):
-					print "    call: %x" % (call)
-				else:
-					call_addr = None
-					for addr, sym in codes.dynsyms.items():
-						if sym.name == call:
-							call_addr = sym.value
-							break
-					if call_addr:
-						print "    call: %s (%x)" % (call, call_addr)
-					else:
-						print "    call: %s" % (call)
-
-			for (prefix, opcode, size, mnem), count in opcodes.items():
-				print prefix.encode('hex'), opcode.encode('hex'), size, mnem,  count
-
 		def getRegSize(self, reg):
 			if reg in ['zmm0','zmm1','zmm2','zmm3','zmm4','zmm5','zmm6','zmm7','zmm8','zmm9','zmm10','zmm11','zmm12','zmm13','zmm14','zmm15','zmm16','zmm17','zmm18','zmm19','zmm20','zmm21','zmm22','zmm23','zmm24','zmm25','zmm26','zmm27','zmm28','zmm29','zmm30','zmm31']:
 				return 'v512'
@@ -1019,6 +964,62 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					AMs[addressingMode] = 1
 			for addressingMode, count in AMs.items():
 				fileToPrintTo.write(addressingMode + ": " + str(count) + "\n")
+
+		def print_to_screen(self, func):
+			print "-------------"
+			print "func %x:" % (func.start)
+
+			opcodes = dict()
+			calls = []
+
+			if func.num_calls != 0:
+				print "Function_address:", func.start,
+				miss_rate = func.num_missed_calls / (func.num_calls * 1.0)
+				print "miss_rate", miss_rate * 100
+
+			for instr in func.instrs:
+				regSizes, addressingMode = self.split_dism(instr.dism)
+				if isinstance(instr, InstrCall):
+					if isinstance(instr.target, int) or isinstance(instr.target, long):
+						if not instr.target in calls:
+							calls.append(instr.target)
+					elif isinstance(instr.target, Op) and instr.target.val:
+						if not instr.target.val in calls:
+							calls.append(instr.target.val)
+
+				opcode = instr.opcode
+				size = instr.size
+				prefix = instr.prefixes
+				mnem = instr.get_instr()
+
+				if mnem is None:
+					continue
+
+				if opcode == '':
+					continue
+				if prefix == '':
+					prefix = chr(0x0)
+				if (prefix, opcode, size, mnem) in opcodes:
+					opcodes[(prefix, opcode, size, mnem)] += 1
+				else:
+					opcodes[(prefix, opcode, size, mnem)] = 1
+
+			for call in calls:
+				if isinstance(call, int) or isinstance(call, long):
+					print "    call: %x" % (call)
+				else:
+					call_addr = None
+					for addr, sym in codes.dynsyms.items():
+						if sym.name == call:
+							call_addr = sym.value
+							break
+					if call_addr:
+						print "    call: %s (%x)" % (call, call_addr)
+					else:
+						print "    call: %s" % (call)
+
+			for (prefix, opcode, size, mnem), count in opcodes.items():
+				print prefix.encode('hex'), opcode.encode('hex'), size, mnem,  count
 
 		def insert_into_db(self, func, sql, pkg_id, bin_id):
 			if sql == None or pkg_id == None or bin_id == None:
