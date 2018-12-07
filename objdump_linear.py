@@ -832,7 +832,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			for (prefix, opcode, size, mnem), count in opcodes.items():
 				print prefix.encode('hex'), opcode.encode('hex'), size, mnem,  count
 
-		def getRegSize(reg):
+		def getRegSize(self, reg):
 			if reg in ['zmm0','zmm1','zmm2','zmm3','zmm4','zmm5','zmm6','zmm7','zmm8','zmm9','zmm10','zmm11','zmm12','zmm13','zmm14','zmm15','zmm16','zmm17','zmm18','zmm19','zmm20','zmm21','zmm22','zmm23','zmm24','zmm25','zmm26','zmm27','zmm28','zmm29','zmm30','zmm31']:
 				return 'v512'
 			elif reg in ['ymm0','ymm1','ymm2','ymm3','ymm4','ymm5','ymm6','ymm7','ymm8','ymm9','ymm10','ymm11','ymm12','ymm13','ymm14','ymm15','ymm16','ymm17','ymm18','ymm19','ymm20','ymm21','ymm22','ymm23','ymm24','ymm25','ymm26','ymm27','ymm28','ymm29','ymm30','ymm31']:
@@ -854,7 +854,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			else:
 				return None
 
-		def parseAddressingmode(dism):
+		def parseAddressingmode(self, dism):
 			addressingMode = ""
 			parts = dism.split('_')
 			for part in parts:
@@ -884,7 +884,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					addressingMode += "Scaled"
 			return addressingMode
 
-		def common_clean(dism):
+		def common_clean(self, dism):
 			dism = re.sub("ZMMWORD PTR","",dism)
 			dism = re.sub("YMMWORD PTR","",dism)
 			dism = re.sub("XMMWORD PTR","",dism)
