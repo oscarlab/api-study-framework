@@ -888,7 +888,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 		def split_dism(self, dism):
 			m = re.search(r'(bad)',dism)
 			if m:
-				return None
+				return None, None
 			dism = self.common_clean(dism)
 			addressingMode = self.parseAddressingmode(dism)
 			dism = re.sub('\[(r(s|b)p)\+(imm8|addr)?\]','stackVal',dism)
