@@ -977,8 +977,26 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				miss_rate = func.num_missed_calls / (func.num_calls * 1.0)
 				print "miss_rate", miss_rate * 100
 
+			registers = dict()
+			AMs = dict()
 			for instr in func.instrs:
 				regSizes, addressingMode = self.split_dism(instr.dism)
+
+				if regSizes is not None:
+					for reg in regSizes:
+						if reg in registers:
+							registers[reg] += 1
+						else:
+							registers[reg] = 1
+
+				if addressingMode is not None:
+					if addressingMode == "":
+						addressingMode = "None"
+					if addressingMode in AMs.keys():
+						AMs[addressingMode] += 1
+					else:
+						AMs[addressingMode] = 1
+
 				if isinstance(instr, InstrCall):
 					if isinstance(instr.target, int) or isinstance(instr.target, long):
 						if not instr.target in calls:
@@ -1021,6 +1039,11 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			for (prefix, opcode, size, mnem), count in opcodes.items():
 				print prefix.encode('hex'), opcode.encode('hex'), size, mnem,  count
 
+			for reg, count in registers.items():
+				print reg, count
+			for addressingMode, count in AMs.items():
+				print addressingMode, count
+
 		def insert_into_db(self, func, sql, pkg_id, bin_id):
 			if sql == None or pkg_id == None or bin_id == None:
 				logging.info("sql, pkg_id or bin_id was None??")
@@ -1038,8 +1061,25 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				mrvalues['miss_rate'] = miss_rate * 100
 				sql.append_record(tables['binary_call_missrate'], mrvalues)
 
+			registers = dict()
+			AMs = dict()
 			for instr in func.instrs:
 				regSizes, addressingMode = self.split_dism(instr.dism)
+
+				if regSizes is not None:
+					for reg in regSizes:
+						if reg in registers:
+							registers[reg] += 1
+						else:
+							registers[reg] = 1
+
+				if addressingMode is not None:
+					if addressingMode == "":
+						addressingMode = "None"
+					if addressingMode in AMs.keys():
+						AMs[addressingMode] += 1
+					else:
+						AMs[addressingMode] = 1
 
 				if isinstance(instr, InstrCall):
 					if isinstance(instr.target, int) or isinstance(instr.target, long):
@@ -1098,6 +1138,33 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					logging.info(int(opcode.encode('hex'),16))
 					logging.info(size)
 					logging.info(mnem)
+					logging.info(count)
+					continue
+
+			for reg, count in registers.items():
+				values = dict()
+				values['pkg_id'] = pkg_id
+				values['bin_id'] = bin_id
+				values['register'] = reg
+				values['count'] = count
+				try:
+					sql.append_record(tables['binary_reg_usage'], values)
+				except Exception as e:
+					logging.info(e)
+					logging.info(reg)
+					logging.info(count)
+					continue
+			for addressingMode, count in AMs.items():
+				values = dict()
+				values['pkg_id'] = pkg_id
+				values['bin_id'] = bin_id
+				values['addressing_mode'] = addressingMode
+				values['count'] = count
+				try:
+					sql.append_record(tables['binary_addressing_mode'], values)
+				except Exception as e:
+					logging.info(e)
+					logging.info(addressingMode)
 					logging.info(count)
 					continue
 

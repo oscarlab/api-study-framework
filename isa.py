@@ -46,10 +46,28 @@ tables['binary_opcode_usage'] = Table('binary_opcode_usage', [
 		['pkg_id', 'bin_id', 'func_addr', 'prefix', 'opcode', 'size', 'mnem'],
 		[['pkg_id', 'bin_id'], ['pkg_id', 'bin_id', 'func_addr'], ['prefix', 'opcode', 'size']])
 
+tables['binary_reg_usage'] = Table('binary_reg_usage', [
+		('pkg_id', 'INT', 'NOT NULL'),
+		('bin_id', 'INT', 'NOT NULL'),
+		('register', 'VARCHAR', 'NOT NULL'),
+		('count', 'INT', 'NOT NULL')],
+		['pkg_id', 'bin_id', 'register'],
+		[['pkg_id', 'bin_id'], ['register']])
+
+tables['binary_addressing_mode'] = Table('binary_addressing_mode', [
+		('pkg_id', 'INT', 'NOT NULL'),
+		('bin_id', 'INT', 'NOT NULL'),
+		('addressing_mode', 'VARCHAR', 'NOT NULL'),
+		('count', 'INT', 'NOT NULL')],
+		['pkg_id', 'bin_id', 'addressing_mode'],
+		[['pkg_id', 'bin_id'], ['addressing_mode']])
+
 def BinaryInstr(jmgr, os_target, sql, args):
 	sql.connect_table(tables['binary_call'])
 	sql.connect_table(tables['binary_call_unknown'])
 	sql.connect_table(tables['binary_opcode_usage'])
+	sql.connect_table(tables['binary_reg_usage'])
+	sql.connect_table(tables['binary_addressing_mode'])
 	sql.connect_table(tables['binary_call_missrate'])
 	# sql.connect_table(tables['instr_list'])
 	# sql.connect_table(tables['prefix_counts'])
