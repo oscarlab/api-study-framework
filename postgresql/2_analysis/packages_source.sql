@@ -14,6 +14,33 @@ IF NOT table_exists('package_opcode_source') THEN
 	CREATE INDEX package_opcode_source_prefix_opcode_size_idx
 		ON package_opcode_source (prefix, opcode, size);
 END IF;
+
+IF NOT table_exists('package_reg_usage') THEN
+	CREATE TABLE package_reg_usage (
+		pkg_id INT NOT NULL,
+		register VARCHAR NOT NULL,
+		count INT NOT NULL,
+		PRIMARY KEY (pkg_id, register)
+	);
+	CREATE INDEX package_reg_usage_pkg_id_idx
+		ON package_reg_usage (pkg_id);
+	CREATE INDEX package_reg_usage_register_idx
+		ON package_reg_usage (register);
+END IF;
+
+IF NOT table_exists('package_addressing_mode') THEN
+	CREATE TABLE package_addressing_mode (
+		pkg_id INT NOT NULL,
+		addressing_mode VARCHAR NOT NULL,
+		count INT NOT NULL,
+		PRIMARY KEY (pkg_id, addressing_mode)
+	);
+	CREATE INDEX package_addressing_mode_pkg_id_idx
+		ON package_addressing_mode (pkg_id);
+	CREATE INDEX package_addressing_mode_AM_idx
+		ON package_addressing_mode (addressing_mode);
+END IF;
+
 END $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION analyze_package_source(p INT)
@@ -54,6 +81,24 @@ BEGIN
 		pkg_bin AS t2
 		ON t1.pkg_id = p AND t1.bin_id = t2.bin_id
 		GROUP BY p, t1.source, t1.prefix, t1.opcode, t1.size, t1.mnem;
+
+	DELETE FROM package_reg_usage WHERE pkg_id = p;
+	INSERT INTO package_reg_usage
+		SELECT p, t1.register, SUM(count)
+		FROM executable_reg_usage AS t1
+		INNER JOIN
+		pkg_bin AS t2
+		ON t1.pkg_id = p AND t1.bin_id = t2.bin_id
+		GROUP BY p, t1.register;
+
+	DELETE FROM package_addressing_mode WHERE pkg_id = p;
+	INSERT INTO package_addressing_mode
+		SELECT p, t1.addressing_mode, SUM(count)
+		FROM executable_addressing_mode AS t1
+		INNER JOIN
+		pkg_bin AS t2
+		ON t1.pkg_id = p AND t1.bin_id = t2.bin_id
+		GROUP BY p, t1.addressing_mode;
 
 	UPDATE package_id SET footprint = True WHERE id = p;
 

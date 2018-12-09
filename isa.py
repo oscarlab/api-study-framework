@@ -49,6 +49,7 @@ tables['binary_opcode_usage'] = Table('binary_opcode_usage', [
 tables['binary_reg_usage'] = Table('binary_reg_usage', [
 		('pkg_id', 'INT', 'NOT NULL'),
 		('bin_id', 'INT', 'NOT NULL'),
+		('func_addr', 'INT', 'NOT NULL'),
 		('register', 'VARCHAR', 'NOT NULL'),
 		('count', 'INT', 'NOT NULL')],
 		['pkg_id', 'bin_id', 'register'],
@@ -57,6 +58,7 @@ tables['binary_reg_usage'] = Table('binary_reg_usage', [
 tables['binary_addressing_mode'] = Table('binary_addressing_mode', [
 		('pkg_id', 'INT', 'NOT NULL'),
 		('bin_id', 'INT', 'NOT NULL'),
+		('func_addr', 'INT', 'NOT NULL'),
 		('addressing_mode', 'VARCHAR', 'NOT NULL'),
 		('count', 'INT', 'NOT NULL')],
 		['pkg_id', 'bin_id', 'addressing_mode'],

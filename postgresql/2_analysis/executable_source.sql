@@ -18,6 +18,34 @@ IF NOT table_exists('executable_opcode_source') THEN
 		ON executable_opcode_source (prefix, opcode, size);
 END IF;
 
+IF NOT table_exists('executable_reg_usage') THEN
+	CREATE TABLE executable_reg_usage (
+		pkg_id INT NOT NULL,
+		bin_id INT NOT NULL,
+		register VARCHAR NOT NULL,
+		count INT NOT NULL,
+		PRIMARY KEY (pkg_id, bin_id, register)
+	);
+	CREATE INDEX executable_reg_usage_pkg_id_bin_id_idx
+		ON executable_reg_usage (pkg_id, bin_id);
+	CREATE INDEX executable_reg_usage_register_idx
+		ON executable_reg_usage (register);
+END IF;
+
+IF NOT table_exists('executable_addressing_mode') THEN
+	CREATE TABLE executable_addressing_mode (
+		pkg_id INT NOT NULL,
+		bin_id INT NOT NULL,
+		addressing_mode VARCHAR NOT NULL,
+		count INT NOT NULL,
+		PRIMARY KEY (pkg_id, bin_id, addressing_mode)
+	);
+	CREATE INDEX executable_addressing_mode_pkg_id_bin_id_idx
+		ON executable_addressing_mode (pkg_id, bin_id);
+	CREATE INDEX executable_addressing_mode_AM_idx
+		ON executable_addressing_mode (addressing_mode);
+END IF;
+
 END $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION analyze_executable_source(p INT, b INT)
@@ -209,6 +237,46 @@ BEGIN
 		GROUP BY p_id, b_id, source, t2.prefix, t2.opcode, t2.size, t2.mnem)
 	AS t3
 	GROUP BY t3.p_id, t3.b_id, t3.source, t3.prefix, t3.opcode, t3.size, t3.mnem;
+
+	DELETE FROM executable_reg_usage WHERE pkg_id = p AND bin_id = b;
+	INSERT INTO executable_reg_usage
+	SELECT t3.p_id, t3.b_id, t3.register, SUM(t3.sum_count) as count
+	FROM(
+		SELECT p as p_id, b as b_id, register, SUM(count) as sum_count
+		FROM binary_reg_usage
+		WHERE pkg_id = p AND bin_id = b
+		GROUP BY p_id, b_id, register
+		UNION ALL
+		SELECT p as p_id, b as b_id, t2.register, SUM(t2.count) as sum_count
+		FROM bin_call AS t1
+		INNER JOIN
+		library_reg_usage AS t2
+		ON  t1.pkg_id = t2.pkg_id
+		AND t1.bin_id = t2.bin_id
+		AND t1.func_addr = t2.func_addr
+		GROUP BY p_id, b_id, t2.register)
+	AS t3
+	GROUP BY t3.p_id, t3.b_id, t3.register;
+
+	DELETE FROM executable_addressing_mode WHERE pkg_id = p AND bin_id = b;
+	INSERT INTO executable_addressing_mode
+	SELECT t3.p_id, t3.b_id, t3.addressing_mode, SUM(t3.sum_count) as count
+	FROM(
+		SELECT p as p_id, b as b_id, addressing_mode, SUM(count) as sum_count
+		FROM binary_addressing_mode
+		WHERE pkg_id = p AND bin_id = b
+		GROUP BY p_id, b_id, addressing_mode
+		UNION ALL
+		SELECT p as p_id, b as b_id, t2.addressing_mode, SUM(t2.count) as sum_count
+		FROM bin_call AS t1
+		INNER JOIN
+		library_addressing_mode AS t2
+		ON  t1.pkg_id = t2.pkg_id
+		AND t1.bin_id = t2.bin_id
+		AND t1.func_addr = t2.func_addr
+		GROUP BY p_id, b_id, t2.addressing_mode)
+	AS t3
+	GROUP BY t3.p_id, t3.b_id, t3.addressing_mode;
 
 	time2 := clock_timestamp();
 	RAISE NOTICE '%', time2 - time1;

@@ -48,6 +48,36 @@ IF NOT table_exists('library_opcode_usage') THEN
 		ON library_opcode_usage (prefix, opcode, size);
 END IF;
 
+IF NOT table_exists('library_reg_usage') THEN
+	CREATE TABLE library_reg_usage (
+		pkg_id INT NOT NULL,
+		bin_id INT NOT NULL,
+		func_addr INT NOT NULL,
+		register VARCHAR NOT NULL,
+		count INT NOT NULL,
+		PRIMARY KEY (pkg_id, bin_id, func_addr, register)
+	);
+	CREATE INDEX library_reg_usage_pkg_id_bin_id_func_addr_idx
+		ON library_reg_usage (pkg_id, bin_id, func_addr);
+	CREATE INDEX library_reg_usage_register_idx
+		ON library_reg_usage (register);
+END IF;
+
+IF NOT table_exists('library_addressing_mode') THEN
+	CREATE TABLE library_addressing_mode (
+		pkg_id INT NOT NULL,
+		bin_id INT NOT NULL,
+		func_addr INT NOT NULL,
+		addressing_mode VARCHAR NOT NULL,
+		count INT NOT NULL,
+		PRIMARY KEY (pkg_id, bin_id, func_addr, addressing_mode)
+	);
+	CREATE INDEX library_addressing_mode_pkg_id_bin_id_func_addr_idx
+		ON library_addressing_mode (pkg_id, bin_id, func_addr);
+	CREATE INDEX library_addressing_mode_AM_idx
+		ON library_addressing_mode (addressing_mode);
+END IF;
+
 END
 $$ LANGUAGE plpgsql;
 
@@ -129,6 +159,30 @@ BEGIN
 	) AS t2
 	ON t1.call_addr = t2.func_addr GROUP BY t2.pkg_id, t2.bin_id, t1.func_addr, t2.prefix, t2.opcode, t2.size, t2.mnem
 	order by t1.func_addr, t2.prefix, t2.opcode, t2.size;
+
+	DELETE FROM library_reg_usage WHERE pkg_id = p AND bin_id = b;
+	INSERT INTO library_reg_usage
+	SELECT t2.pkg_id, t2.bin_id, t1.call_addr, t2.register, SUM(t2.sum_count) FROM
+	lib_callgraph AS t1
+	INNER JOIN (
+		SELECT DISTINCT pkg_id, bin_id, func_addr, register, SUM(count) as sum_count FROM binary_reg_usage
+		WHERE pkg_id = p AND bin_id = b
+		GROUP BY pkg_id, bin_id, func_addr, register
+	) AS t2
+	ON t1.call_addr = t2.func_addr GROUP BY t2.pkg_id, t2.bin_id, t1.func_addr, t2.register
+	order by t1.func_addr, t2.register;
+
+	DELETE FROM library_addressing_mode WHERE pkg_id = p AND bin_id = b;
+	INSERT INTO library_addressing_mode
+	SELECT t2.pkg_id, t2.bin_id, t1.call_addr, t2.addressing_mode, SUM(t2.sum_count) FROM
+	lib_callgraph AS t1
+	INNER JOIN (
+		SELECT DISTINCT pkg_id, bin_id, func_addr, addressing_mode, SUM(count) as sum_count FROM binary_addressing_mode
+		WHERE pkg_id = p AND bin_id = b
+		GROUP BY pkg_id, bin_id, func_addr, addressing_mode
+	) AS t2
+	ON t1.call_addr = t2.func_addr GROUP BY t2.pkg_id, t2.bin_id, t1.func_addr, t2.addressing_mode
+	order by t1.func_addr, t2.addressing_mode;
 
 	UPDATE binary_list SET callgraph = True, linking = False
 	WHERE pkg_id = p AND bin_id = b;

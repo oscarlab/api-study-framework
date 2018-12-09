@@ -1145,6 +1145,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				values = dict()
 				values['pkg_id'] = pkg_id
 				values['bin_id'] = bin_id
+				values['func_addr'] = func.start
 				values['register'] = reg
 				values['count'] = count
 				try:
@@ -1158,6 +1159,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				values = dict()
 				values['pkg_id'] = pkg_id
 				values['bin_id'] = bin_id
+				values['func_addr'] = func.start
 				values['addressing_mode'] = addressingMode
 				values['count'] = count
 				try:
