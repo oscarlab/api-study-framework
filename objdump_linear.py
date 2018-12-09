@@ -649,8 +649,14 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				if insn == 'data16':
 					return opcodes.PYBFD_DISASM_CONTINUE
 
-				#if insn_type == opcodes.InstructionType.BRANCH:
-				# if insn_type == opcodes.InstructionType.COND_BRANCH:
+				if insn_type == opcodes.InstructionType.BRANCH:
+					logging.info("BRANCH")
+					logging.info(address-self.cur_func.start)
+					logging.info(insn)
+				if insn_type == opcodes.InstructionType.COND_BRANCH:
+					logging.info("COND_BRANCH")
+					logging.info(address-self.cur_func.start)
+					logging.info(insn)
 
 				# rbp, rbx, r12, r13, r14, r15 are callee-preserved,
 				# so they will always be concrete
@@ -1037,7 +1043,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 						print "    call: %s" % (call)
 
 			for (prefix, opcode, size, mnem), count in opcodes.items():
-				print prefix.encode('hex'), opcode.encode('hex'), size, mnem,  count
+				print prefix.encode('hex'), opcode.encode('hex'), size, mnem, count
 
 			for reg, count in registers.items():
 				print reg, count
