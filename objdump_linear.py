@@ -508,6 +508,8 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 
 		def process_instructions(self, address, size, branch_delay_insn,insn_type, target, target2, disassembly):
 			binbytes = self.content[address - self.start:address - self.start + size]
+			if self.cur_func.curBB_start is None:
+				self.cur_func.curBB_start = address
 			#logging.info(insn_type)
 			#logging.info(address)
 			#logging.info(disassembly)
