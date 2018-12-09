@@ -912,7 +912,6 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				regsize = self.getRegSize(parts[-1])
 				if regsize is not None:
 					regSizes.append(regsize)
-			print regSizes, addressingMode
 			return regSizes, addressingMode
 
 		def print_corpus(self, func):
@@ -1208,7 +1207,12 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 			#	else:
 			#		print hex(item[1])
 
+			seenAddresses = []
 			for [entry, exit] in addressRanges:
+				if entry in seenAddresses:
+					continue
+				else:
+					seenAddresses.append(entry)
 				if exit is None:
 					self.cur_func = Func(entry)
 				else:

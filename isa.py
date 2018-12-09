@@ -52,8 +52,8 @@ tables['binary_reg_usage'] = Table('binary_reg_usage', [
 		('func_addr', 'INT', 'NOT NULL'),
 		('register', 'VARCHAR', 'NOT NULL'),
 		('count', 'INT', 'NOT NULL')],
-		['pkg_id', 'bin_id', 'register'],
-		[['pkg_id', 'bin_id'], ['register']])
+		['pkg_id', 'bin_id', 'func_addr', 'register'],
+		[['pkg_id', 'bin_id', 'func_addr'], ['register']])
 
 tables['binary_addressing_mode'] = Table('binary_addressing_mode', [
 		('pkg_id', 'INT', 'NOT NULL'),
@@ -61,8 +61,8 @@ tables['binary_addressing_mode'] = Table('binary_addressing_mode', [
 		('func_addr', 'INT', 'NOT NULL'),
 		('addressing_mode', 'VARCHAR', 'NOT NULL'),
 		('count', 'INT', 'NOT NULL')],
-		['pkg_id', 'bin_id', 'addressing_mode'],
-		[['pkg_id', 'bin_id'], ['addressing_mode']])
+		['pkg_id', 'bin_id', 'func_addr', 'addressing_mode'],
+		[['pkg_id', 'bin_id', 'func_addr'], ['addressing_mode']])
 
 def BinaryInstr(jmgr, os_target, sql, args):
 	sql.connect_table(tables['binary_call'])
