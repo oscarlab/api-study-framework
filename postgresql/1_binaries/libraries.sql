@@ -78,6 +78,21 @@ IF NOT table_exists('library_addressing_mode') THEN
 		ON library_addressing_mode (addressing_mode);
 END IF;
 
+IF NOT table_exists('library_basic_blocks') THEN
+	CREATE TABLE library_basic_blocks (
+		pkg_id INT NOT NULL,
+		bin_id INT NOT NULL,
+		func_addr INT NOT NULL,
+		BBLength INT NOT NULL,
+		count INT NOT NULL,
+		PRIMARY KEY (pkg_id, bin_id, func_addr, BBLength)
+	);
+	CREATE INDEX library_basic_blocks_pkg_id_bin_id_func_addr_idx
+		ON library_basic_blocks (pkg_id, bin_id, func_addr);
+	CREATE INDEX library_basic_blocks_AM_idx
+		ON library_basic_blocks (BBLength);
+END IF;
+
 END
 $$ LANGUAGE plpgsql;
 
@@ -182,6 +197,18 @@ BEGIN
 		GROUP BY pkg_id, bin_id, func_addr, addressing_mode
 	) AS t2
 	ON t1.call_addr = t2.func_addr GROUP BY t2.pkg_id, t2.bin_id, t1.func_addr, t2.addressing_mode
+	order by t1.func_addr, t2.addressing_mode;
+
+	DELETE FROM library_basic_blocks WHERE pkg_id = p AND bin_id = b;
+	INSERT INTO library_basic_blocks
+	SELECT t2.pkg_id, t2.bin_id, t1.call_addr, t2.BBLength, SUM(t2.sum_count) FROM
+	lib_callgraph AS t1
+	INNER JOIN (
+		SELECT DISTINCT pkg_id, bin_id, func_addr, BBLength, SUM(count) as sum_count FROM binary_basic_blocks
+		WHERE pkg_id = p AND bin_id = b
+		GROUP BY pkg_id, bin_id, func_addr, BBLength
+	) AS t2
+	ON t1.call_addr = t2.func_addr GROUP BY t2.pkg_id, t2.bin_id, t1.func_addr, t2.BBLength
 	order by t1.func_addr, t2.addressing_mode;
 
 	UPDATE binary_list SET callgraph = True, linking = False

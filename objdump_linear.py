@@ -214,6 +214,11 @@ class Instr:
 				return None
 		return splitdism[0]
 
+class InstrBranch(Instr):
+	def __init__(self, addr, dism, size, binbytes, BBLength):
+		Instr.__init__(self, addr, dism, size, binbytes)
+		self.BBLength = BBLength
+
 class InstrJCond(Instr):
 	def __init__(self, addr, dism, target, size, binbytes):
 		Instr.__init__(self, addr, dism, size, binbytes)
@@ -236,9 +241,10 @@ class InstrMov(Instr):
 		return "%x: %s=%s" % (self.addr, str(self.reg), str(self.source))
 
 class InstrCall(Instr):
-	def __init__(self, addr, dism, target, size, binbytes):
+	def __init__(self, addr, dism, target, size, binbytes, BBLength):
 		Instr.__init__(self, addr, dism, size, binbytes)
 		self.target = target
+		self.BBLength = BBLength
 
 	def __str__(self):
 		if isinstance(self.target, (int, long)):
@@ -256,6 +262,7 @@ class Func:
 		self.targets = Set()
 		self.num_calls = 0
 		self.num_missed_calls = 0
+		self.curBB_start = start
 
 class Op:
 	def __init__(self, val=None):
@@ -650,13 +657,19 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					return opcodes.PYBFD_DISASM_CONTINUE
 
 				if insn_type == opcodes.InstructionType.BRANCH:
-					logging.info("BRANCH")
-					logging.info(address-self.cur_func.start)
-					logging.info(insn)
+					BBLength = address - self.cur_func.curBB_start + size
+					if address + size < self.cur_func.end:
+						self.cur_func.curBB_start = address + size
+					else:
+						self.cur_func.curBB_start = None
+					self.cur_func.instrs.append(InstrBranch(address, disassembly, size, binbytes, BBLength))
 				if insn_type == opcodes.InstructionType.COND_BRANCH:
-					logging.info("COND_BRANCH")
-					logging.info(address-self.cur_func.start)
-					logging.info(insn)
+					BBLength = address - self.cur_func.curBB_start + size
+					if address + size < self.cur_func.end:
+						self.cur_func.curBB_start = address + size
+					else:
+						self.cur_func.curBB_start = None
+					self.cur_func.instrs.append(InstrBranch(address, disassembly, size, binbytes, BBLength))
 
 				# rbp, rbx, r12, r13, r14, r15 are callee-preserved,
 				# so they will always be concrete
@@ -664,6 +677,11 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				# Must implement push and pop
 				# Popping a register makes it concrete
 				if insn_type == opcodes.InstructionType.JSR or insn_type == opcodes.InstructionType.COND_JSR: #CALL
+					BBLength = address - self.cur_func.curBB_start + size
+					if address + size < self.cur_func.end:
+						self.cur_func.curBB_start = address + size
+					else:
+						self.cur_func.curBB_start = None
 					target_addr = None
 					if isinstance(arg1, OpLoad):
 						target_addr = arg1.addr.get_val()
@@ -675,7 +693,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 								self.cur_func.instrs.append(InstrCall(address,
 											disassembly,
 											rel_entries[target_addr],
-											size, binbytes))
+											size, binbytes, BBLength))
 							else:
 								#val2p = val2ptr(target_addr, ptr_size)
 								#if val2p < self.start or val2p >= self.end:
@@ -683,7 +701,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 								#	self.add_entry(val2ptr(target_addr, ptr_size))
 								self.cur_func.instrs.append(InstrCall(address,
 											disassembly,
-											target_addr, size, binbytes))
+											target_addr, size, binbytes, BBLength))
 						else:
 							logging.info("Target_addr out of valid bounds")
 							logging.info(disassembly)
@@ -699,10 +717,11 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 #							self.add_entry(val2p)
 						self.cur_func.instrs.append(InstrCall(address,
 											disassembly,
-											target, size, binbytes))
+											target, size, binbytes, BBLength))
 					else:
 						if insn == 'call':
 							self.cur_func.num_missed_calls += 1
+							self.cur_func.instrs.append(InstrBranch(address, disassembly, size, binbytes, BBLength))
 					# Not redundant. Looks kinda odd, but
 					# setting registers to non-concrete
 					# has to be at the end
@@ -984,6 +1003,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 
 			registers = dict()
 			AMs = dict()
+			BBLengths = dict()
 			for instr in func.instrs:
 				regSizes, addressingMode = self.split_dism(instr.dism)
 
@@ -1009,6 +1029,12 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					elif isinstance(instr.target, Op) and instr.target.val:
 						if not instr.target.val in calls:
 							calls.append(instr.target.val)
+
+				if isinstance(instr, InstrCall) or isinstance(instr, InstrBranch):
+					if instr.BBLength in BBLengths.keys():
+						BBLengths[instr.BBLength] += 1
+					else:
+						BBLengths[instr.BBLength] = 1
 
 				opcode = instr.opcode
 				size = instr.size
@@ -1046,8 +1072,12 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 
 			for reg, count in registers.items():
 				print reg, count
+
 			for addressingMode, count in AMs.items():
 				print addressingMode, count
+
+			for BBLength, count in BBLengths.items():
+				print BBLength, count
 
 		def insert_into_db(self, func, sql, pkg_id, bin_id):
 			if sql == None or pkg_id == None or bin_id == None:
@@ -1068,6 +1098,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 
 			registers = dict()
 			AMs = dict()
+			BBLengths = dict()
 			for instr in func.instrs:
 				regSizes, addressingMode = self.split_dism(instr.dism)
 
@@ -1093,6 +1124,13 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					elif isinstance(instr.target, Op) and instr.target.val:
 						if not instr.target.val in calls:
 							calls.append(instr.target.val)
+
+				if isinstance(instr, InstrCall) or isinstance(instr, InstrBranch):
+					if instr.BBLength in BBLengths.keys():
+						BBLengths[instr.BBLength] += 1
+					else:
+						BBLengths[instr.BBLength] = 1
+
 				opcode = instr.opcode
 				size = instr.size
 				prefix = instr.prefixes
@@ -1160,6 +1198,7 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 					logging.info(reg)
 					logging.info(count)
 					continue
+
 			for addressingMode, count in AMs.items():
 				values = dict()
 				values['pkg_id'] = pkg_id
@@ -1172,6 +1211,21 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 				except Exception as e:
 					logging.info(e)
 					logging.info(addressingMode)
+					logging.info(count)
+					continue
+
+			for BBLength, count in BBLengths.items():
+				values = dict()
+				values['pkg_id'] = pkg_id
+				values['bin_id'] = bin_id
+				values['func_addr'] = func.start
+				values['BBLength'] = BBLength
+				values['count'] = count
+				try:
+					sql.append_record(tables['binary_basic_blocks'], values)
+				except Exception as e:
+					logging.info(e)
+					logging.info(BBLength)
 					logging.info(count)
 					continue
 
@@ -1203,15 +1257,6 @@ def get_callgraph(binary_name, print_screen=False, analysis=False, emit_corpus=F
 
 			if startIter != lastEntry and startIter < self.end:
 				addressRanges.append([startIter, self.end])
-			#print hex(self.start), hex(self.end)
-			#for entry in self.entries:
-			#	print hex(entry)
-			#for item in addressRanges:
-			#	print hex(item[0]),
-			#	if item[1] is None:
-			#		print item[1]
-			#	else:
-			#		print hex(item[1])
 
 			seenAddresses = []
 			for [entry, exit] in addressRanges:

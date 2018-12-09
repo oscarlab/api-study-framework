@@ -64,6 +64,15 @@ tables['binary_addressing_mode'] = Table('binary_addressing_mode', [
 		['pkg_id', 'bin_id', 'func_addr', 'addressing_mode'],
 		[['pkg_id', 'bin_id', 'func_addr'], ['addressing_mode']])
 
+tables['binary_basic_blocks'] = Table('binary_basic_blocks', [
+		('pkg_id', 'INT', 'NOT NULL'),
+		('bin_id', 'INT', 'NOT NULL'),
+		('func_addr', 'INT', 'NOT NULL'),
+		('BBLength', 'INT', 'NOT NULL'),
+		('count', 'INT', 'NOT NULL')],
+		['pkg_id', 'bin_id', 'func_addr', 'BBLength'],
+		[['pkg_id', 'bin_id', 'func_addr'], ['BBLength']])
+
 def BinaryInstr(jmgr, os_target, sql, args):
 	sql.connect_table(tables['binary_call'])
 	sql.connect_table(tables['binary_call_unknown'])
@@ -71,6 +80,7 @@ def BinaryInstr(jmgr, os_target, sql, args):
 	sql.connect_table(tables['binary_reg_usage'])
 	sql.connect_table(tables['binary_addressing_mode'])
 	sql.connect_table(tables['binary_call_missrate'])
+	sql.connect_table(tables['binary_basic_blocks'])
 	# sql.connect_table(tables['instr_list'])
 	# sql.connect_table(tables['prefix_counts'])
 

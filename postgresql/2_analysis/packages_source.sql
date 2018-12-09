@@ -41,6 +41,19 @@ IF NOT table_exists('package_addressing_mode') THEN
 		ON package_addressing_mode (addressing_mode);
 END IF;
 
+IF NOT table_exists('package_basic_blocks') THEN
+	CREATE TABLE package_basic_blocks (
+		pkg_id INT NOT NULL,
+		BBLength INT NOT NULL,
+		count INT NOT NULL,
+		PRIMARY KEY (pkg_id, basic_blocks)
+	);
+	CREATE INDEX package_basic_blocks_pkg_id_idx
+		ON package_basic_blocks (pkg_id);
+	CREATE INDEX package_basic_blocks_AM_idx
+		ON package_basic_blocks (BBLength);
+END IF;
+
 END $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION analyze_package_source(p INT)
@@ -99,6 +112,15 @@ BEGIN
 		pkg_bin AS t2
 		ON t1.pkg_id = p AND t1.bin_id = t2.bin_id
 		GROUP BY p, t1.addressing_mode;
+
+	DELETE FROM package_basic_blocks WHERE pkg_id = p;
+	INSERT INTO package_basic_blocks
+		SELECT p, t1.BBLength, SUM(count)
+		FROM executable_basic_blocks AS t1
+		INNER JOIN
+		pkg_bin AS t2
+		ON t1.pkg_id = p AND t1.bin_id = t2.bin_id
+		GROUP BY p, t1.BBLength;
 
 	UPDATE package_id SET footprint = True WHERE id = p;
 

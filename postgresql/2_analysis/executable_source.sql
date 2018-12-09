@@ -46,6 +46,20 @@ IF NOT table_exists('executable_addressing_mode') THEN
 		ON executable_addressing_mode (addressing_mode);
 END IF;
 
+IF NOT table_exists('executable_basic_blocks') THEN
+	CREATE TABLE executable_basic_blocks (
+		pkg_id INT NOT NULL,
+		bin_id INT NOT NULL,
+		BBLength INT NOT NULL,
+		count INT NOT NULL,
+		PRIMARY KEY (pkg_id, bin_id, BBLength)
+	);
+	CREATE INDEX executable_basic_blocks_pkg_id_bin_id_idx
+		ON executable_basic_blocks (pkg_id, bin_id);
+	CREATE INDEX executable_basic_blocks_AM_idx
+		ON executable_basic_blocks (BBLength);
+END IF;
+
 END $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION analyze_executable_source(p INT, b INT)
@@ -277,6 +291,26 @@ BEGIN
 		GROUP BY p_id, b_id, t2.addressing_mode)
 	AS t3
 	GROUP BY t3.p_id, t3.b_id, t3.addressing_mode;
+
+	DELETE FROM executable_basic_blocks WHERE pkg_id = p AND bin_id = b;
+	INSERT INTO executable_basic_blocks
+	SELECT t3.p_id, t3.b_id, t3.BBLength, SUM(t3.sum_count) as count
+	FROM(
+		SELECT p as p_id, b as b_id, BBLength, SUM(count) as sum_count
+		FROM binary_basic_blocks
+		WHERE pkg_id = p AND bin_id = b
+		GROUP BY p_id, b_id, BBLength
+		UNION ALL
+		SELECT p as p_id, b as b_id, t2.BBLength, SUM(t2.count) as sum_count
+		FROM bin_call AS t1
+		INNER JOIN
+		library_basic_blocks AS t2
+		ON  t1.pkg_id = t2.pkg_id
+		AND t1.bin_id = t2.bin_id
+		AND t1.func_addr = t2.func_addr
+		GROUP BY p_id, b_id, t2.BBLength)
+	AS t3
+	GROUP BY t3.p_id, t3.b_id, t3.BBLength;
 
 	time2 := clock_timestamp();
 	RAISE NOTICE '%', time2 - time1;
